@@ -1,2 +1,10 @@
 <Solution>
+  <Folder Name="/Goo/">
+    <Project Path="Goo/Goo/Goo.gsproj" Type="f1526b4d-c1a8-4b42-b2f7-48da6f9ca033" />
+  </Folder>
+  <Folder Name="/Goo/vendor/" />
+  <Folder Name="/Goo/vendor/Yoga.Net/" />
+  <Folder Name="/Goo/vendor/Yoga.Net/src/">
+    <Project Path="Goo/vendor/Yoga.Net/src/Yoga.Net/Yoga.Net.csproj" />
+  </Folder>
 </Solution>

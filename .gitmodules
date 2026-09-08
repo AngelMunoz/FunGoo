@@ -1,0 +1,3 @@
+[submodule "Goo"]
+	path = Goo
+	url = git@github.com:obselate/goo.git
