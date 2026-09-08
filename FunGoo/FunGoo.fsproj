@@ -13,4 +13,8 @@
     <ProjectReference Include="..\Goo\Goo\Goo.gsproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Fabulous.AST" Version="1.10.0" />
+  </ItemGroup>
+
 </Project>
