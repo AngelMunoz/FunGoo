@@ -1,0 +1,1 @@
+GooRes.App.run()
