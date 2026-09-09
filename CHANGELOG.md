@@ -14,4 +14,4 @@
 
 ### Added
 
-Generated the skeleton
+- Generated the skeleton
