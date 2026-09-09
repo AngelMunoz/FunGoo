@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Core:** The Goo dependency is now 0.5.2. The Goo 0.5.1 and 0.5.2 releases remove the gradient stop limit, improve hot reload behavior, and fix rounded edge rendering, with no public API changes to the generated bindings. The RaznorGoo sample moves to Goo and Goo.Svg 0.5.2.
+
 ## [0.1.0] - 2026-09-08
 
 ### Added
