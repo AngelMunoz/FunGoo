@@ -5,15 +5,13 @@
 // children-bearing widgets, Try methods and implicit operators flow through
 // on the next run. Generated files overwrite idempotently.
 #r "nuget: Fabulous.AST, 2.0.0-pre08"
+#r "nuget: Hexa.NET.SDL3, 1.2.17"
+#r "nuget: HexaGen.Runtime, 1.1.24"
+#r "nuget: Unicode.Bidi, 0.3.18"
 
 #I __SOURCE_DIRECTORY__
 #r "../Goo/Goo/bin/Debug/net10.0/Yoga.Net.dll"
 #r "../Goo/Goo/bin/Debug/net10.0/Goo.dll"
-// Dependency loads required for reflection over Goo types. Update the version
-// segments when the NuGet cache changes.
-#r "/home/daniel/.nuget/packages/hexa.net.sdl3/1.2.17/lib/net10.0/Hexa.NET.SDL3.dll"
-#r "/home/daniel/.nuget/packages/hexagen.runtime/1.1.24/lib/net10.0/HexaGen.Runtime.dll"
-#r "/home/daniel/.nuget/packages/unicode.bidi/0.3.18/lib/net10.0/Unicode.Bidi.dll"
 
 open System
 open System.IO
