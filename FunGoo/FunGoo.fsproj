@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,15 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="Widgets/Children.g.fsi" />
+    <Compile Include="Widgets/Children.g.fs" />
+    <Compile Include="Widgets/Setters.g.fsi" />
+    <Compile Include="Widgets/Setters.g.fs" />
+    <Compile Include="Widgets/Interop.g.fsi" />
+    <Compile Include="Widgets/Interop.g.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Goo\Goo\Goo.gsproj" />
+    <PackageReference Include="Goo" Version="0.5.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Fabulous.AST" Version="1.10.0" />
-  </ItemGroup>
-
 </Project>
