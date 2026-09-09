@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-08
+
 ### Added
 
 - **Core:** Children helpers for `Container` and `Button`: append children in one call from a sequence or individual elements.
@@ -9,9 +11,3 @@
 - **Core:** `voption` wrappers for the `ElementHandle` text queries, and inline conversion helpers from `float` and `int` to `Length` and from CSS color strings to `Color`.
 - **Core:** `Virtual` bindings for Goo's virtualized lists: build from an `IReadOnlyList`, a sequence, or a count and indexer without touching G#'s compiler-generated entry points.
 - **Samples:** RaznorGoo, a media player built on Goo: adaptive playlist and playback state, LibVLCSharp audio behind an environment record, runtime SVG icons, and a custom file and folder picker.
-
-## [0.0.1] - 2026-09-07
-
-### Added
-
-- Generated the skeleton
