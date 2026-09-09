@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -12,6 +12,8 @@
     <Compile Include="Widgets/Setters.g.fs" />
     <Compile Include="Widgets/Interop.g.fsi" />
     <Compile Include="Widgets/Interop.g.fs" />
+    <Compile Include="Virtual.fsi" />
+    <Compile Include="Virtual.fs" />
   </ItemGroup>
 
   <ItemGroup>
