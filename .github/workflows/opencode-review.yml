@@ -1,0 +1,40 @@
+name: opencode-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      issues: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_PERMISSION: '{ "bash": {  "*": "deny", "gh*": "allow", "gh pr review*": "deny", "dotnet*": "allow" }, "external_directory": { "*": "deny" } }'
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/glm-5.3-flash
+          variant: high
+          prompt: |
+            Review this pull request:
+            - Ensure AGENTS.md rules are respected
+            - Look out for perf regressions particularly around allocations in hot paths
+            - When new code is added make sure performance is accounted for and not a secondary thing
+            - Look out for rendering affecting changes not noted in the PR
+            - When state or threading changes are made, make sure UI commits still go through the post door on the UI thread and no polling was introduced
+            - When bug fixes are submitted for rendering or state concerns, make sure every widget touching the same state is consistent
+
+            DO NOT MAKE ANY CHANGES LOCALLY, DO NOT CHANGE THE PR DESCRIPTION OR REACTIONS.
+            FOCUS ON THE REVIEW ONLY AND REPORT IN ASD-STE100 SIMPLIFIED TECHNICAL ENGLISH.
