@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Goo" Version="0.5.2" />
-    <PackageReference Include="Goo.Svg" Version="0.5.2" />
+    <PackageReference Include="Goo" Version="0.5.3" />
+    <PackageReference Include="Goo.Svg" Version="0.5.3" />
     <PackageReference Include="LibVLCSharp" Version="3.10.1" />
     <PackageReference Include="Mibo.Adaptive" Version="1.0.1" />
   </ItemGroup>
