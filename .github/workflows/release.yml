@@ -77,7 +77,9 @@ jobs:
 
       - name: Pack
         if: steps.check_tag.outputs.exists == 'false'
-        run: dotnet pack --configuration Release --no-build --output nupkgs FunGoo/FunGoo.fsproj
+        run: |
+          dotnet pack --configuration Release --no-build --output nupkgs FunGoo/FunGoo.fsproj
+          dotnet pack --configuration Release --no-build --output nupkgs FunGoo.Widgets/FunGoo.Widgets.fsproj
 
       - name: NuGet login (trusted publishing)
         if: steps.check_tag.outputs.exists == 'false'
