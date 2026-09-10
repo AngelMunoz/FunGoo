@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The package version comes from the latest released section of the
+         shared repository changelog (Ionide.KeepAChangelog.Tasks below). -->
+    <ChangelogFile>$(MSBuildThisFileDirectory)../CHANGELOG.md</ChangelogFile>
+    <Authors>Angel D. Munoz</Authors>
+    <Description>F# bindings and helpers for the Goo.Widgets library.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/AngelMunoz/FunGoo</RepositoryUrl>
+    <PackageTags>goo;fsharp;widgets;desktop;ui</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Widgets.g.fsi" />
+    <Compile Include="Widgets.g.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Goo.Widgets comes from the published package; the goo-widgets
+         submodule is a source reference used only by codegen/Generate.fsx. -->
+    <PackageReference Include="Goo.Widgets" Version="0.1.1" />
+    <PackageReference Include="Goo" Version="0.5.3" />
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ionide.KeepAChangelog.Tasks" Version="0.3.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="FunGoo/FunGoo.fsproj" />
+  <Project Path="FunGoo.Widgets/FunGoo.Widgets.fsproj" />
   <Folder Name="/samples/">
     <Project Path="samples\RaznorGoo\RaznorGoo.fsproj" />
   </Folder>

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Widgets:** New `FunGoo.Widgets` package for the `Goo.Widgets` library, pinned to Goo.Widgets 0.1.1. Widgets compose through F# constructor property assignment, and generated optional setters cover nullable widget properties: call with a value to set it, or with no argument to reset it to the widget default.
+
 ## [0.2.0] - 2026-09-09
 
 ### Changed

@@ -1,3 +1,6 @@
 [submodule "Goo"]
 	path = Goo
 	url = git@github.com:obselate/goo.git
+[submodule "goo-widgets"]
+	path = goo-widgets
+	url = git@github.com:obselate/goo-widgets.git
