@@ -12,7 +12,9 @@ type IPlayback =
   abstract Pause: unit -> unit
   abstract Resume: unit -> unit
   abstract Stop: unit -> unit
-  abstract SeekPercent: float32 -> unit
+  abstract SeekSeconds: float32 -> unit
+  abstract Volume: unit -> float
+  abstract SetVolume: float -> unit
 
 type PlaybackEvents = {
   OnPosition: float32 -> int64 -> unit

@@ -3,12 +3,19 @@ module GooRes.Shell
 open Goo
 open FunGoo.Children
 open GooRes.Types
-open GooRes.Player
 open GooRes.Widgets
 open GooRes.Widgets.FilePicker
 open Mibo.Adaptive
+open Goo.Widgets.Media
 
-let view (env: Env) (player: PlayerState) (picker: FilePickerWidget) : Blob =
+
+
+let view
+  (env: Env)
+  (player: Player.PlayerState)
+  (picker: FilePickerWidget)
+  : Blob =
+
   Container(
     Width = Length.Percent 100,
     Height = Length.Percent 100,
@@ -47,8 +54,8 @@ let view (env: Env) (player: PlayerState) (picker: FilePickerWidget) : Blob =
             .Children(
               MediaList.create {
                 songs = player.songs
-                selected = CVal.value player.selected
-                onSelect = fun song -> playSong env player song
+                selected = player.selected
+                onSelect = fun song -> Player.playSong env player song
               }
             )
         ),
@@ -62,22 +69,26 @@ let view (env: Env) (player: PlayerState) (picker: FilePickerWidget) : Blob =
         BorderColor = Color.Rgb(35, 44, 62)
       )
         .Children(
-          Text(Content = nowPlaying player, FontSize = 15, Color = Color.White),
-          Progress.create {
-            value = CVal.value player.position
-            maxValue = AVal.constant 100.0f
-            color = Color.Rgb(74, 125, 255)
-            trackColor = Color.Rgb(35, 44, 62)
-            height = 8.0
-          },
-          MediaMenu.create {
-            isPlaying = CVal.value player.playing
-            loop = CVal.value player.loop
-            onPlayPause = fun _ -> playPause env player
-            onNext = fun _ -> skipNext env player
-            onPrevious = fun _ -> skipPrevious env player
-            onShuffle = fun _ -> shuffle player
-            onLoop = fun _ -> cycleLoop player
-          }
+          Text(
+            Key = "now-playing",
+            Content = (player.nowPlaying |> AVal.getValue),
+            FontSize = 15,
+            Color = Color.White
+          ),
+          Cell.Mount<MediaTransportInput, MediaTransport>(
+            "media-transport",
+            MediaTransportInput(
+              Playing = AVal.getValue player.playing,
+              Position = (player.position |> AVal.map float |> AVal.getValue),
+              Duration = (player.length |> AVal.map float |> AVal.getValue),
+              Volume = env.Playback.Volume(),
+              OnPlayPause = (fun () -> Player.playPause env player),
+              OnNext = (fun () -> Player.skipNext env player),
+              OnPrevious = (fun () -> Player.skipPrevious env player),
+              OnSeekCommitted = (fun seconds -> Player.seek env seconds),
+              OnVolumeChanged = (fun value -> Player.setVolume env value),
+              OnVolumeCommitted = (fun value -> Player.setVolume env value)
+            )
+          )
         )
     )

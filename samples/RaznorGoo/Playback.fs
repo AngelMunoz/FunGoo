@@ -61,7 +61,14 @@ let create (post: (unit -> unit) -> unit) (events: PlaybackEvents) : IPlayback =
         mediaPlayer.Stop()
         releaseCurrent()
 
-      member _.SeekPercent percent =
-        if lengthMs > 0L then
-          mediaPlayer.Time <- int64(float percent / 100.0 * float lengthMs)
+      member _.SeekSeconds seconds =
+        mediaPlayer.Time <- int64(seconds * 1000.0f)
+
+      member _.Volume() =
+        let raw = max 0 (min 100 mediaPlayer.Volume)
+        float raw / 100.0
+
+      member _.SetVolume(value: float) =
+        let clamped = Math.Clamp(value, 0.0, 1.0)
+        mediaPlayer.Volume <- int(round(clamped * 100.0))
   }

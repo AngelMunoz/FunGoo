@@ -6,11 +6,11 @@ open Goo
 open Goo.Widgets.Actions
 open Goo.Widgets.Feedback
 open Goo.Widgets.Layout
-open GooRes.Icons
 open GooRes.Types
 open FunGoo.Children
 open FunGoo.Widgets
 open Mibo.Adaptive
+open GooRes
 
 type PickerMode =
   | PickFolder
@@ -60,7 +60,7 @@ let inline entryRow
       $"folder-{e.Path}",
       ListRow(
         Title = e.Name,
-        Leading = folder,
+        Leading = Icons.folder,
         MinHeight = 36.0,
         PaddingVertical = 8.0
       )

@@ -10,7 +10,7 @@ open Mibo.Adaptive
 
 type MediaListProps = {
   songs: alist<Song>
-  selected: int aval
+  selected: int voption aval
   onSelect: Song -> unit
 }
 
@@ -42,7 +42,7 @@ let inline row
 
 let inline create(p: MediaListProps) : Blob =
   let songs = AList.toList p.songs
-  let selected = AVal.getValue p.selected
+  let selected = AVal.getValue p.selected |> ValueOption.defaultValue -1
 
   Container(
     FlexDirection = FlexDirection.Column,

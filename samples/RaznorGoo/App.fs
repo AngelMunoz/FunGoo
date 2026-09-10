@@ -28,48 +28,37 @@ let run() =
         window.Root.Rebuild())
       |> ignore)
 
-  // The libvlc service. Its callbacks land on the UI thread through `post`;
-  // the one late-bound piece is the service itself, for auto-advance at the
-  // end of a track.
-  let mutable playbackSlot: IPlayback voption = ValueNone
-
-  let playback =
-    Playback.create post {
-      OnPosition = fun percent _lengthMs -> CVal.set percent player.position
-      OnState = fun playing -> CVal.set playing player.playing
-      OnEnded =
-        fun () ->
-          let count = Player.songCount player
-          let songs = AList.toList player.songs
-          let index = AVal.getValue player.selected
-
-          let playAt next =
-            let song = List.item next songs
-            Player.pickSong player song
-            CVal.set true player.hasCurrent
-
-            playbackSlot |> ValueOption.iter(fun pb -> pb.Play song)
-
-          if count > 0 then
-            match AVal.getValue player.loop with
-            | LoopState.Single -> playAt index
-            | LoopState.All -> playAt((index + 1) % count)
-            | LoopState.Off when index + 1 < count -> playAt(index + 1)
-            | _ -> ()
-      OnError = fun message -> eprintfn "playback: %s" message
-    }
-
-  playbackSlot <- ValueSome playback
-
   // The file system service is stateless; widgets and playlist loaders call
   // it from background threads and post the entries back to the UI.
   let fileSystem = FileSystem.create()
+
+  // The libvlc service. Its callbacks land on the UI thread through `post`.
+  // The one late-bound piece is the environment: the end-of-track handler
+  // needs it, but it is built out of the playback service that owns the
+  // handler.
+  let mutable envSlot: Env voption = ValueNone
+
+  let playback =
+    Playback.create post {
+      OnPosition =
+        fun percent lengthMs ->
+          let length = float32 lengthMs / 1000.0f
+          CVal.set length player.length
+          CVal.set (percent / 100.0f * length) player.position
+      OnState = fun playing -> CVal.set playing player.playing
+      OnEnded =
+        fun () ->
+          envSlot |> ValueOption.iter(fun env -> Player.skipNext env player)
+      OnError = fun message -> eprintfn "playback: %s" message
+    }
 
   let env: Env = {
     PostUI = post
     Playback = playback
     FileSystem = fileSystem
   }
+
+  envSlot <- ValueSome env
 
   let loadSongsFromFolder(dir: string) =
     async {

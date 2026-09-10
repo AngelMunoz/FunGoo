@@ -11,12 +11,10 @@
     <Compile Include="Playback.fs" />
     <Compile Include="FileSystem.fs" />
     <Compile Include="Icons.fs" />
+    <Compile Include="Player.fs" />
     <Compile Include="Widgets\MenuBar.fs" />
     <Compile Include="Widgets\MediaList.fs" />
-    <Compile Include="Widgets\MediaMenu.fs" />
     <Compile Include="Widgets\FilePicker.fs" />
-    <Compile Include="Widgets\Progress.fs" />
-    <Compile Include="Player.fs" />
     <Compile Include="Shell.fs" />
     <Compile Include="App.fs" />
     <Compile Include="Program.fs" />
