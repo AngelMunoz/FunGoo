@@ -1,17 +1,16 @@
 module GooRes.Widgets.FilePicker
 
 open System
-open System.IO
 
 open Goo
+open Goo.Widgets.Actions
+open Goo.Widgets.Feedback
+open Goo.Widgets.Layout
+open GooRes.Icons
+open GooRes.Types
 open FunGoo.Children
+open FunGoo.Widgets
 open Mibo.Adaptive
-
-type PickerEntry = {
-  Name: string
-  Path: string
-  IsFolder: bool
-}
 
 type PickerMode =
   | PickFolder
@@ -19,9 +18,8 @@ type PickerMode =
 
 type FilePickerProps = {
   filters: string list
-  postUI: (unit -> unit) -> unit
-
-  onFilesSelected: string list -> unit
+  startIn: string
+  onFilesSelected: FsEntry list -> unit
   onFolderSelected: string -> unit
 }
 
@@ -31,125 +29,107 @@ type FilePickerWidget = {
   openPicker: PickerMode -> unit
 }
 
-let listDir (filterPatterns: string list) (path: string) : PickerEntry list =
-  try
-    let dirs =
-      Directory.GetDirectories path
-      |> Array.sort
-      |> Array.map(fun d -> {
-        Name = Path.GetFileName d
-        Path = d
-        IsFolder = true
-      })
-
-    let files =
-      Array.ofList filterPatterns
-      |> Array.collect(fun pattern -> Directory.GetFiles(path, pattern))
-      |> Array.distinct
-      |> Array.sort
-      |> Array.map(fun f -> {
-        Name = Path.GetFileName f
-        Path = f
-        IsFolder = false
-      })
-
-    List.ofArray dirs @ List.ofArray files
-  with _ -> []
-
 let inline actionButton
   (label: string)
   ([<InlineIfLambda>] onClick: unit -> unit)
-  =
-  Button(
-    OnClick = (fun _ -> onClick()),
-    Padding = 8,
-    BorderRadius = 6,
-    BackgroundColor = Color.Rgb(30, 38, 54)
-  )
-    .Children(
-      Text(Content = label, FontSize = 13, Color = Color.Rgb(230, 235, 245))
-    )
-
-let entryRow
-  (m: PickerMode)
-  (currentPicked: string list)
-  (onOpenFolder: string -> unit)
-  (onToggleFile: string -> unit)
-  (e: PickerEntry)
   : Blob =
-  let isPicked = List.contains e.Path currentPicked
+  ActionButton(Label = label, OnClick = fun _ -> onClick())
+    .backgroundColor(Color.Rgb(30, 38, 54))
+    .textColor(Color.Rgb(230, 235, 245))
+    .hoverBackgroundColor(Color.Rgb(40, 52, 74))
+    .Build()
+
+let inline clickable
+  (id: string, child: Blob, [<InlineIfLambda>] onClick: unit -> unit)
+  : Blob =
+  Container(Key = id, OnClick = fun _ -> onClick()).Children child
+
+
+let inline entryRow
+  (m: PickerMode)
+  (currentPicked: FsEntry list)
+  (onOpenFolder: string -> unit)
+  (onToggleFile: FsEntry -> unit)
+  (e: FsEntry)
+  : Blob =
+  let isPicked = List.exists (fun x -> x.Path = e.Path) currentPicked
 
   if e.IsFolder then
-    Container(
-      Key = e.Path,
-      OnClick = (fun _ -> onOpenFolder e.Path),
-      HitTestSelf = true,
-      Padding = 8,
-      BorderRadius = 6,
-      BackgroundColor = Color.Rgb(24, 31, 43)
-    )
-      .Children(
-        Text(
-          Content = "/ " + e.Name,
-          FontSize = 14,
-          Color = Color.Rgb(140, 190, 255)
-        )
+
+    clickable(
+      $"folder-{e.Path}",
+      ListRow(
+        Title = e.Name,
+        Leading = folder,
+        MinHeight = 36.0,
+        PaddingVertical = 8.0
       )
+        .backgroundColor(Color.Rgb(24, 31, 43))
+        .textColor(Color.Rgb(140, 190, 255))
+        .Build(),
+      fun () -> onOpenFolder e.Path
+    )
   elif m = PickFiles then
-    Container(
-      Key = e.Path,
-      OnClick = (fun _ -> onToggleFile e.Path),
-      HitTestSelf = true,
-      Padding = 8,
-      BorderRadius = 6,
-      BackgroundColor =
-        (if isPicked then
-           Color.Rgb(40, 52, 74)
-         else
-           Color.Rgb(24, 31, 43))
-    )
-      .Children(
-        Text(
-          Content = (if isPicked then "[x] " else "[ ] ") + e.Name,
-          FontSize = 14,
-          Color = Color.Rgb(230, 235, 245)
-        )
+    clickable(
+      $"file-{e.Path}",
+      ListRow(
+        Title = e.Name,
+        Selected = isPicked,
+        MinHeight = 36.0,
+        PaddingVertical = 8.0
       )
+        .backgroundColor(Color.Rgb(24, 31, 43))
+        .selectedBackgroundColor(Color.Rgb(40, 52, 74))
+        .textColor(Color.Rgb(230, 235, 245))
+        .Build(),
+      fun () -> onToggleFile e
+    )
   else
-    Container(
-      Key = e.Path,
-      Padding = 8,
-      BorderRadius = 6,
-      BackgroundColor = Color.Rgb(20, 25, 36)
-    )
-      .Children(
-        Text(Content = e.Name, FontSize = 14, Color = Color.Rgb(120, 130, 150))
-      )
+    ListRow(Title = e.Name, MinHeight = 36.0, PaddingVertical = 8.0)
+      .backgroundColor(Color.Rgb(20, 25, 36))
+      .textColor(Color.Rgb(120, 130, 150))
+      .opacity(0.7)
+      .Build()
 
-let inline create(p: FilePickerProps) : FilePickerWidget =
-  let home = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
-
+// Infrastructure comes in through the environment; props carry data and
+// events only.
+let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
   let isOpen = CVal.create false
   let mode = CVal.create PickFolder
-  let directory = CVal.create home
-  let entries = CVal.create List.empty<PickerEntry>
-  let picked = CVal.create List.empty<string>
+
+  // `ValueNone` is the drives view: the list shows one row per ready drive.
+  let directory = CVal.create(ValueSome p.startIn)
+  let entries = CVal.create List.empty<FsEntry>
+  let picked = CVal.create List.empty<FsEntry>
 
   let loadDirectory path =
     async {
-      let found = listDir p.filters path
+      let found = env.FileSystem.List(path, p.filters)
 
-      p.postUI(fun () ->
+      env.PostUI(fun () ->
         CVal.set found entries
-        CVal.set path directory)
+        CVal.set (ValueSome path) directory)
+    }
+    |> Async.Start
+
+  let loadDrives() =
+    async {
+      let found = env.FileSystem.Drives()
+
+      env.PostUI(fun () ->
+        CVal.set found entries
+        CVal.set ValueNone directory)
     }
     |> Async.Start
 
   let openPicker m =
     CVal.set m mode
-    CVal.set List.empty<string> picked
+    CVal.set List.empty<FsEntry> picked
     CVal.set true isOpen
-    loadDirectory(AVal.getValue directory)
+
+    match AVal.getValue directory with
+    | ValueSome dir -> loadDirectory dir
+    | ValueNone -> loadDrives()
 
   let closePicker() = CVal.set false isOpen
 
@@ -158,7 +138,7 @@ let inline create(p: FilePickerProps) : FilePickerWidget =
       Container()
     else
       let currentMode = AVal.getValue mode
-      let dir = AVal.getValue directory
+      let currentDir = AVal.getValue directory
       let currentEntries = AVal.getValue entries
       let currentPicked = AVal.getValue picked
 
@@ -169,27 +149,57 @@ let inline create(p: FilePickerProps) : FilePickerWidget =
           "Add Files"
 
       let goUp() =
-        match Path.GetDirectoryName dir with
-        | null -> ()
-        | parent -> loadDirectory parent
+        match currentDir with
+        | ValueNone -> ()
+        | ValueSome dir ->
+          match env.FileSystem.Parent dir with
+          | ValueSome parent -> loadDirectory parent
+          | ValueNone -> loadDrives()
 
-      let toggle path =
+      let toggle(e: FsEntry) =
         let next =
-          if List.contains path currentPicked then
-            List.filter ((<>) path) currentPicked
+          if List.exists (fun x -> x.Path = e.Path) currentPicked then
+            List.filter (fun x -> x.Path <> e.Path) currentPicked
           else
-            path :: currentPicked
+            e :: currentPicked
 
         CVal.set next picked
 
       let confirm() =
-        if currentMode = PickFolder then
-          p.onFolderSelected dir
-        else
-          p.onFilesSelected(List.sort currentPicked)
-          CVal.set List.empty<string> picked
+        match currentDir with
+        | ValueNone -> ()
+        | ValueSome dir ->
+          if currentMode = PickFolder then
+            p.onFolderSelected dir
+          else
+            p.onFilesSelected(List.sortBy (fun e -> e.Path) currentPicked)
+            CVal.set List.empty<FsEntry> picked
 
-        closePicker()
+          closePicker()
+
+      let locationText = currentDir |> ValueOption.defaultValue "This PC"
+
+      let filterText = String.Join(", ", p.filters)
+      let filterMessage = $"No {filterText} files in this folder"
+
+      let emptyTitle, emptyDescription =
+        if currentDir.IsNone then
+          ("No drives found", "No ready drives on this system")
+        else
+          ("No media here", filterMessage)
+
+      let rows =
+        if List.isEmpty currentEntries then
+          EmptyState(
+            Title = emptyTitle,
+            Description = emptyDescription,
+            MinHeight = Nullable 160.0
+          )
+            .Build()
+          |> List.singleton
+        else
+          currentEntries
+          |> List.map(entryRow currentMode currentPicked loadDirectory toggle)
 
       Container(
         FlexDirection = FlexDirection.Column,
@@ -206,7 +216,7 @@ let inline create(p: FilePickerProps) : FilePickerWidget =
           )
             .Children(
               Text(
-                Content = dir,
+                Content = locationText,
                 FontSize = 13,
                 Color = Color.Rgb(150, 160, 180),
                 FlexGrow = 1.0
@@ -225,12 +235,7 @@ let inline create(p: FilePickerProps) : FilePickerWidget =
             ScrollbarVisibility = ScrollbarVisibility.Auto,
             Gap = 2
           )
-            .Children(
-              currentEntries
-              |> List.map(
-                entryRow currentMode currentPicked loadDirectory toggle
-              )
-            )
+            .Children(rows)
         )
 
   { view = view; openPicker = openPicker }

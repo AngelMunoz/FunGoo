@@ -1,9 +1,11 @@
 module GooRes.Widgets.MediaMenu
 
 open Goo
+open Goo.Widgets.Actions
 open GooRes.Icons
 open GooRes.Types
 open FunGoo.Children
+open FunGoo.Widgets
 open Mibo.Adaptive
 
 type MediaMenuProps = {
@@ -17,17 +19,34 @@ type MediaMenuProps = {
 }
 
 let inline button
-  (icon: VectorAsset)
+  (icon: Blob)
+  (name: string)
   ([<InlineIfLambda>] onClick: unit -> unit)
-  =
-  Button(OnClick = fun _ -> onClick())
-    .Children(Container(Width = 24, Height = 24).Children(icon.Render()))
+  : Blob =
+  IconButton(
+    Icon = icon,
+    AccessibilityName = name,
+    OnClick = fun _ -> onClick()
+  )
+    .Build()
 
-let inline loopIcon(loop: LoopState) : VectorAsset =
-  match loop with
-  | LoopState.Off -> repeatOff
-  | LoopState.All -> repeat
-  | LoopState.Single -> repeatOne
+let inline loopButton
+  (loop: LoopState)
+  ([<InlineIfLambda>] onClick: unit -> unit)
+  : Blob =
+  let icon =
+    match loop with
+    | LoopState.Off -> repeatOff
+    | LoopState.All -> repeat
+    | LoopState.Single -> repeatOne
+
+  IconButton(
+    Icon = icon,
+    AccessibilityName = "Loop",
+    Active = (loop <> LoopState.Off),
+    OnClick = fun _ -> onClick()
+  )
+    .Build()
 
 let inline create(p: MediaMenuProps) : Blob =
   let playing = AVal.getValue p.isPlaying
@@ -39,9 +58,12 @@ let inline create(p: MediaMenuProps) : Blob =
     AlignItems = AlignItems.Center
   )
     .Children(
-      button previous p.onPrevious,
-      button (if playing then pause else play) p.onPlayPause,
-      button next p.onNext,
-      button shuffle p.onShuffle,
-      button (loopIcon loop) p.onLoop
+      button previous "Previous" p.onPrevious,
+      button
+        (if playing then pause else play)
+        (if playing then "Pause" else "Play")
+        p.onPlayPause,
+      button next "Next" p.onNext,
+      button shuffle "Shuffle" p.onShuffle,
+      loopButton loop p.onLoop
     )

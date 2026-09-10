@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Samples:** RaznorGoo gains a file-system service behind an `IFileSystem` entry in its environment record: list a folder's sub-folders and extension-filtered files in one call, search the entries of one folder by name, case-insensitive, list the ready drives of the system, and ask for the parent folder of a path. Extension filters accept `*.mp3`, `.mp3`, or `mp3` forms, and unreadable folders return empty results instead of errors.
+- **Samples:** The RaznorGoo file picker shows the drive list above every drive root, so folders on other drives are now reachable. The picker and the playlist loader go through the file-system service instead of direct `System.IO` calls.
+
+### Changed
+
+- **Samples:** RaznorGoo builds its menu buttons, transport buttons, playlist rows, progress bar, and file picker rows and buttons from `Goo.Widgets` through `FunGoo.Widgets`, gaining hover, focus, and accessibility semantics. Icons come from the Material Symbols set, with one hand-parsed SVG kept for the missing "repeat off" glyph.
+
 ## [0.3.0] - 2026-09-09
 
 ### Added

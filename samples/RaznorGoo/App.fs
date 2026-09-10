@@ -1,7 +1,6 @@
 module GooRes.App
 
 open System
-open System.IO
 
 open Goo
 open GooRes.Types
@@ -19,18 +18,15 @@ let run() =
   let musicFilters = [ "*.mp3"; "*.wav" ]
   let player = Player.create()
 
-  let mutable shellCell: Cell voption = ValueNone
   let mutable gooWindow: Window voption = ValueNone
 
   let inline post(action: unit -> unit) =
     gooWindow
     |> ValueOption.iter(fun window ->
-      shellCell
-      |> ValueOption.iter(fun shell ->
-        window.TryPost(fun () ->
-          action()
-          shell.Rebuild())
-        |> ignore))
+      window.TryPost(fun () ->
+        action()
+        window.Root.Rebuild())
+      |> ignore)
 
   // The libvlc service. Its callbacks land on the UI thread through `post`;
   // the one late-bound piece is the service itself, for auto-advance at the
@@ -38,7 +34,7 @@ let run() =
   let mutable playbackSlot: IPlayback voption = ValueNone
 
   let playback =
-    Playback.live post {
+    Playback.create post {
       OnPosition = fun percent _lengthMs -> CVal.set percent player.position
       OnState = fun playing -> CVal.set playing player.playing
       OnEnded =
@@ -65,43 +61,51 @@ let run() =
 
   playbackSlot <- ValueSome playback
 
-  let env: Env = { Post = post; Playback = playback }
+  // The file system service is stateless; widgets and playlist loaders call
+  // it from background threads and post the entries back to the UI.
+  let fileSystem = FileSystem.create()
+
+  let env: Env = {
+    PostUI = post
+    Playback = playback
+    FileSystem = fileSystem
+  }
 
   let loadSongsFromFolder(dir: string) =
     async {
-      let files =
-        Array.ofList musicFilters
-        |> Array.collect(fun pattern -> Directory.GetFiles(dir, pattern))
-        |> Array.distinct
-        |> Array.sort
-        |> Array.map(fun f -> { Name = Path.GetFileName f; Path = f })
+      let songs =
+        env.FileSystem.List(dir, musicFilters)
+        |> List.filter(fun e -> not e.IsFolder)
+        |> List.map(fun e -> { Name = e.Name; Path = e.Path })
 
-      post(fun () -> Player.replaceSongs player (List.ofArray files))
+      post(fun () -> Player.replaceSongs player songs)
     }
     |> Async.Start
 
-  let filesPicked(paths: string list) =
+  let filesPicked(entries: FsEntry list) =
     Player.replaceSongs
       player
-      (paths |> List.map(fun f -> { Name = Path.GetFileName f; Path = f }))
+      (entries |> List.map(fun e -> { Name = e.Name; Path = e.Path }))
 
   let picker =
-    FilePicker.create {
+    FilePicker.create env {
       filters = musicFilters
-      postUI = post
+      startIn = Environment.GetFolderPath Environment.SpecialFolder.MyMusic
       onFilesSelected = filesPicked
       onFolderSelected = loadSongsFromFolder
     }
 
-  let root = {
-    new Cell() with
-      override _.Build() : Blob = Shell.view env player picker
-  }
-
   let window =
-    Window(Title = "RaznorGoo", Width = 720, Height = 480, Root = root)
+    Window(
+      Title = "RaznorGoo",
+      Width = 720,
+      Height = 480,
+      Root = {
+        new Cell() with
+          override _.Build() : Blob = Shell.view env player picker
+      }
+    )
 
-  shellCell <- ValueSome root
   gooWindow <- ValueSome window
 
   window.Run()

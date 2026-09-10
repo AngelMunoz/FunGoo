@@ -1,23 +1,24 @@
 module GooRes.Widgets.MenuBar
 
 open Goo
+open Goo.Widgets.Actions
 open FunGoo.Children
+open FunGoo.Widgets
 
 type MenuBarProps = {
   onSelectFiles: unit -> unit
   onSelectFolder: unit -> unit
 }
 
-let inline item (label: string) ([<InlineIfLambda>] onClick: unit -> unit) =
-  Button(
-    OnClick = (fun _ -> onClick()),
-    Padding = 10,
-    BorderRadius = 6,
-    BackgroundColor = Color.Rgb(30, 38, 54)
-  )
-    .Children(
-      Text(Content = label, FontSize = 14, Color = Color.Rgb(230, 235, 245))
-    )
+let inline item
+  (label: string)
+  ([<InlineIfLambda>] onClick: unit -> unit)
+  : Blob =
+  ActionButton(Label = label, OnClick = fun _ -> onClick())
+    .backgroundColor(Color.Rgb(30, 38, 54))
+    .textColor(Color.Rgb(230, 235, 245))
+    .hoverBackgroundColor(Color.Rgb(40, 52, 74))
+    .Build()
 
 let inline create(p: MenuBarProps) : Blob =
   Container(

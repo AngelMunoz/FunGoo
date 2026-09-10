@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="Types.fs" />
     <Compile Include="Playback.fs" />
+    <Compile Include="FileSystem.fs" />
     <Compile Include="Icons.fs" />
     <Compile Include="Widgets\MenuBar.fs" />
     <Compile Include="Widgets\MediaList.fs" />
@@ -23,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\FunGoo\FunGoo.fsproj" />
+    <ProjectReference Include="..\..\FunGoo.Widgets\FunGoo.Widgets.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

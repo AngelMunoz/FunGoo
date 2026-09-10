@@ -58,7 +58,7 @@ let reset =
     .Build()
 ```
 
-See [samples/RaznorGoo](samples/RaznorGoo) for a complete media player: Goo widgets, adaptive state, LibVLCSharp audio, runtime SVG icons, and a custom file picker.
+See [samples/RaznorGoo](samples/RaznorGoo) for a complete media player: Goo widgets, adaptive state, LibVLCSharp audio, Material icons, and a custom file picker.
 
 ## Building
 

@@ -8,7 +8,7 @@ open LibVLCSharp.Shared
 // raises its events on its own threads; every callback is handed to the app
 // through `post`, so state changes and playback commands always run on the
 // UI thread.
-let live (post: (unit -> unit) -> unit) (events: PlaybackEvents) : IPlayback =
+let create (post: (unit -> unit) -> unit) (events: PlaybackEvents) : IPlayback =
   Core.Initialize()
 
   let libvlc = new LibVLC("--no-video")

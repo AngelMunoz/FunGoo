@@ -1,7 +1,10 @@
 module GooRes.Widgets.Progress
 
+open System
 open Goo
+open Goo.Widgets.Feedback
 open FunGoo.Children
+open FunGoo.Widgets
 open Mibo.Adaptive
 
 type ProgressProps = {
@@ -12,22 +15,14 @@ type ProgressProps = {
   height: float
 }
 
+// ProgressBar's root is a fixed pixel width, so the factory rebuilds the root
+// at 100% width and keeps the resolved track, fill, and clipping composition.
 let inline create(p: ProgressProps) : Blob =
   let v = AVal.getValue p.value
   let m = AVal.getValue p.maxValue
-  let pct = if m <= 0.0f then 0.0f else v * 100.0f / m
+  let value = if m <= 0.0f then 0.0 else float v / float m
 
-  Container(
-    Width = Length.Percent 100,
-    Height = p.height,
-    BackgroundColor = p.trackColor,
-    BorderRadius = 4
-  )
-    .Children(
-      Container(
-        Width = Length.Percent(float pct),
-        Height = Length.Percent 100,
-        BackgroundColor = p.color,
-        BorderRadius = 4
-      )
-    )
+  ProgressBar(Value = value, Height = p.height)
+    .trackColor(p.trackColor)
+    .fillColor(p.color)
+    .Build()
