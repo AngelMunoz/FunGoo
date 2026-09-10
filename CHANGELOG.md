@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-09
+
 ### Changed
 
 - **Core:** The Goo dependency is now 0.5.3. The RaznorGoo sample moves to Goo and Goo.Svg 0.5.3.
