@@ -19,7 +19,7 @@ type PickerMode =
 type FilePickerProps = {
   filters: string list
   startIn: string
-  onFilesSelected: FsEntry list -> unit
+  onFilesSelected: FsEntry[] -> unit
   onFolderSelected: string -> unit
 }
 
@@ -47,12 +47,12 @@ let inline clickable
 
 let inline entryRow
   (m: PickerMode)
-  (currentPicked: FsEntry list)
-  (onOpenFolder: string -> unit)
-  (onToggleFile: FsEntry -> unit)
+  (currentPicked: FsEntry[])
+  ([<InlineIfLambda>] onOpenFolder: string -> unit)
+  ([<InlineIfLambda>] onToggleFile: FsEntry -> unit)
   (e: FsEntry)
   : Blob =
-  let isPicked = List.exists (fun x -> x.Path = e.Path) currentPicked
+  let isPicked = Array.exists (fun x -> x.Path = e.Path) currentPicked
 
   if e.IsFolder then
 
@@ -99,10 +99,10 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
 
   // `ValueNone` is the drives view: the list shows one row per ready drive.
   let directory = CVal.create(ValueSome p.startIn)
-  let entries = CVal.create List.empty<FsEntry>
-  let picked = CVal.create List.empty<FsEntry>
+  let entries = CVal.create Array.empty<FsEntry>
+  let picked = CVal.create Array.empty<FsEntry>
 
-  let loadDirectory path =
+  let inline loadDirectory path =
     async {
       let found = env.FileSystem.List(path, p.filters)
 
@@ -112,7 +112,7 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
     }
     |> Async.Start
 
-  let loadDrives() =
+  let inline loadDrives() =
     async {
       let found = env.FileSystem.Drives()
 
@@ -122,18 +122,18 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
     }
     |> Async.Start
 
-  let openPicker m =
+  let inline openPicker m =
     CVal.set m mode
-    CVal.set List.empty<FsEntry> picked
+    CVal.set Array.empty<FsEntry> picked
     CVal.set true isOpen
 
     match AVal.getValue directory with
     | ValueSome dir -> loadDirectory dir
     | ValueNone -> loadDrives()
 
-  let closePicker() = CVal.set false isOpen
+  let inline closePicker() = CVal.set false isOpen
 
-  let view() : Blob =
+  let inline view() : Blob =
     if not(AVal.getValue isOpen) then
       Container()
     else
@@ -148,34 +148,36 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
         else
           "Add Files"
 
-      let goUp() =
-        match currentDir with
-        | ValueNone -> ()
-        | ValueSome dir ->
-          match env.FileSystem.Parent dir with
-          | ValueSome parent -> loadDirectory parent
-          | ValueNone -> loadDrives()
+      let inline goUp() =
+        let parent =
+          currentDir |> ValueOption.bind(fun dir -> env.FileSystem.Parent dir)
 
-      let toggle(e: FsEntry) =
+        match parent with
+        | ValueSome parent -> loadDirectory parent
+        | ValueNone -> loadDrives()
+
+      let inline toggle(e: FsEntry) =
         let next =
-          if List.exists (fun x -> x.Path = e.Path) currentPicked then
-            List.filter (fun x -> x.Path <> e.Path) currentPicked
+          if Array.exists (fun x -> x.Path = e.Path) currentPicked then
+            Array.filter (fun x -> x.Path <> e.Path) currentPicked
           else
-            e :: currentPicked
+            let array = Array.zeroCreate(currentPicked.Length + 1)
+            array[0] <- e
+            Array.insertManyAt 1 currentPicked array
 
         CVal.set next picked
 
-      let confirm() =
-        match currentDir with
-        | ValueNone -> ()
-        | ValueSome dir ->
+      let inline confirm() =
+        currentDir
+        |> ValueOption.iter(fun dir ->
           if currentMode = PickFolder then
             p.onFolderSelected dir
           else
-            p.onFilesSelected(List.sortBy (fun e -> e.Path) currentPicked)
-            CVal.set List.empty<FsEntry> picked
+            p.onFilesSelected(Array.sortBy (fun e -> e.Path) currentPicked)
+            CVal.set Array.empty<FsEntry> picked
 
-          closePicker()
+          closePicker())
+
 
       let locationText = currentDir |> ValueOption.defaultValue "This PC"
 
@@ -184,22 +186,22 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
 
       let emptyTitle, emptyDescription =
         if currentDir.IsNone then
-          ("No drives found", "No ready drives on this system")
+          "No drives found", "No ready drives on this system"
         else
-          ("No media here", filterMessage)
+          "No media here", filterMessage
 
       let rows =
-        if List.isEmpty currentEntries then
+        if Array.isEmpty currentEntries then
           EmptyState(
             Title = emptyTitle,
             Description = emptyDescription,
             MinHeight = Nullable 160.0
           )
             .Build()
-          |> List.singleton
+          |> Array.singleton
         else
           currentEntries
-          |> List.map(entryRow currentMode currentPicked loadDirectory toggle)
+          |> Array.map(entryRow currentMode currentPicked loadDirectory toggle)
 
       Container(
         FlexDirection = FlexDirection.Column,

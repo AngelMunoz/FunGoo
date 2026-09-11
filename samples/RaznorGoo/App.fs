@@ -3,10 +3,11 @@ module GooRes.App
 open System
 
 open Goo
+open Mibo.Adaptive
 open GooRes.Types
 open GooRes.Widgets
 open GooRes.Widgets.FilePicker
-open Mibo.Adaptive
+open GooRes.Layout
 
 let run() =
   Window.ConfigureApplication(
@@ -18,8 +19,20 @@ let run() =
   let musicFilters = [ "*.mp3"; "*.wav" ]
   let player = Player.create()
 
+  // The one late binding the window forces: Root is init-only, so the
+  // window is built last while the marshal below is needed first. Declared
+  // up front, assigned once, read only at call time.
   let mutable gooWindow: Window voption = ValueNone
 
+  // Foreign threads (VLC, async loads) may only marshal work to the UI
+  // thread through here. What the work touches is the caller's decision.
+  let inline marshal(action: unit -> unit) =
+    gooWindow
+    |> ValueOption.iter(fun window ->
+      window.TryPost(fun () -> action()) |> ignore)
+
+  // The picker body is still a root blob until it becomes a cell, so its
+  // loads are the only remaining root rebuilds.
   let inline post(action: unit -> unit) =
     gooWindow
     |> ValueOption.iter(fun window ->
@@ -28,29 +41,11 @@ let run() =
         window.Root.Rebuild())
       |> ignore)
 
-  // The file system service is stateless; widgets and playlist loaders call
-  // it from background threads and post the entries back to the UI.
   let fileSystem = FileSystem.create()
 
-  // The libvlc service. Its callbacks land on the UI thread through `post`.
-  // The one late-bound piece is the environment: the end-of-track handler
-  // needs it, but it is built out of the playback service that owns the
-  // handler.
-  let mutable envSlot: Env voption = ValueNone
-
-  let playback =
-    Playback.create post {
-      OnPosition =
-        fun percent lengthMs ->
-          let length = float32 lengthMs / 1000.0f
-          CVal.set length player.length
-          CVal.set (percent / 100.0f * length) player.position
-      OnState = fun playing -> CVal.set playing player.playing
-      OnEnded =
-        fun () ->
-          envSlot |> ValueOption.iter(fun env -> Player.skipNext env player)
-      OnError = fun message -> eprintfn "playback: %s" message
-    }
+  // Construction is linear: service, environment, stateful cells, picker.
+  // Nothing references a value defined after it.
+  let playback, subscribePlayback = Playback.create marshal
 
   let env: Env = {
     PostUI = post
@@ -58,23 +53,34 @@ let run() =
     FileSystem = fileSystem
   }
 
-  envSlot <- ValueSome env
+  let playlist =
+    MediaList.create {
+      songs = player.songs
+      selected = player.selected
+      onSelect = fun song -> Player.playSong env player song
+    }
+
+  let bottomBar = BottomBar.create env player (fun () -> playlist.Rebuild())
 
   let loadSongsFromFolder(dir: string) =
     async {
       let songs =
         env.FileSystem.List(dir, musicFilters)
-        |> List.filter(fun e -> not e.IsFolder)
-        |> List.map(fun e -> { Name = e.Name; Path = e.Path })
+        |> Array.filter(fun e -> not e.IsFolder)
+        |> Array.map(fun e -> { Name = e.Name; Path = e.Path })
 
-      post(fun () -> Player.replaceSongs player songs)
+      marshal(fun () ->
+        Player.replaceSongs player songs
+        playlist.Rebuild())
     }
     |> Async.Start
 
-  let filesPicked(entries: FsEntry list) =
+  let filesPicked(entries: FsEntry[]) =
     Player.replaceSongs
       player
-      (entries |> List.map(fun e -> { Name = e.Name; Path = e.Path }))
+      (entries |> Array.map(fun e -> { Name = e.Name; Path = e.Path }))
+
+    playlist.Rebuild()
 
   let picker =
     FilePicker.create env {
@@ -84,17 +90,32 @@ let run() =
       onFolderSelected = loadSongsFromFolder
     }
 
+  let root = Layout.view picker playlist bottomBar
+
   let window =
-    Window(
-      Title = "RaznorGoo",
-      Width = 720,
-      Height = 480,
-      Root = {
-        new Cell() with
-          override _.Build() : Blob = Shell.view env player picker
-      }
-    )
+    Window(Title = "RaznorGoo", Width = 720, Height = 480, Root = root)
 
   gooWindow <- ValueSome window
+
+  // Subscriptions come last: every value the handlers touch exists, so no
+  // handler needs a slot to reach its targets. The service delivers them
+  // on the UI thread.
+  subscribePlayback {
+    OnPosition =
+      fun percent lengthMs ->
+        let length = float32 lengthMs / 1000.0f
+        CVal.set length player.length
+        CVal.set (percent / 100.0f * length) player.position
+        bottomBar.Rebuild()
+    OnState =
+      fun playing ->
+        CVal.set playing player.playing
+        bottomBar.Rebuild()
+    OnEnded =
+      fun () ->
+        Player.skipNext env player
+        playlist.Rebuild()
+    OnError = fun message -> eprintfn "playback: %s" message
+  }
 
   window.Run()

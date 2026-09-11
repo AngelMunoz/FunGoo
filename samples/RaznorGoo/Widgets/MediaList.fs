@@ -40,18 +40,27 @@ let inline row
     fun () -> onSelect song
   )
 
-let inline create(p: MediaListProps) : Blob =
-  let songs = AList.toList p.songs
-  let selected = AVal.getValue p.selected |> ValueOption.defaultValue -1
+// The playlist is one mounted cell: its build pulls the songs and the
+// selection from the long-lived sources in the props, and a row click
+// rebuilds it through the owner rule. Selecting a row only raises the
+// event; the parent decides what it means.
+let create(p: MediaListProps) : Cell = {
+  new Cell() with
+    override _.Build() : Blob =
+      let songs = AList.toList p.songs
+      let selected = AVal.getValue p.selected |> ValueOption.defaultValue -1
 
-  Container(
-    FlexDirection = FlexDirection.Column,
-    FlexGrow = 1.0,
-    FlexShrink = 1.0,
-    MinHeight = 0,
-    OverflowY = Overflow.Scroll,
-    OverflowX = Overflow.Hidden,
-    ScrollbarVisibility = ScrollbarVisibility.Auto,
-    Gap = 2
-  )
-    .Children(songs |> List.mapi(fun i s -> row s i (i = selected) p.onSelect))
+      Container(
+        FlexDirection = FlexDirection.Column,
+        FlexGrow = 1.0,
+        FlexShrink = 1.0,
+        MinHeight = 0,
+        OverflowY = Overflow.Scroll,
+        OverflowX = Overflow.Hidden,
+        ScrollbarVisibility = ScrollbarVisibility.Auto,
+        Gap = 2
+      )
+        .Children(
+          songs |> List.mapi(fun i s -> row s i (i = selected) p.onSelect)
+        )
+}

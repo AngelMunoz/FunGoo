@@ -41,7 +41,7 @@ let inline create() : PlayerState =
 
 let inline songCount(p: PlayerState) : int = AVal.getValue(AList.count p.songs)
 
-let replaceSongs (p: PlayerState) (songs: Song list) : unit =
+let replaceSongs (p: PlayerState) (songs: Song[]) : unit =
   p.songs.Set songs
   CVal.set ValueNone p.selected
 

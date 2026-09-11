@@ -18,9 +18,9 @@ let create() : IFileSystem =
 
     if trimmed.StartsWith '.' then trimmed else $".{trimmed}"
 
-  let inline matchesExtensions(extensions: string list, name: string) =
-    List.isEmpty extensions
-    || List.exists (fun ext -> name.EndsWith(ext, comparison)) extensions
+  let inline matchesExtensions(extensions: string seq, name: string) =
+    Seq.isEmpty extensions
+    || Seq.exists (fun ext -> name.EndsWith(ext, comparison)) extensions
 
   let inline entry(path: string, isFolder: bool) = {
     Name = Path.GetFileName path
@@ -31,15 +31,16 @@ let create() : IFileSystem =
   let directories path =
     Directory.EnumerateDirectories path
     |> Seq.map(fun d -> entry(d, true))
-    |> List.ofSeq
+    |> Array.ofSeq
 
-  let files (extensions: string list) path =
+  let files (extensions: string seq) path =
     Directory.EnumerateFiles path
     |> Seq.filter(fun f -> matchesExtensions(extensions, Path.GetFileName f))
     |> Seq.map(fun f -> entry(f, false))
-    |> List.ofSeq
+    |> Array.ofSeq
 
-  let sorted entries = entries |> List.sortBy(fun e -> e.Name)
+  let sorted entries =
+    entries |> Array.sortBy(fun e -> e.Name)
 
   let inline nameContains(query: string, name: string) =
     String.IsNullOrWhiteSpace query || name.Contains(query, comparison)
@@ -48,22 +49,24 @@ let create() : IFileSystem =
     new IFileSystem with
       member _.List(path, extensions) =
         try
-          let exts = List.map normalize extensions
-          sorted(directories path) @ sorted(files exts path)
-        with _ -> []
+          let exts = Seq.map normalize extensions
+          [| yield! sorted(directories path); yield! sorted(files exts path) |]
+        with _ ->
+          Array.empty
 
       member _.Search(path, query, extensions) =
         try
-          let exts = List.map normalize extensions
+          let exts = Seq.map normalize extensions
 
           let matches e =
             nameContains(query, e.Name)
             && (e.IsFolder || matchesExtensions(exts, e.Name))
 
-          let folders = directories path |> List.filter matches
-          let found = files exts path |> List.filter matches
-          sorted folders @ sorted found
-        with _ -> []
+          let folders = directories path |> Array.filter matches
+          let found = files exts path |> Array.filter matches
+          [| yield! sorted folders; yield! sorted found |]
+        with _ ->
+          Array.empty
 
       // Drive rows carry their name straight from DriveInfo: for a root path
       // like `C:\`, `Path.GetFileName` gives an empty string.
@@ -76,9 +79,9 @@ let create() : IFileSystem =
             Path = d.Name
             IsFolder = true
           })
-          |> List.ofArray
           |> sorted
-        with _ -> []
+        with _ ->
+          Array.empty
 
       member _.Parent path =
         match Path.GetDirectoryName path with

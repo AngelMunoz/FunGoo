@@ -10,6 +10,7 @@
 ### Changed
 
 - **Samples:** The RaznorGoo player bar is now a mounted `MediaTransport` cell from `Goo.Widgets`: position, seek, volume, and play state render from immutable input snapshots, seek and volume work against the playback service, and the hand-rolled media menu and progress widgets are gone. Playback state reports seconds, and the now-playing title derives adaptively from the selection.
+- **Samples:** RaznorGoo renders the playlist and the player bar as mounted cells that rebuild only on the events that touch them, the playback events are subscribed after the app is wired instead of during service construction, and playback ticks no longer re-render the whole window. The app file is split into a bottom-bar widget, a layout view, and a slim composition root.
 - **Samples:** RaznorGoo builds its menu buttons, transport buttons, playlist rows, progress bar, and file picker rows and buttons from `Goo.Widgets` through `FunGoo.Widgets`, gaining hover, focus, and accessibility semantics. Icons come from the Material Symbols set, with one hand-parsed SVG kept for the missing "repeat off" glyph.
 
 ## [0.3.0] - 2026-09-09

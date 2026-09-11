@@ -15,7 +15,8 @@
     <Compile Include="Widgets\MenuBar.fs" />
     <Compile Include="Widgets\MediaList.fs" />
     <Compile Include="Widgets\FilePicker.fs" />
-    <Compile Include="Shell.fs" />
+    <Compile Include="Widgets\BottomBar.fs" />
+    <Compile Include="Layout.fs" />
     <Compile Include="App.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

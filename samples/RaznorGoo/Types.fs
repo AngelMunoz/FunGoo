@@ -38,12 +38,12 @@ type FsEntry = {
 // query keeps everything. `Drives` lists the ready drives of the system.
 // `Parent` gives the parent folder of a path, or none at a drive root.
 type IFileSystem =
-  abstract List: path: string * extensions: string list -> FsEntry list
+  abstract List: path: string * extensions: string seq -> FsEntry[]
 
   abstract Search:
-    path: string * query: string * extensions: string list -> FsEntry list
+    path: string * query: string * extensions: string seq -> FsEntry[]
 
-  abstract Drives: unit -> FsEntry list
+  abstract Drives: unit -> FsEntry[]
 
   abstract Parent: path: string -> string voption
 
