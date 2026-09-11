@@ -22,6 +22,7 @@ let inline item
 
 let inline create(p: MenuBarProps) : Blob =
   Container(
+    Key = "menu-bar",
     FlexDirection = FlexDirection.Row,
     Gap = 8,
     Padding = 12,

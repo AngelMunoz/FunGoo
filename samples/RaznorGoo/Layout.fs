@@ -12,6 +12,7 @@ open GooRes.Widgets.FilePicker
 let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
   let middleView =
     Container(
+      Key = "middle-view",
       FlexDirection = FlexDirection.Row,
       Gap = 12,
       FlexGrow = 1.0,
@@ -37,7 +38,7 @@ let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
 
   // Unkeyed mounts: the root children keep positional identity, and Goo
   // rejects child lists that mix keyed and unkeyed siblings.
-  let bottomBarView = Cell.Mount<Cell>((fun () -> bottomBar), null)
+  let bottomBarView = Cell.Mount<Cell>((fun () -> bottomBar), "bottom-bar")
 
   {
     new Cell() with
