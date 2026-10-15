@@ -30,6 +30,14 @@ module Interop =
       space: Goo.TextCoordinateSpace ->
         Goo.TextPosition voption
 
+  val inline tryCreate:
+    values: System.Collections.Generic.IReadOnlyList<string> ->
+      Goo.NativeFileDrag voption
+
   val inline colorFromString: value: string -> Goo.Color
+  val inline edgesFromFloat: value: float -> Goo.Edges
+  val inline edgesFromInt: value: int -> Goo.Edges
+  val inline edgesFromLength: value: Goo.Length -> Goo.Edges
+  val inline edgesFromColor: value: Goo.Color -> Goo.Edges<Goo.Color>
   val inline lengthFromFloat: value: float -> Goo.Length
   val inline lengthFromInt: value: int -> Goo.Length

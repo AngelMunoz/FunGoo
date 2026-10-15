@@ -2,6 +2,7 @@ module GooRes.Layout
 
 open Goo
 open FunGoo.Children
+open FunGoo.Style
 open GooRes.Types
 open GooRes.Widgets
 open GooRes.Widgets.FilePicker
@@ -28,7 +29,7 @@ let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
           BackgroundColor = Color.Rgb(16, 21, 31)
         ),
         Container(
-          Width = Length.Percent 100,
+          Width = percent 100.0,
           MaxWidth = 280,
           FlexShrink = 1.0,
           MinWidth = 0
@@ -44,8 +45,8 @@ let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
     new Cell() with
       override _.Build() : Blob =
         Container(
-          Width = Length.Percent 100,
-          Height = Length.Percent 100,
+          Width = percent 100.0,
+          Height = percent 100.0,
           Padding = 12,
           Gap = 12,
           FlexDirection = FlexDirection.Column,

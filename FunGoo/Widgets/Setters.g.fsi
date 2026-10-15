@@ -25,6 +25,11 @@ module Setters =
   [<Extension; Sealed>]
   type TextEditorControllerExtensions =
     [<Extension>]
+    static member inline IndentWidth:
+      this: Goo.TextEditorController * indentWidth: int ->
+        Goo.TextEditorController
+
+    [<Extension>]
     static member inline OnCommand:
       this: Goo.TextEditorController * onCommand: Action<Goo.TextCommandEvent> ->
         Goo.TextEditorController
@@ -44,6 +49,14 @@ module Setters =
       this: Goo.TextEditorController * selection: Goo.TextSelection ->
         Goo.TextEditorController
 
+    [<Extension>]
+    static member inline TabWidth:
+      this: Goo.TextEditorController * tabWidth: int -> Goo.TextEditorController
+
+    [<Extension>]
+    static member inline UseTabs:
+      this: Goo.TextEditorController * useTabs: bool -> Goo.TextEditorController
+
   [<Extension; Sealed>]
   type WindowExtensions =
     [<Extension>]
@@ -60,11 +73,50 @@ module Setters =
       this: Goo.Window * decorated: bool -> Goo.Window
 
     [<Extension>]
+    static member inline Focusable:
+      this: Goo.Window * focusable: bool -> Goo.Window
+
+    [<Extension>]
+    static member inline FramePacing:
+      this: Goo.Window * framePacing: Goo.WindowFramePacing -> Goo.Window
+
+    [<Extension>]
     static member inline Height: this: Goo.Window * height: int -> Goo.Window
+
+    [<Extension>]
+    static member inline InitiallyVisible:
+      this: Goo.Window * initiallyVisible: bool -> Goo.Window
+
+    [<Extension>]
+    static member inline MaxHeight:
+      this: Goo.Window * maxHeight: int -> Goo.Window
+
+    [<Extension>]
+    static member inline MaxWidth:
+      this: Goo.Window * maxWidth: int -> Goo.Window
+
+    [<Extension>]
+    static member inline MinHeight:
+      this: Goo.Window * minHeight: int -> Goo.Window
+
+    [<Extension>]
+    static member inline MinWidth:
+      this: Goo.Window * minWidth: int -> Goo.Window
+
+    [<Extension>]
+    static member inline Modal: this: Goo.Window * modal: bool -> Goo.Window
+
+    [<Extension>]
+    static member inline NativeFileDropEnabled:
+      this: Goo.Window * nativeFileDropEnabled: bool -> Goo.Window
 
     [<Extension>]
     static member inline OnClosing:
       this: Goo.Window * onClosing: Func<bool> -> Goo.Window
+
+    [<Extension>]
+    static member inline Owner:
+      this: Goo.Window * owner: Goo.Window -> Goo.Window
 
     [<Extension>]
     static member inline Resizable:
@@ -75,11 +127,18 @@ module Setters =
       this: Goo.Window * resizeBand: float32 -> Goo.Window
 
     [<Extension>]
+    static member inline SmoothScrolling:
+      this: Goo.Window * smoothScrolling: bool -> Goo.Window
+
+    [<Extension>]
     static member inline State:
       this: Goo.Window * state: Goo.WindowState -> Goo.Window
 
     [<Extension>]
     static member inline Title: this: Goo.Window * title: string -> Goo.Window
+
+    [<Extension>]
+    static member inline Topmost: this: Goo.Window * topmost: bool -> Goo.Window
 
     [<Extension>]
     static member inline Transparent:
@@ -89,6 +148,10 @@ module Setters =
     static member inline VSync: this: Goo.Window * vSync: bool -> Goo.Window
 
     [<Extension>]
+    static member inline WheelScrollScale:
+      this: Goo.Window * wheelScrollScale: float32 -> Goo.Window
+
+    [<Extension>]
     static member inline Width: this: Goo.Window * width: int -> Goo.Window
 
     [<Extension>]
@@ -96,3 +159,9 @@ module Setters =
 
     [<Extension>]
     static member inline Y: this: Goo.Window * y: int -> Goo.Window
+
+  [<Extension; Sealed>]
+  type WindowTitlebarEventExtensions =
+    [<Extension>]
+    static member inline Handled:
+      this: Goo.WindowTitlebarEvent * handled: bool -> Goo.WindowTitlebarEvent

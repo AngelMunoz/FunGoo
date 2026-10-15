@@ -57,7 +57,14 @@ let create(p: MediaListProps) : Cell = {
         MinHeight = 0,
         OverflowY = Overflow.Scroll,
         OverflowX = Overflow.Hidden,
-        ScrollbarVisibility = ScrollbarVisibility.Auto,
+        // Goo 0.6.4 dropped the built-in scrollbar thumb look: a scrollbar
+        // only paints when the axis owns authored Track and Thumb parts.
+        ScrollbarY =
+          Scrollbar(
+            Thickness = 10.0,
+            Track = Container(BackgroundColor = Color.Rgb(24, 31, 43)),
+            Thumb = Container(BackgroundColor = Color.Rgb(90, 105, 135))
+          ),
         Gap = 2
       )
         .Children(

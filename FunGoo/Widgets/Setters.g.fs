@@ -34,6 +34,13 @@ module Setters =
   [<Extension; Sealed>]
   type TextEditorControllerExtensions =
     [<Extension>]
+    static member inline IndentWidth
+      (this: Goo.TextEditorController, indentWidth: int)
+      : Goo.TextEditorController =
+      this.IndentWidth <- indentWidth
+      this
+
+    [<Extension>]
     static member inline OnCommand
       (this: Goo.TextEditorController, onCommand: Action<Goo.TextCommandEvent>)
       : Goo.TextEditorController =
@@ -61,6 +68,20 @@ module Setters =
       this.Selection <- selection
       this
 
+    [<Extension>]
+    static member inline TabWidth
+      (this: Goo.TextEditorController, tabWidth: int)
+      : Goo.TextEditorController =
+      this.TabWidth <- tabWidth
+      this
+
+    [<Extension>]
+    static member inline UseTabs
+      (this: Goo.TextEditorController, useTabs: bool)
+      : Goo.TextEditorController =
+      this.UseTabs <- useTabs
+      this
+
   [<Extension; Sealed>]
   type WindowExtensions =
     [<Extension>]
@@ -85,8 +106,69 @@ module Setters =
       this
 
     [<Extension>]
+    static member inline Focusable
+      (this: Goo.Window, focusable: bool)
+      : Goo.Window =
+      this.Focusable <- focusable
+      this
+
+    [<Extension>]
+    static member inline FramePacing
+      (this: Goo.Window, framePacing: Goo.WindowFramePacing)
+      : Goo.Window =
+      this.FramePacing <- framePacing
+      this
+
+    [<Extension>]
     static member inline Height(this: Goo.Window, height: int) : Goo.Window =
       this.Height <- height
+      this
+
+    [<Extension>]
+    static member inline InitiallyVisible
+      (this: Goo.Window, initiallyVisible: bool)
+      : Goo.Window =
+      this.InitiallyVisible <- initiallyVisible
+      this
+
+    [<Extension>]
+    static member inline MaxHeight
+      (this: Goo.Window, maxHeight: int)
+      : Goo.Window =
+      this.MaxHeight <- maxHeight
+      this
+
+    [<Extension>]
+    static member inline MaxWidth
+      (this: Goo.Window, maxWidth: int)
+      : Goo.Window =
+      this.MaxWidth <- maxWidth
+      this
+
+    [<Extension>]
+    static member inline MinHeight
+      (this: Goo.Window, minHeight: int)
+      : Goo.Window =
+      this.MinHeight <- minHeight
+      this
+
+    [<Extension>]
+    static member inline MinWidth
+      (this: Goo.Window, minWidth: int)
+      : Goo.Window =
+      this.MinWidth <- minWidth
+      this
+
+    [<Extension>]
+    static member inline Modal(this: Goo.Window, modal: bool) : Goo.Window =
+      this.Modal <- modal
+      this
+
+    [<Extension>]
+    static member inline NativeFileDropEnabled
+      (this: Goo.Window, nativeFileDropEnabled: bool)
+      : Goo.Window =
+      this.NativeFileDropEnabled <- nativeFileDropEnabled
       this
 
     [<Extension>]
@@ -94,6 +176,13 @@ module Setters =
       (this: Goo.Window, onClosing: Func<bool>)
       : Goo.Window =
       this.OnClosing <- onClosing
+      this
+
+    [<Extension>]
+    static member inline Owner
+      (this: Goo.Window, owner: Goo.Window)
+      : Goo.Window =
+      this.Owner <- owner
       this
 
     [<Extension>]
@@ -111,6 +200,13 @@ module Setters =
       this
 
     [<Extension>]
+    static member inline SmoothScrolling
+      (this: Goo.Window, smoothScrolling: bool)
+      : Goo.Window =
+      this.SmoothScrolling <- smoothScrolling
+      this
+
+    [<Extension>]
     static member inline State
       (this: Goo.Window, state: Goo.WindowState)
       : Goo.Window =
@@ -120,6 +216,11 @@ module Setters =
     [<Extension>]
     static member inline Title(this: Goo.Window, title: string) : Goo.Window =
       this.Title <- title
+      this
+
+    [<Extension>]
+    static member inline Topmost(this: Goo.Window, topmost: bool) : Goo.Window =
+      this.Topmost <- topmost
       this
 
     [<Extension>]
@@ -135,6 +236,13 @@ module Setters =
       this
 
     [<Extension>]
+    static member inline WheelScrollScale
+      (this: Goo.Window, wheelScrollScale: float32)
+      : Goo.Window =
+      this.WheelScrollScale <- wheelScrollScale
+      this
+
+    [<Extension>]
     static member inline Width(this: Goo.Window, width: int) : Goo.Window =
       this.Width <- width
       this
@@ -147,4 +255,13 @@ module Setters =
     [<Extension>]
     static member inline Y(this: Goo.Window, y: int) : Goo.Window =
       this.Y <- y
+      this
+
+  [<Extension; Sealed>]
+  type WindowTitlebarEventExtensions =
+    [<Extension>]
+    static member inline Handled
+      (this: Goo.WindowTitlebarEvent, handled: bool)
+      : Goo.WindowTitlebarEvent =
+      this.Handled <- handled
       this

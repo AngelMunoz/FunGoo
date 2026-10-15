@@ -22,8 +22,8 @@
   <ItemGroup>
     <!-- Goo.Widgets comes from the published package; the goo-widgets
          submodule is a source reference used only by codegen/Generate.fsx. -->
-    <PackageReference Include="Goo.Widgets" Version="0.1.1" />
-    <PackageReference Include="Goo" Version="0.5.3" />
+    <PackageReference Include="Goo.Widgets" Version="0.2.9" />
+    <PackageReference Include="Goo" Version="0.7.9" />
     <None Include="../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 

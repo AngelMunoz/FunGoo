@@ -2,6 +2,7 @@ module GooRes.Widgets.BottomBar
 
 open Goo
 open FunGoo.Children
+open FunGoo.Style
 open Mibo.Adaptive
 open GooRes.Types
 open GooRes.Player
@@ -38,7 +39,7 @@ let inline create
           Padding = 12,
           BackgroundColor = Color.Rgb(16, 21, 31),
           BorderRadius = 8,
-          BorderTopWidth = 1,
+          BorderWidth = topEdge 1.0,
           BorderColor = Color.Rgb(35, 44, 62)
         )
           .Children(

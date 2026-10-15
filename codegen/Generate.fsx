@@ -631,12 +631,66 @@ let tryMember(t: Type, m: MethodInfo, out: ParameterInfo) =
   |> _.toStatic()
   |> _.toInlined()
 
+// .NET generic type names carry an arity suffix (Edges`1) that is invalid in
+// helper identifiers; drop it.
+let plainName(t: Type) = t.Name.Split('`')[0]
+
+// Try* methods split by binding: instance methods become extension members,
+// static methods become plain module functions (e.g. NativeFileDrag.TryCreate).
+let instanceTryMethods =
+  tryMethods |> Array.filter(fun (_, m, _) -> not m.IsStatic)
+
+let staticTryMethods = tryMethods |> Array.filter(fun (_, m, _) -> m.IsStatic)
+
+// Static Try* wrapper: plain module function, voption result.
+let staticTryFunction(t: Type, m: MethodInfo, out: ParameterInfo) =
+  let normal = m.GetParameters() |> Array.filter(fun p -> not p.IsOut)
+  let outType = fsType(out.ParameterType.GetElementType())
+
+  let callArguments =
+    m.GetParameters()
+    |> Array.map(fun p ->
+      if p.IsOut then
+        PrefixAppExpr("&", "value")
+      else
+        ConstantExpr(p.Name))
+    |> Array.toList
+
+  Function(
+    camelCase m.Name,
+    [
+      for p in normal do
+        ParenPat(ParameterPat(p.Name, LongIdent(fsType p.ParameterType)))
+    ],
+    CompExprBodyExpr [
+      OtherExpr $"let mutable value = Unchecked.defaultof<{outType}>"
+
+      OtherExpr(
+        IfThenElseExpr(
+          AppExpr(
+            $"Goo.{plainName t}.{m.Name}",
+            [ ParenExpr(TupleExpr callArguments) ]
+          ),
+          "ValueSome value",
+          "ValueNone"
+        )
+      )
+    ],
+    $"{outType} voption"
+  )
+  |> _.toInlined()
+
 let implicitHelper(fromType: Type, toType: Type) =
   let sourceName =
-    fromType.Name.Replace("Double", "Float").Replace("Int32", "Int")
+    plainName fromType
+    |> _.Replace("Double", "Float")
+    |> _.Replace("Int32", "Int")
 
   let targetName =
-    camelCase(toType.Name.Replace("Double", "Float").Replace("Int32", "Int"))
+    plainName toType
+    |> _.Replace("Double", "Float")
+    |> _.Replace("Int32", "Int")
+    |> camelCase
 
   // The annotated identity body relies on F# type-directed op_Implicit
   // insertion, which must be validated per pair by the smoke check. Pairs
@@ -663,8 +717,13 @@ let renderInterop() =
           Open("System")
           Open("System.Runtime.CompilerServices")
 
-          extensionClass "InteropExtensions" tryMethods (fun (t, m, out) ->
-            tryMember(t, m, out))
+          extensionClass
+            "InteropExtensions"
+            instanceTryMethods
+            (fun (t, m, out) -> tryMember(t, m, out))
+
+          for (t, m, out) in staticTryMethods do
+            staticTryFunction(t, m, out)
 
           for pair in implicitOperators do
             implicitHelper pair
@@ -695,10 +754,15 @@ let tryFsiSlot(t: Type, m: MethodInfo, _) =
 
 let implicitHelperVal(fromType: Type, toType: Type) =
   let sourceName =
-    fromType.Name.Replace("Double", "Float").Replace("Int32", "Int")
+    plainName fromType
+    |> _.Replace("Double", "Float")
+    |> _.Replace("Int32", "Int")
 
   let targetName =
-    camelCase(toType.Name.Replace("Double", "Float").Replace("Int32", "Int"))
+    plainName toType
+    |> _.Replace("Double", "Float")
+    |> _.Replace("Int32", "Int")
+    |> camelCase
 
   Val(
     [ "val"; "inline" ],
@@ -709,12 +773,29 @@ let implicitHelperVal(fromType: Type, toType: Type) =
 let interopFsiTypes() =
   let tryExtension =
     TypeDefn("InteropExtensions") {
-      for (t, m, out) in tryMethods do
+      for (t, m, out) in instanceTryMethods do
         tryFsiSlot(t, m, out)
     }
     |> _.attributes([ Attribute("Extension"); Attribute("Sealed") ])
 
   tryExtension
+
+let staticTryVal(t: Type, m: MethodInfo, out: ParameterInfo) =
+  let normal = m.GetParameters() |> Array.filter(fun p -> not p.IsOut)
+
+  let outType = fsiType(out.ParameterType.GetElementType())
+
+  Val(
+    [ "val"; "inline" ],
+    camelCase m.Name,
+    Funs(
+      [
+        for p in normal do
+          SignatureParameter(p.Name, fsiType p.ParameterType)
+      ],
+      AppPostfix(outType, "voption")
+    )
+  )
 
 // ---------------------------------------------------------------------------
 // FunGoo.Widgets — optional-value setters for nullable widget fields
@@ -832,7 +913,9 @@ renderFsiFile
   widgetsDir
   "Interop"
   [ interopFsiTypes() ]
-  (implicitOperators |> Seq.map implicitHelperVal)
+  (Seq.append
+    (staticTryMethods |> Seq.map staticTryVal)
+    (implicitOperators |> Seq.map implicitHelperVal))
 
 Directory.CreateDirectory(widgetsProjectDir) |> ignore
 

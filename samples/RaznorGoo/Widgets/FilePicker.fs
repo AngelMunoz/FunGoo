@@ -33,7 +33,7 @@ let inline actionButton
   (label: string)
   ([<InlineIfLambda>] onClick: unit -> unit)
   : Blob =
-  ActionButton(Label = label, OnClick = fun _ -> onClick())
+  ActionButton(Content = label, OnClick = fun _ -> onClick())
     .backgroundColor(Color.Rgb(30, 38, 54))
     .textColor(Color.Rgb(230, 235, 245))
     .hoverBackgroundColor(Color.Rgb(40, 52, 74))
@@ -234,7 +234,14 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
             MinHeight = 0,
             OverflowY = Overflow.Scroll,
             OverflowX = Overflow.Hidden,
-            ScrollbarVisibility = ScrollbarVisibility.Auto,
+            // Goo 0.6.4 dropped the built-in scrollbar thumb look: a scrollbar
+            // only paints when the axis owns authored Track and Thumb parts.
+            ScrollbarY =
+              Scrollbar(
+                Thickness = 10.0,
+                Track = Container(BackgroundColor = Color.Rgb(24, 31, 43)),
+                Thumb = Container(BackgroundColor = Color.Rgb(90, 105, 135))
+              ),
             Gap = 2
           )
             .Children(rows)

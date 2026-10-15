@@ -21,12 +21,14 @@
     <Compile Include="Widgets/Setters.g.fs" />
     <Compile Include="Widgets/Interop.g.fsi" />
     <Compile Include="Widgets/Interop.g.fs" />
+    <Compile Include="Style.fsi" />
+    <Compile Include="Style.fs" />
     <Compile Include="Virtual.fsi" />
     <Compile Include="Virtual.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Goo" Version="0.5.3" />
+    <PackageReference Include="Goo" Version="0.7.9" />
     <None Include="../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 

@@ -123,6 +123,52 @@ module Widgets =
         Goo.Widgets.Actions.IconButton
 
   [<Extension; Sealed>]
+  type ChartSeriesExtensions =
+    [<Extension>]
+    static member inline color:
+      this: Goo.Widgets.Charts.ChartSeries * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Charts.ChartSeries
+
+  [<Extension; Sealed>]
+  type DonutChartExtensions =
+    [<Extension>]
+    static member inline size:
+      this: Goo.Widgets.Charts.DonutChart * [<Struct>] ?value: float ->
+        Goo.Widgets.Charts.DonutChart
+
+    [<Extension>]
+    static member inline thickness:
+      this: Goo.Widgets.Charts.DonutChart * [<Struct>] ?value: float ->
+        Goo.Widgets.Charts.DonutChart
+
+    [<Extension>]
+    static member inline trackColor:
+      this: Goo.Widgets.Charts.DonutChart * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Charts.DonutChart
+
+  [<Extension; Sealed>]
+  type StackedBarExtensions =
+    [<Extension>]
+    static member inline borderRadius:
+      this: Goo.Widgets.Charts.StackedBar * [<Struct>] ?value: float ->
+        Goo.Widgets.Charts.StackedBar
+
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Charts.StackedBar * [<Struct>] ?value: float ->
+        Goo.Widgets.Charts.StackedBar
+
+    [<Extension>]
+    static member inline trackColor:
+      this: Goo.Widgets.Charts.StackedBar * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Charts.StackedBar
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Charts.StackedBar * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Charts.StackedBar
+
+  [<Extension; Sealed>]
   type ColorPickerInputExtensions =
     [<Extension>]
     static member inline focusOutlineColor:
@@ -137,6 +183,12 @@ module Widgets =
     [<Extension>]
     static member inline markerBorderColor:
       this: Goo.Widgets.Colors.ColorPickerInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Colors.ColorPickerInput
+
+    [<Extension>]
+    static member inline mode:
+      this: Goo.Widgets.Colors.ColorPickerInput *
+      [<Struct>] ?value: Goo.Widgets.Colors.ColorMode ->
         Goo.Widgets.Colors.ColorPickerInput
 
   [<Extension; Sealed>]
@@ -235,6 +287,193 @@ module Widgets =
     static member inline transitionMs:
       this: Goo.Widgets.Data.Chip * [<Struct>] ?value: float ->
         Goo.Widgets.Data.Chip
+
+  [<Extension; Sealed>]
+  type DataGridColumnExtensions =
+    [<Extension>]
+    static member inline flex:
+      this: Goo.Widgets.Data.DataGridColumn * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridColumn
+
+    [<Extension>]
+    static member inline maximum:
+      this: Goo.Widgets.Data.DataGridColumn * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridColumn
+
+    [<Extension>]
+    static member inline minimum:
+      this: Goo.Widgets.Data.DataGridColumn * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridColumn
+
+    [<Extension>]
+    static member inline resizable:
+      this: Goo.Widgets.Data.DataGridColumn * [<Struct>] ?value: bool ->
+        Goo.Widgets.Data.DataGridColumn
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Data.DataGridColumn * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridColumn
+
+  [<Extension; Sealed>]
+  type DataGridInputExtensions =
+    [<Extension>]
+    static member inline backgroundColor:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline filterHeight:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline headerHeight:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline rowHeight:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline scrollbarVisibilityX:
+      this: Goo.Widgets.Data.DataGridInput *
+      [<Struct>] ?value: Goo.ScrollbarVisibility ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline scrollbarVisibilityY:
+      this: Goo.Widgets.Data.DataGridInput *
+      [<Struct>] ?value: Goo.ScrollbarVisibility ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline selectedColor:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline textColor:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline useDefaultKeyboard:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Data.DataGridInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Data.DataGridInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Data.DataGridInput
+
+  [<Extension; Sealed>]
+  type TimeAxisInputExtensions =
+    [<Extension>]
+    static member inline currentTime:
+      this: Goo.Widgets.Data.TimeAxisInput *
+      [<Struct>] ?value: System.DateTimeOffset ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline initialTime:
+      this: Goo.Widgets.Data.TimeAxisInput *
+      [<Struct>] ?value: System.DateTimeOffset ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline laneGap:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline laneHeight:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline markerColor:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline maximumLanes:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: int ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline minimumEventWidth:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline pixelsPerHour:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline tickInterval:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: System.TimeSpan ->
+        Goo.Widgets.Data.TimeAxisInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Data.TimeAxisInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Data.TimeAxisInput
+
+  [<Extension; Sealed>]
+  type TreeViewInputExtensions =
+    [<Extension>]
+    static member inline backgroundColor:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline indent:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline rowHeight:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline selectedColor:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline textColor:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline virtualize:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Data.TreeViewInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Data.TreeViewInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Data.TreeViewInput
 
   [<Extension; Sealed>]
   type BadgeExtensions =
@@ -657,6 +896,11 @@ module Widgets =
         Goo.Widgets.Graphs.GraphNodeCard
 
     [<Extension>]
+    static member inline center:
+      this: Goo.Widgets.Graphs.GraphNodeCard * [<Struct>] ?value: Goo.Point ->
+        Goo.Widgets.Graphs.GraphNodeCard
+
+    [<Extension>]
     static member inline foregroundColor:
       this: Goo.Widgets.Graphs.GraphNodeCard * [<Struct>] ?value: Goo.Color ->
         Goo.Widgets.Graphs.GraphNodeCard
@@ -675,6 +919,49 @@ module Widgets =
     static member inline selectedBorderColor:
       this: Goo.Widgets.Graphs.GraphNodeCard * [<Struct>] ?value: Goo.Color ->
         Goo.Widgets.Graphs.GraphNodeCard
+
+  [<Extension; Sealed>]
+  type CalendarInputExtensions =
+    [<Extension>]
+    static member inline firstDayOfWeek:
+      this: Goo.Widgets.Inputs.CalendarInput *
+      [<Struct>] ?value: System.DayOfWeek ->
+        Goo.Widgets.Inputs.CalendarInput
+
+    [<Extension>]
+    static member inline maximum:
+      this: Goo.Widgets.Inputs.CalendarInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.CalendarInput
+
+    [<Extension>]
+    static member inline minimum:
+      this: Goo.Widgets.Inputs.CalendarInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.CalendarInput
+
+    [<Extension>]
+    static member inline month:
+      this: Goo.Widgets.Inputs.CalendarInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.CalendarInput
+
+    [<Extension>]
+    static member inline today:
+      this: Goo.Widgets.Inputs.CalendarInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.CalendarInput
+
+    [<Extension>]
+    static member inline value:
+      this: Goo.Widgets.Inputs.CalendarInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.CalendarInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Inputs.CalendarInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Inputs.CalendarInput
 
   [<Extension; Sealed>]
   type CheckboxExtensions =
@@ -714,6 +1001,16 @@ module Widgets =
         Goo.Widgets.Inputs.Checkbox
 
     [<Extension>]
+    static member inline labelColor:
+      this: Goo.Widgets.Inputs.Checkbox * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.Checkbox
+
+    [<Extension>]
+    static member inline labelGap:
+      this: Goo.Widgets.Inputs.Checkbox * [<Struct>] ?value: float ->
+        Goo.Widgets.Inputs.Checkbox
+
+    [<Extension>]
     static member inline markColor:
       this: Goo.Widgets.Inputs.Checkbox * [<Struct>] ?value: Goo.Color ->
         Goo.Widgets.Inputs.Checkbox
@@ -727,6 +1024,55 @@ module Widgets =
     static member inline transitionMs:
       this: Goo.Widgets.Inputs.Checkbox * [<Struct>] ?value: float ->
         Goo.Widgets.Inputs.Checkbox
+
+  [<Extension; Sealed>]
+  type ComboBoxInputExtensions =
+    [<Extension>]
+    static member inline ``open``:
+      this: Goo.Widgets.Inputs.ComboBoxInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Inputs.ComboBoxInput
+
+  [<Extension; Sealed>]
+  type DatePickerInputExtensions =
+    [<Extension>]
+    static member inline allowEmpty:
+      this: Goo.Widgets.Inputs.DatePickerInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Inputs.DatePickerInput
+
+    [<Extension>]
+    static member inline firstDayOfWeek:
+      this: Goo.Widgets.Inputs.DatePickerInput *
+      [<Struct>] ?value: System.DayOfWeek ->
+        Goo.Widgets.Inputs.DatePickerInput
+
+    [<Extension>]
+    static member inline maximum:
+      this: Goo.Widgets.Inputs.DatePickerInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.DatePickerInput
+
+    [<Extension>]
+    static member inline minimum:
+      this: Goo.Widgets.Inputs.DatePickerInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.DatePickerInput
+
+    [<Extension>]
+    static member inline ``open``:
+      this: Goo.Widgets.Inputs.DatePickerInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Inputs.DatePickerInput
+
+    [<Extension>]
+    static member inline today:
+      this: Goo.Widgets.Inputs.DatePickerInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.DatePickerInput
+
+    [<Extension>]
+    static member inline value:
+      this: Goo.Widgets.Inputs.DatePickerInput *
+      [<Struct>] ?value: System.DateOnly ->
+        Goo.Widgets.Inputs.DatePickerInput
 
   [<Extension; Sealed>]
   type SearchListExtensions =
@@ -788,6 +1134,11 @@ module Widgets =
         Goo.Widgets.Inputs.SliderInput
 
     [<Extension>]
+    static member inline labelColor:
+      this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.SliderInput
+
+    [<Extension>]
     static member inline maximum:
       this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: float ->
         Goo.Widgets.Inputs.SliderInput
@@ -808,8 +1159,18 @@ module Widgets =
         Goo.Widgets.Inputs.SliderInput
 
     [<Extension>]
+    static member inline thumbBorderWidth:
+      this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Inputs.SliderInput
+
+    [<Extension>]
     static member inline thumbColor:
       this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.SliderInput
+
+    [<Extension>]
+    static member inline thumbRadius:
+      this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: float ->
         Goo.Widgets.Inputs.SliderInput
 
     [<Extension>]
@@ -820,6 +1181,11 @@ module Widgets =
     [<Extension>]
     static member inline trackRadius:
       this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Inputs.SliderInput
+
+    [<Extension>]
+    static member inline valueColor:
+      this: Goo.Widgets.Inputs.SliderInput * [<Struct>] ?value: Goo.Color ->
         Goo.Widgets.Inputs.SliderInput
 
     [<Extension>]
@@ -895,6 +1261,48 @@ module Widgets =
         Goo.Widgets.Inputs.Stepper
 
   [<Extension; Sealed>]
+  type TextAreaInputExtensions =
+    [<Extension>]
+    static member inline backgroundColor:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline focusColor:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline fontSize:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline invalidColor:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline minimumHeight:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline textColor:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Inputs.TextAreaInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Inputs.TextAreaInput
+
+  [<Extension; Sealed>]
   type TextFieldExtensions =
     [<Extension>]
     static member inline backgroundColor:
@@ -939,6 +1347,11 @@ module Widgets =
     [<Extension>]
     static member inline invalidColor:
       this: Goo.Widgets.Inputs.TextField * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Inputs.TextField
+
+    [<Extension>]
+    static member inline labelTextTransform:
+      this: Goo.Widgets.Inputs.TextField * [<Struct>] ?value: Goo.TextTransform ->
         Goo.Widgets.Inputs.TextField
 
     [<Extension>]
@@ -1196,6 +1609,68 @@ module Widgets =
         Goo.Widgets.Layout.AppBar
 
   [<Extension; Sealed>]
+  type DisclosureExtensions =
+    [<Extension>]
+    static member inline backgroundColor:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline borderColor:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline borderRadius:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline borderWidth:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline contentPadding:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline disabledOpacity:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline gap:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline headerHeight:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline headerPadding:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline hoverColor:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline textColor:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.Disclosure
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Layout.Disclosure * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Layout.Disclosure
+
+  [<Extension; Sealed>]
   type DrawerExtensions =
     [<Extension>]
     static member inline backgroundColor:
@@ -1256,6 +1731,37 @@ module Widgets =
     static member inline transitionMs:
       this: Goo.Widgets.Layout.Drawer * [<Struct>] ?value: float ->
         Goo.Widgets.Layout.Drawer
+
+  [<Extension; Sealed>]
+  type GridExtensions =
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Layout.Grid * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Layout.Grid
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Layout.Grid * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Layout.Grid
+
+  [<Extension; Sealed>]
+  type GridItemExtensions =
+    [<Extension>]
+    static member inline columnSpan:
+      this: Goo.Widgets.Layout.GridItem * [<Struct>] ?value: int ->
+        Goo.Widgets.Layout.GridItem
+
+    [<Extension>]
+    static member inline rowSpan:
+      this: Goo.Widgets.Layout.GridItem * [<Struct>] ?value: int ->
+        Goo.Widgets.Layout.GridItem
+
+  [<Extension; Sealed>]
+  type GridTrackExtensions =
+    [<Extension>]
+    static member inline maximum:
+      this: Goo.Widgets.Layout.GridTrack * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.GridTrack
 
   [<Extension; Sealed>]
   type ListRowExtensions =
@@ -1384,6 +1890,48 @@ module Widgets =
         Goo.Widgets.Layout.ModalDialog
 
   [<Extension; Sealed>]
+  type PopoverInputExtensions =
+    [<Extension>]
+    static member inline backgroundColor:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline borderColor:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline dismissOnOutsideClick:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline gap:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline padding:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline viewport:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: Goo.ElementRect ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline viewportMargin:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.PopoverInput
+
+    [<Extension>]
+    static member inline windowPoint:
+      this: Goo.Widgets.Layout.PopoverInput * [<Struct>] ?value: Goo.Point ->
+        Goo.Widgets.Layout.PopoverInput
+
+  [<Extension; Sealed>]
   type SectionHeaderExtensions =
     [<Extension>]
     static member inline accentColor:
@@ -1440,6 +1988,40 @@ module Widgets =
     static member inline width:
       this: Goo.Widgets.Layout.SectionHeader * [<Struct>] ?value: Goo.Length ->
         Goo.Widgets.Layout.SectionHeader
+
+  [<Extension; Sealed>]
+  type SplitPaneInputExtensions =
+    [<Extension>]
+    static member inline handleSize:
+      this: Goo.Widgets.Layout.SplitPaneInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.SplitPaneInput
+
+    [<Extension>]
+    static member inline height:
+      this: Goo.Widgets.Layout.SplitPaneInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Layout.SplitPaneInput
+
+    [<Extension>]
+    static member inline step:
+      this: Goo.Widgets.Layout.SplitPaneInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.SplitPaneInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Layout.SplitPaneInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Layout.SplitPaneInput
+
+  [<Extension; Sealed>]
+  type TooltipInputExtensions =
+    [<Extension>]
+    static member inline delayMs:
+      this: Goo.Widgets.Layout.TooltipInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.TooltipInput
+
+    [<Extension>]
+    static member inline gap:
+      this: Goo.Widgets.Layout.TooltipInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.TooltipInput
 
   [<Extension; Sealed>]
   type WindowChromeExtensions =
@@ -1708,6 +2290,30 @@ module Widgets =
         Goo.Widgets.Media.MediaTransportInput
 
   [<Extension; Sealed>]
+  type MenuInputExtensions =
+    [<Extension>]
+    static member inline dismissOnActivate:
+      this: Goo.Widgets.Navigation.MenuInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Navigation.MenuInput
+
+    [<Extension>]
+    static member inline submenuPlacement:
+      this: Goo.Widgets.Navigation.MenuInput *
+      [<Struct>] ?value: Goo.Widgets.Layout.PopoverPlacement ->
+        Goo.Widgets.Navigation.MenuInput
+
+    [<Extension>]
+    static member inline viewport:
+      this: Goo.Widgets.Navigation.MenuInput *
+      [<Struct>] ?value: Goo.ElementRect ->
+        Goo.Widgets.Navigation.MenuInput
+
+    [<Extension>]
+    static member inline windowPoint:
+      this: Goo.Widgets.Navigation.MenuInput * [<Struct>] ?value: Goo.Point ->
+        Goo.Widgets.Navigation.MenuInput
+
+  [<Extension; Sealed>]
   type NavigationRailExtensions =
     [<Extension>]
     static member inline backgroundColor:
@@ -1775,3 +2381,15 @@ module Widgets =
       this: Goo.Widgets.Navigation.NavigationRail *
       [<Struct>] ?value: Goo.PanelTransform ->
         Goo.Widgets.Navigation.NavigationRail
+
+  [<Extension; Sealed>]
+  type TabBarInputExtensions =
+    [<Extension>]
+    static member inline itemHeight:
+      this: Goo.Widgets.Navigation.TabBarInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Navigation.TabBarInput
+
+    [<Extension>]
+    static member inline width:
+      this: Goo.Widgets.Navigation.TabBarInput * [<Struct>] ?value: Goo.Length ->
+        Goo.Widgets.Navigation.TabBarInput

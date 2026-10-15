@@ -53,6 +53,20 @@ module Interop =
       else
         ValueNone
 
+  let inline tryCreate
+    (values: System.Collections.Generic.IReadOnlyList<string>)
+    : Goo.NativeFileDrag voption =
+    let mutable value = Unchecked.defaultof<Goo.NativeFileDrag>
+
+    if Goo.NativeFileDrag.TryCreate(values, &value) then
+      ValueSome value
+    else
+      ValueNone
+
   let inline colorFromString(value: string) : Goo.Color = Goo.Color.Parse value
+  let inline edgesFromFloat(value: float) : Goo.Edges = value
+  let inline edgesFromInt(value: int) : Goo.Edges = value
+  let inline edgesFromLength(value: Goo.Length) : Goo.Edges = value
+  let inline edgesFromColor(value: Goo.Color) : Goo.Edges<Goo.Color> = value
   let inline lengthFromFloat(value: float) : Goo.Length = value
   let inline lengthFromInt(value: int) : Goo.Length = value

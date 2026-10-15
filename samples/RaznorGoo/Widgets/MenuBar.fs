@@ -14,7 +14,7 @@ let inline item
   (label: string)
   ([<InlineIfLambda>] onClick: unit -> unit)
   : Blob =
-  ActionButton(Label = label, OnClick = fun _ -> onClick())
+  ActionButton(Content = label, OnClick = fun _ -> onClick())
     .backgroundColor(Color.Rgb(30, 38, 54))
     .textColor(Color.Rgb(230, 235, 245))
     .hoverBackgroundColor(Color.Rgb(40, 52, 74))
