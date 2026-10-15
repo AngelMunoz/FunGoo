@@ -7,20 +7,14 @@
 ### Added
 
 - **Core:** New `FunGoo.Style` module with `percent`, a percentage length helper for the Goo `Percent` function, and `topEdge`, a top-only border-width edge value. Both cover the Goo APIs removed in 0.6.6 (`Length.Percent`, per-side border-width properties).
+- **Samples:** RaznorGoo gains a file-system service behind an `IFileSystem` entry in its environment record: list a folder's sub-folders and extension-filtered files in one call, search the entries of one folder by name, case-insensitive, list the ready drives of the system, and ask for the parent folder of a path. Extension filters accept `*.mp3`, `.mp3`, or `mp3` forms, and unreadable folders return empty results instead of errors.
+- **Samples:** The RaznorGoo file picker shows the drive list above every drive root, so folders on other drives are now reachable. The picker and the playlist loader go through the file-system service instead of direct `System.IO` calls.
 
 ### Changed
 
 - **Core:** **Breaking:** The Goo dependency is now 0.7.9 (was 0.5.3). The generated surface follows the new Goo API: `Padding`, `Margin`, `BorderWidth`, and `BorderColor` setters take grouped `Edges` values, and the interop module gains `Edges` and `Edges<Color>` conversion helpers plus a `tryCreate` wrapper for the new static `NativeFileDrag.TryCreate`.
 - **Widgets:** **Breaking:** The Goo.Widgets dependency is now 0.2.9 (was 0.1.1). Generated optional setters cover the new widget fields, including Calendar, DatePicker, ComboBox, Tooltip, and Markdown-era widgets; button text is now authored through `Content` instead of `Label`.
 - **Samples:** RaznorGoo moves to Goo and Goo.Svg 0.7.9: percentage sizes go through `FunGoo.Style.percent`, the player bar's top border goes through `topEdge`, menu and picker buttons author `Content`, and the playlist and file-picker scrollbars now own authored track and thumb parts, which Goo requires to paint a scrollbar.
-
-### Added
-
-- **Samples:** RaznorGoo gains a file-system service behind an `IFileSystem` entry in its environment record: list a folder's sub-folders and extension-filtered files in one call, search the entries of one folder by name, case-insensitive, list the ready drives of the system, and ask for the parent folder of a path. Extension filters accept `*.mp3`, `.mp3`, or `mp3` forms, and unreadable folders return empty results instead of errors.
-- **Samples:** The RaznorGoo file picker shows the drive list above every drive root, so folders on other drives are now reachable. The picker and the playlist loader go through the file-system service instead of direct `System.IO` calls.
-
-### Changed
-
 - **Samples:** The RaznorGoo player bar is now a mounted `MediaTransport` cell from `Goo.Widgets`: position, seek, volume, and play state render from immutable input snapshots, seek and volume work against the playback service, and the hand-rolled media menu and progress widgets are gone. Playback state reports seconds, and the now-playing title derives adaptively from the selection.
 - **Samples:** RaznorGoo renders the playlist and the player bar as mounted cells that rebuild only on the events that touch them, the playback events are subscribed after the app is wired instead of during service construction, and playback ticks no longer re-render the whole window. The app file is split into a bottom-bar widget, a layout view, and a slim composition root.
 - **Samples:** RaznorGoo builds its menu buttons, transport buttons, playlist rows, progress bar, and file picker rows and buttons from `Goo.Widgets` through `FunGoo.Widgets`, gaining hover, focus, and accessibility semantics. Icons come from the Material Symbols set, with one hand-parsed SVG kept for the missing "repeat off" glyph.
