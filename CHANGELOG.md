@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-15
+
 ### Added
 
 - **Core:** New `FunGoo.Style` module with `percent`, a percentage length helper for the Goo `Percent` function, and `topEdge`, a top-only border-width edge value. Both cover the Goo APIs removed in 0.6.6 (`Length.Percent`, per-side border-width properties).
