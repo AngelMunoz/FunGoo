@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-06
+
 ### Changed
 
 - **Core:** **Breaking:** The Goo dependency is now 0.28.3 (was 0.7.9). Goo merged its former optional packages into the main assembly and discontinued the Goo.Svg package: SVG loading, spell check, rich text, gestures, native dialogs and menus, printing, and notifications now come from the Goo package alone. Generated setters cover the merged types in their new sub-namespaces, and `FunGoo.Style.percent` keeps its signature while calling Goo's named `Length.Percent` factory.
