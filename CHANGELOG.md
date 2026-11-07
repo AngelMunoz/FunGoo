@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Core:** **Breaking:** The Goo dependency is now 0.28.3 (was 0.7.9). Goo merged its former optional packages into the main assembly and discontinued the Goo.Svg package: SVG loading, spell check, rich text, gestures, native dialogs and menus, printing, and notifications now come from the Goo package alone. Generated setters cover the merged types in their new sub-namespaces, and `FunGoo.Style.percent` keeps its signature while calling Goo's named `Length.Percent` factory.
+- **Widgets:** **Breaking:** The Goo.Widgets dependency is now 0.19.3 (was 0.2.9). Generated optional setters follow the Goo.Widgets API migration: size fields such as `MinHeight` and `Width` take nullable `Length` values, numeric style fields are nullable tokens, and selection callbacks follow the new `OnChange`/`OnCommit` naming (MediaTransport uses `OnPositionChange`/`OnPositionCommit` and `OnVolumeChange`/`OnVolumeCommit`).
+- **Widgets:** **Breaking:** The `FunGoo.Virtual` module moved from the FunGoo package to FunGoo.Widgets. Goo removed its package-level virtual collection function in 0.7.22; the `create`, `ofSeq`, and `ofIndexed` helpers keep their signatures and now build on Goo.Widgets' `VirtualItems`.
+- **Samples:** RaznorGoo moves to Goo 0.28.3 and drops the discontinued Goo.Svg package reference. Playlist rows, file-picker rows, and the empty state pass nullable lengths for their minimum heights, and the player bar uses the renamed MediaTransport callbacks.
+
 ## [0.4.0] - 2026-10-15
 
 ### Added

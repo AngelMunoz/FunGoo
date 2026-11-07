@@ -8,6 +8,7 @@ open Goo.Widgets.Feedback
 open Goo.Widgets.Layout
 open GooRes.Types
 open FunGoo.Children
+open FunGoo.Interop
 open FunGoo.Widgets
 open Mibo.Adaptive
 open GooRes
@@ -61,8 +62,8 @@ let inline entryRow
       ListRow(
         Title = e.Name,
         Leading = Icons.folder,
-        MinHeight = 36.0,
-        PaddingVertical = 8.0
+        MinHeight = Nullable(lengthFromFloat 36.0),
+        PaddingVertical = Nullable 8.0
       )
         .backgroundColor(Color.Rgb(24, 31, 43))
         .textColor(Color.Rgb(140, 190, 255))
@@ -75,8 +76,8 @@ let inline entryRow
       ListRow(
         Title = e.Name,
         Selected = isPicked,
-        MinHeight = 36.0,
-        PaddingVertical = 8.0
+        MinHeight = Nullable(lengthFromFloat 36.0),
+        PaddingVertical = Nullable 8.0
       )
         .backgroundColor(Color.Rgb(24, 31, 43))
         .selectedBackgroundColor(Color.Rgb(40, 52, 74))
@@ -85,7 +86,11 @@ let inline entryRow
       fun () -> onToggleFile e
     )
   else
-    ListRow(Title = e.Name, MinHeight = 36.0, PaddingVertical = 8.0)
+    ListRow(
+      Title = e.Name,
+      MinHeight = Nullable(lengthFromFloat 36.0),
+      PaddingVertical = Nullable 8.0
+    )
       .backgroundColor(Color.Rgb(20, 25, 36))
       .textColor(Color.Rgb(120, 130, 150))
       .opacity(0.7)
@@ -195,7 +200,7 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
           EmptyState(
             Title = emptyTitle,
             Description = emptyDescription,
-            MinHeight = Nullable 160.0
+            MinHeight = Nullable(lengthFromFloat 160.0)
           )
             .Build()
           |> Array.singleton

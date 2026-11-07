@@ -83,6 +83,30 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: float)
+      : Goo.Widgets.Actions.ActionButton =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: int)
+      : Goo.Widgets.Actions.ActionButton =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Actions.ActionButton =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline hoverBackgroundColor
       (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Actions.ActionButton =
@@ -91,11 +115,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline minWidth
+      (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Actions.ActionButton =
+      let mutable copy = this
+      copy.MinWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: float)
       : Goo.Widgets.Actions.ActionButton =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: float)
+      : Goo.Widgets.Actions.ActionButton =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline pressed
+      (this: Goo.Widgets.Actions.ActionButton, [<Struct>] ?value: bool)
+      : Goo.Widgets.Actions.ActionButton =
+      let mutable copy = this
+      copy.Pressed <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -175,6 +223,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Actions.IconButton, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Actions.IconButton =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline hoverBackgroundColor
       (this: Goo.Widgets.Actions.IconButton, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Actions.IconButton =
@@ -188,6 +244,14 @@ module Widgets =
       : Goo.Widgets.Actions.IconButton =
       let mutable copy = this
       copy.Padding <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Actions.IconButton, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Actions.IconButton =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -238,7 +302,7 @@ module Widgets =
 
     [<Extension>]
     static member inline height
-      (this: Goo.Widgets.Charts.StackedBar, [<Struct>] ?value: float)
+      (this: Goo.Widgets.Charts.StackedBar, [<Struct>] ?value: Goo.Length)
       : Goo.Widgets.Charts.StackedBar =
       let mutable copy = this
       copy.Height <- ValueOption.toNullable value
@@ -287,6 +351,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline markerSize
+      (this: Goo.Widgets.Colors.ColorPickerInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Colors.ColorPickerInput =
+      let mutable copy = this
+      copy.MarkerSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline mode
       (
         this: Goo.Widgets.Colors.ColorPickerInput,
@@ -294,6 +366,58 @@ module Widgets =
       ) : Goo.Widgets.Colors.ColorPickerInput =
       let mutable copy = this
       copy.Mode <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline toneSliderHeight
+      (this: Goo.Widgets.Colors.ColorPickerInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Colors.ColorPickerInput =
+      let mutable copy = this
+      copy.ToneSliderHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline wheelSize
+      (this: Goo.Widgets.Colors.ColorPickerInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Colors.ColorPickerInput =
+      let mutable copy = this
+      copy.WheelSize <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type CodeBlockInputExtensions =
+    [<Extension>]
+    static member inline maxHeight
+      (this: Goo.Widgets.Content.CodeBlockInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Content.CodeBlockInput =
+      let mutable copy = this
+      copy.MaxHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Content.CodeBlockInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Content.CodeBlockInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type AttachmentChipExtensions =
+    [<Extension>]
+    static member inline progress
+      (this: Goo.Widgets.Data.AttachmentChip, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.AttachmentChip =
+      let mutable copy = this
+      copy.Progress <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Data.AttachmentChip, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Data.AttachmentChip =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -363,6 +487,38 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Data.Chip, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.Chip =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Data.Chip, [<Struct>] ?value: int)
+      : Goo.Widgets.Data.Chip =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline gap
+      (this: Goo.Widgets.Data.Chip, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.Chip =
+      let mutable copy = this
+      copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Data.Chip, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Data.Chip =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline hoverBackgroundColor
       (this: Goo.Widgets.Data.Chip, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Data.Chip =
@@ -376,6 +532,14 @@ module Widgets =
       : Goo.Widgets.Data.Chip =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Data.Chip, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.Chip =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -503,11 +667,61 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline commitEditKey
+      (
+        this: Goo.Widgets.Data.DataGridInput,
+        [<Struct>] ?value: Goo.Widgets.Data.DataGridEditKey
+      ) : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.CommitEditKey <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline detailBackground
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.DetailBackground <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline detailPadding
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.DetailPadding <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline estimatedRowHeight
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.EstimatedRowHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline expandColumnWidth
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.ExpandColumnWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline filterHeight
       (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
       : Goo.Widgets.Data.DataGridInput =
       let mutable copy = this
       copy.FilterHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline focusColor
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.FocusColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -524,6 +738,22 @@ module Widgets =
       : Goo.Widgets.Data.DataGridInput =
       let mutable copy = this
       copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline maximumRowHeight
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.MaximumRowHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline rowHeaderWidth
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.RowHeaderWidth <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -563,6 +793,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline selectionColumnWidth
+      (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.DataGridInput =
+      let mutable copy = this
+      copy.SelectionColumnWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline textColor
       (this: Goo.Widgets.Data.DataGridInput, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Data.DataGridInput =
@@ -584,6 +822,52 @@ module Widgets =
       : Goo.Widgets.Data.DataGridInput =
       let mutable copy = this
       copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type DataGridRowExtensions =
+    [<Extension>]
+    static member inline editable
+      (this: Goo.Widgets.Data.DataGridRow, [<Struct>] ?value: bool)
+      : Goo.Widgets.Data.DataGridRow =
+      let mutable copy = this
+      copy.Editable <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ListViewInputExtensions =
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Data.ListViewInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Data.ListViewInput =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline rowHeight
+      (this: Goo.Widgets.Data.ListViewInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Data.ListViewInput =
+      let mutable copy = this
+      copy.RowHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Data.ListViewInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Data.ListViewInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ListViewItemExtensions =
+    [<Extension>]
+    static member inline count
+      (this: Goo.Widgets.Data.ListViewItem, [<Struct>] ?value: int)
+      : Goo.Widgets.Data.ListViewItem =
+      let mutable copy = this
+      copy.Count <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -747,6 +1031,16 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
+  type AlertExtensions =
+    [<Extension>]
+    static member inline live
+      (this: Goo.Widgets.Feedback.Alert, [<Struct>] ?value: bool)
+      : Goo.Widgets.Feedback.Alert =
+      let mutable copy = this
+      copy.Live <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
   type BadgeExtensions =
     [<Extension>]
     static member inline backgroundColor
@@ -765,11 +1059,91 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline borderRadius
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.BorderRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline borderWidth
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.BorderWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline count
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.Count <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline dotSize
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.DotSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline maxCount
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.MaxCount <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minWidth
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.MinWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: float)
       : Goo.Widgets.Feedback.Badge =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Feedback.Badge, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Badge =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -839,11 +1213,59 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Banner =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.Banner =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline live
+      (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: bool)
+      : Goo.Widgets.Feedback.Banner =
+      let mutable copy = this
+      copy.Live <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minHeight
+      (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.Banner =
+      let mutable copy = this
+      copy.MinHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: float)
       : Goo.Widgets.Feedback.Banner =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Banner =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingVertical
+      (this: Goo.Widgets.Feedback.Banner, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.Banner =
+      let mutable copy = this
+      copy.PaddingVertical <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1011,6 +1433,34 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline dismissFontSize
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.DismissFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline dismissFontWeight
+      (this: Goo.Widgets.Feedback.DismissibleContextBar, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.DismissFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline dismissHeight
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.DismissHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline dismissHoverBackgroundColor
       (
         this: Goo.Widgets.Feedback.DismissibleContextBar,
@@ -1018,6 +1468,26 @@ module Widgets =
       ) : Goo.Widgets.Feedback.DismissibleContextBar =
       let mutable copy = this
       copy.DismissHoverBackgroundColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline dismissMinWidth
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.DismissMinWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline dismissPaddingHorizontal
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.DismissPaddingHorizontal <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1041,6 +1511,16 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline minHeight
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: Goo.Length
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.MinHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (
         this: Goo.Widgets.Feedback.DismissibleContextBar,
@@ -1048,6 +1528,26 @@ module Widgets =
       ) : Goo.Widgets.Feedback.DismissibleContextBar =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingHorizontal
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingVertical
+      (
+        this: Goo.Widgets.Feedback.DismissibleContextBar,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Feedback.DismissibleContextBar =
+      let mutable copy = this
+      copy.PaddingVertical <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1143,6 +1643,22 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline descriptionFontSize
+      (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.EmptyState =
+      let mutable copy = this
+      copy.DescriptionFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline descriptionFontWeight
+      (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.EmptyState =
+      let mutable copy = this
+      copy.DescriptionFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline gap
       (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: float)
       : Goo.Widgets.Feedback.EmptyState =
@@ -1152,7 +1668,7 @@ module Widgets =
 
     [<Extension>]
     static member inline minHeight
-      (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: float)
+      (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: Goo.Length)
       : Goo.Widgets.Feedback.EmptyState =
       let mutable copy = this
       copy.MinHeight <- ValueOption.toNullable value
@@ -1199,6 +1715,22 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline titleFontSize
+      (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.EmptyState =
+      let mutable copy = this
+      copy.TitleFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline titleFontWeight
+      (this: Goo.Widgets.Feedback.EmptyState, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.EmptyState =
+      let mutable copy = this
+      copy.TitleFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline transform
       (
         this: Goo.Widgets.Feedback.EmptyState,
@@ -1233,6 +1765,16 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
+  type InlineMessageExtensions =
+    [<Extension>]
+    static member inline live
+      (this: Goo.Widgets.Feedback.InlineMessage, [<Struct>] ?value: bool)
+      : Goo.Widgets.Feedback.InlineMessage =
+      let mutable copy = this
+      copy.Live <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
   type ProgressBarExtensions =
     [<Extension>]
     static member inline borderColor
@@ -1243,11 +1785,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline borderRadius
+      (this: Goo.Widgets.Feedback.ProgressBar, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.ProgressBar =
+      let mutable copy = this
+      copy.BorderRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline borderWidth
+      (this: Goo.Widgets.Feedback.ProgressBar, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.ProgressBar =
+      let mutable copy = this
+      copy.BorderWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline fillColor
       (this: Goo.Widgets.Feedback.ProgressBar, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Feedback.ProgressBar =
       let mutable copy = this
       copy.FillColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Feedback.ProgressBar, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.ProgressBar =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1292,6 +1858,14 @@ module Widgets =
       copy.TransitionMs <- ValueOption.toNullable value
       copy
 
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Feedback.ProgressBar, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.ProgressBar =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
   [<Extension; Sealed>]
   type ProgressSummaryExtensions =
     [<Extension>]
@@ -1300,6 +1874,14 @@ module Widgets =
       : Goo.Widgets.Feedback.ProgressSummary =
       let mutable copy = this
       copy.DetailColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline detailFontSize
+      (this: Goo.Widgets.Feedback.ProgressSummary, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.ProgressSummary =
+      let mutable copy = this
+      copy.DetailFontSize <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1327,10 +1909,202 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline labelFontSize
+      (this: Goo.Widgets.Feedback.ProgressSummary, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.ProgressSummary =
+      let mutable copy = this
+      copy.LabelFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline labelFontWeight
+      (this: Goo.Widgets.Feedback.ProgressSummary, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.ProgressSummary =
+      let mutable copy = this
+      copy.LabelFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline width
       (this: Goo.Widgets.Feedback.ProgressSummary, [<Struct>] ?value: Goo.Length) : Goo.Widgets.Feedback.ProgressSummary =
       let mutable copy = this
       copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type SkeletonInputExtensions =
+    [<Extension>]
+    static member inline animated
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.Animated <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline backgroundColor
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.BackgroundColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline borderRadius
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.BorderRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline gap
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline lineHeight
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.LineHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline lines
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.Lines <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline shimmerColor
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.ShimmerColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline size
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.Size <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Feedback.SkeletonInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.SkeletonInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type SpinnerInputExtensions =
+    [<Extension>]
+    static member inline color
+      (this: Goo.Widgets.Feedback.SpinnerInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Feedback.SpinnerInput =
+      let mutable copy = this
+      copy.Color <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline size
+      (this: Goo.Widgets.Feedback.SpinnerInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.SpinnerInput =
+      let mutable copy = this
+      copy.Size <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline strokeWidth
+      (this: Goo.Widgets.Feedback.SpinnerInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.SpinnerInput =
+      let mutable copy = this
+      copy.StrokeWidth <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type StatusIndicatorExtensions =
+    [<Extension>]
+    static member inline tone
+      (
+        this: Goo.Widgets.Feedback.StatusIndicator,
+        [<Struct>] ?value: Goo.Widgets.Tone
+      ) : Goo.Widgets.Feedback.StatusIndicator =
+      let mutable copy = this
+      copy.Tone <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type TeachingTipExtensions =
+    [<Extension>]
+    static member inline maxHeight
+      (this: Goo.Widgets.Feedback.TeachingTip, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.TeachingTip =
+      let mutable copy = this
+      copy.MaxHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Feedback.TeachingTip, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.TeachingTip =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ToastHostInputExtensions =
+    [<Extension>]
+    static member inline maxVisible
+      (this: Goo.Widgets.Feedback.ToastHostInput, [<Struct>] ?value: int)
+      : Goo.Widgets.Feedback.ToastHostInput =
+      let mutable copy = this
+      copy.MaxVisible <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Feedback.ToastHostInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Feedback.ToastHostInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ToastInputExtensions =
+    [<Extension>]
+    static member inline ``open``
+      (this: Goo.Widgets.Feedback.ToastInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Feedback.ToastInput =
+      let mutable copy = this
+      copy.Open <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ToastItemExtensions =
+    [<Extension>]
+    static member inline durationMs
+      (this: Goo.Widgets.Feedback.ToastItem, [<Struct>] ?value: float)
+      : Goo.Widgets.Feedback.ToastItem =
+      let mutable copy = this
+      copy.DurationMs <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -1352,11 +2126,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline edgeWidth
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.EdgeWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline gridColor
       (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Graphs.GraphCanvasInput =
       let mutable copy = this
       copy.GridColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline gridSpacing
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.GridSpacing <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1376,11 +2174,43 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline minimumGridScreenSpacing
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.MinimumGridScreenSpacing <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline nodeHeight
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.NodeHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline nodeWidth
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.NodeWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline selectedEdgeColor
       (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Graphs.GraphCanvasInput =
       let mutable copy = this
       copy.SelectedEdgeColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Graphs.GraphCanvasInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphCanvasInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -1434,6 +2264,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Graphs.GraphNodeCard, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphNodeCard =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline padding
       (this: Goo.Widgets.Graphs.GraphNodeCard, [<Struct>] ?value: float)
       : Goo.Widgets.Graphs.GraphNodeCard =
@@ -1457,8 +2295,24 @@ module Widgets =
       copy.SelectedBorderColor <- ValueOption.toNullable value
       copy
 
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Graphs.GraphNodeCard, [<Struct>] ?value: float)
+      : Goo.Widgets.Graphs.GraphNodeCard =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
   [<Extension; Sealed>]
   type CalendarInputExtensions =
+    [<Extension>]
+    static member inline dayHeight
+      (this: Goo.Widgets.Inputs.CalendarInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.CalendarInput =
+      let mutable copy = this
+      copy.DayHeight <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline firstDayOfWeek
       (
@@ -1586,11 +2440,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline hitSize
+      (this: Goo.Widgets.Inputs.Checkbox, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.Checkbox =
+      let mutable copy = this
+      copy.HitSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline labelColor
       (this: Goo.Widgets.Inputs.Checkbox, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.Checkbox =
       let mutable copy = this
       copy.LabelColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline labelFontSize
+      (this: Goo.Widgets.Inputs.Checkbox, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.Checkbox =
+      let mutable copy = this
+      copy.LabelFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline labelFontWeight
+      (this: Goo.Widgets.Inputs.Checkbox, [<Struct>] ?value: int)
+      : Goo.Widgets.Inputs.Checkbox =
+      let mutable copy = this
+      copy.LabelFontWeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1607,6 +2485,22 @@ module Widgets =
       : Goo.Widgets.Inputs.Checkbox =
       let mutable copy = this
       copy.MarkColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline markSize
+      (this: Goo.Widgets.Inputs.Checkbox, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.Checkbox =
+      let mutable copy = this
+      copy.MarkSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline size
+      (this: Goo.Widgets.Inputs.Checkbox, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.Checkbox =
+      let mutable copy = this
+      copy.Size <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1633,6 +2527,30 @@ module Widgets =
       : Goo.Widgets.Inputs.ComboBoxInput =
       let mutable copy = this
       copy.Open <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline popupHeight
+      (this: Goo.Widgets.Inputs.ComboBoxInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.ComboBoxInput =
+      let mutable copy = this
+      copy.PopupHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline rowHeight
+      (this: Goo.Widgets.Inputs.ComboBoxInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.ComboBoxInput =
+      let mutable copy = this
+      copy.RowHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.ComboBoxInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.ComboBoxInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -1684,6 +2602,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline popupWidth
+      (this: Goo.Widgets.Inputs.DatePickerInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.DatePickerInput =
+      let mutable copy = this
+      copy.PopupWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline today
       (
         this: Goo.Widgets.Inputs.DatePickerInput,
@@ -1701,6 +2627,134 @@ module Widgets =
       ) : Goo.Widgets.Inputs.DatePickerInput =
       let mutable copy = this
       copy.Value <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.DatePickerInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.DatePickerInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type FindBarExtensions =
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.FindBar, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.FindBar =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type FormFieldExtensions =
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.FormField, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.FormField =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type FormSectionExtensions =
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.FormSection, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.FormSection =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type NumberInputInputExtensions =
+    [<Extension>]
+    static member inline maximum
+      (this: Goo.Widgets.Inputs.NumberInputInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.NumberInputInput =
+      let mutable copy = this
+      copy.Maximum <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minimum
+      (this: Goo.Widgets.Inputs.NumberInputInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.NumberInputInput =
+      let mutable copy = this
+      copy.Minimum <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline pageStep
+      (this: Goo.Widgets.Inputs.NumberInputInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.NumberInputInput =
+      let mutable copy = this
+      copy.PageStep <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline showSpinButtons
+      (this: Goo.Widgets.Inputs.NumberInputInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Inputs.NumberInputInput =
+      let mutable copy = this
+      copy.ShowSpinButtons <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline step
+      (this: Goo.Widgets.Inputs.NumberInputInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.NumberInputInput =
+      let mutable copy = this
+      copy.Step <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.NumberInputInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.NumberInputInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type RadioGroupInputExtensions =
+    [<Extension>]
+    static member inline orientation
+      (
+        this: Goo.Widgets.Inputs.RadioGroupInput,
+        [<Struct>] ?value: Goo.AccessibilityOrientation
+      ) : Goo.Widgets.Inputs.RadioGroupInput =
+      let mutable copy = this
+      copy.Orientation <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type RatingControlInputExtensions =
+    [<Extension>]
+    static member inline maximum
+      (this: Goo.Widgets.Inputs.RatingControlInput, [<Struct>] ?value: int)
+      : Goo.Widgets.Inputs.RatingControlInput =
+      let mutable copy = this
+      copy.Maximum <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline step
+      (this: Goo.Widgets.Inputs.RatingControlInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.RatingControlInput =
+      let mutable copy = this
+      copy.Step <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (
+        this: Goo.Widgets.Inputs.RatingControlInput,
+        [<Struct>] ?value: Goo.Length
+      ) : Goo.Widgets.Inputs.RatingControlInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -1723,7 +2777,7 @@ module Widgets =
 
     [<Extension>]
     static member inline height
-      (this: Goo.Widgets.Inputs.SearchList, [<Struct>] ?value: float)
+      (this: Goo.Widgets.Inputs.SearchList, [<Struct>] ?value: Goo.Length)
       : Goo.Widgets.Inputs.SearchList =
       let mutable copy = this
       copy.Height <- ValueOption.toNullable value
@@ -1746,6 +2800,16 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline scrollbarVisibilityY
+      (
+        this: Goo.Widgets.Inputs.SearchList,
+        [<Struct>] ?value: Goo.ScrollbarVisibility
+      ) : Goo.Widgets.Inputs.SearchList =
+      let mutable copy = this
+      copy.ScrollbarVisibilityY <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline selectedColor
       (this: Goo.Widgets.Inputs.SearchList, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.SearchList =
@@ -1763,7 +2827,7 @@ module Widgets =
 
     [<Extension>]
     static member inline width
-      (this: Goo.Widgets.Inputs.SearchList, [<Struct>] ?value: float)
+      (this: Goo.Widgets.Inputs.SearchList, [<Struct>] ?value: Goo.Length)
       : Goo.Widgets.Inputs.SearchList =
       let mutable copy = this
       copy.Width <- ValueOption.toNullable value
@@ -1771,6 +2835,14 @@ module Widgets =
 
   [<Extension; Sealed>]
   type SliderInputExtensions =
+    [<Extension>]
+    static member inline backgroundColor
+      (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Inputs.SliderInput =
+      let mutable copy = this
+      copy.BackgroundColor <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline disabledOpacity
       (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: float)
@@ -1796,11 +2868,27 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.SliderInput =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline labelColor
       (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.SliderInput =
       let mutable copy = this
       copy.LabelColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline labelFontSize
+      (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.SliderInput =
+      let mutable copy = this
+      copy.LabelFontSize <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1860,6 +2948,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline thumbSize
+      (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.SliderInput =
+      let mutable copy = this
+      copy.ThumbSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline trackColor
       (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.SliderInput =
@@ -1876,11 +2972,27 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline trackThickness
+      (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.SliderInput =
+      let mutable copy = this
+      copy.TrackThickness <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline valueColor
       (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.SliderInput =
       let mutable copy = this
       copy.ValueColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline valueFontSize
+      (this: Goo.Widgets.Inputs.SliderInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.SliderInput =
+      let mutable copy = this
+      copy.ValueFontSize <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -1926,11 +3038,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Inputs.Stepper, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.Stepper =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Inputs.Stepper, [<Struct>] ?value: int)
+      : Goo.Widgets.Inputs.Stepper =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline gap
       (this: Goo.Widgets.Inputs.Stepper, [<Struct>] ?value: float)
       : Goo.Widgets.Inputs.Stepper =
       let mutable copy = this
       copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Inputs.Stepper, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.Stepper =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2040,11 +3176,19 @@ module Widgets =
       copy
 
     [<Extension>]
-    static member inline minimumHeight
-      (this: Goo.Widgets.Inputs.TextAreaInput, [<Struct>] ?value: float)
+    static member inline maxLength
+      (this: Goo.Widgets.Inputs.TextAreaInput, [<Struct>] ?value: int)
       : Goo.Widgets.Inputs.TextAreaInput =
       let mutable copy = this
-      copy.MinimumHeight <- ValueOption.toNullable value
+      copy.MaxLength <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minHeight
+      (this: Goo.Widgets.Inputs.TextAreaInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.TextAreaInput =
+      let mutable copy = this
+      copy.MinHeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2053,6 +3197,14 @@ module Widgets =
       : Goo.Widgets.Inputs.TextAreaInput =
       let mutable copy = this
       copy.TextColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline touchEditing
+      (this: Goo.Widgets.Inputs.TextAreaInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Inputs.TextAreaInput =
+      let mutable copy = this
+      copy.TouchEditing <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2098,6 +3250,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline contentDirection
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.Direction)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.ContentDirection <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline disabledBackgroundColor
       (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.TextField =
@@ -2111,6 +3271,22 @@ module Widgets =
       : Goo.Widgets.Inputs.TextField =
       let mutable copy = this
       copy.DisabledTextColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline entryHeight
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.EntryHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline errorFontSize
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.ErrorFontSize <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2130,6 +3306,22 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline gap
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline invalidColor
       (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.TextField =
@@ -2138,11 +3330,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline labelFontSize
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.LabelFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline labelFontWeight
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: int)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.LabelFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline labelTextTransform
       (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.TextTransform)
       : Goo.Widgets.Inputs.TextField =
       let mutable copy = this
       copy.LabelTextTransform <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline maxLength
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: int)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.MaxLength <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2162,11 +3378,27 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline textColor
       (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.TextField =
       let mutable copy = this
       copy.TextColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline touchEditing
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: bool)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.TouchEditing <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2190,6 +3422,62 @@ module Widgets =
       : Goo.Widgets.Inputs.TextField =
       let mutable copy = this
       copy.TransitionMs <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.TextField, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.TextField =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type TimePickerInputExtensions =
+    [<Extension>]
+    static member inline allowEmpty
+      (this: Goo.Widgets.Inputs.TimePickerInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Inputs.TimePickerInput =
+      let mutable copy = this
+      copy.AllowEmpty <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minuteIncrement
+      (this: Goo.Widgets.Inputs.TimePickerInput, [<Struct>] ?value: int)
+      : Goo.Widgets.Inputs.TimePickerInput =
+      let mutable copy = this
+      copy.MinuteIncrement <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline value
+      (
+        this: Goo.Widgets.Inputs.TimePickerInput,
+        [<Struct>] ?value: System.TimeOnly
+      ) : Goo.Widgets.Inputs.TimePickerInput =
+      let mutable copy = this
+      copy.Value <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.TimePickerInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.TimePickerInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ToggleGroupInputExtensions =
+    [<Extension>]
+    static member inline orientation
+      (
+        this: Goo.Widgets.Inputs.ToggleGroupInput,
+        [<Struct>] ?value: Goo.AccessibilityOrientation
+      ) : Goo.Widgets.Inputs.ToggleGroupInput =
+      let mutable copy = this
+      copy.Orientation <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -2253,6 +3541,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Inputs.ToggleSwitch, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.ToggleSwitch =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline offTrackColor
       (this: Goo.Widgets.Inputs.ToggleSwitch, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.ToggleSwitch =
@@ -2285,6 +3581,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline padding
+      (this: Goo.Widgets.Inputs.ToggleSwitch, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.ToggleSwitch =
+      let mutable copy = this
+      copy.Padding <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline thumbColor
       (this: Goo.Widgets.Inputs.ToggleSwitch, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Inputs.ToggleSwitch =
@@ -2298,6 +3602,14 @@ module Widgets =
       : Goo.Widgets.Inputs.ToggleSwitch =
       let mutable copy = this
       copy.ThumbRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline thumbSize
+      (this: Goo.Widgets.Inputs.ToggleSwitch, [<Struct>] ?value: float)
+      : Goo.Widgets.Inputs.ToggleSwitch =
+      let mutable copy = this
+      copy.ThumbSize <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2324,6 +3636,44 @@ module Widgets =
       : Goo.Widgets.Inputs.ToggleSwitch =
       let mutable copy = this
       copy.TransitionMs <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.ToggleSwitch, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.ToggleSwitch =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type TokenInputInputExtensions =
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Inputs.TokenInputInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.TokenInputInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type TouchTextEditingInputExtensions =
+    [<Extension>]
+    static member inline enabled
+      (this: Goo.Widgets.Inputs.TouchTextEditingInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Inputs.TouchTextEditingInput =
+      let mutable copy = this
+      copy.Enabled <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type TriggerMenuInputExtensions =
+    [<Extension>]
+    static member inline maxHeight
+      (this: Goo.Widgets.Inputs.TriggerMenuInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Inputs.TriggerMenuInput =
+      let mutable copy = this
+      copy.MaxHeight <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -2451,6 +3801,24 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
+  type KbdExtensions =
+    [<Extension>]
+    static member inline color
+      (this: Goo.Widgets.Kbd, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Kbd =
+      let mutable copy = this
+      copy.Color <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline keycaps
+      (this: Goo.Widgets.Kbd, [<Struct>] ?value: bool)
+      : Goo.Widgets.Kbd =
+      let mutable copy = this
+      copy.Keycaps <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
   type AppBarExtensions =
     [<Extension>]
     static member inline backgroundColor
@@ -2493,6 +3861,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.AppBar =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: float)
       : Goo.Widgets.Layout.AppBar =
@@ -2517,11 +3893,43 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline subtitleFontSize
+      (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.AppBar =
+      let mutable copy = this
+      copy.SubtitleFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline subtitleFontWeight
+      (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: int)
+      : Goo.Widgets.Layout.AppBar =
+      let mutable copy = this
+      copy.SubtitleFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline textColor
       (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Layout.AppBar =
       let mutable copy = this
       copy.TextColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline titleFontSize
+      (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.AppBar =
+      let mutable copy = this
+      copy.TitleFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline titleFontWeight
+      (this: Goo.Widgets.Layout.AppBar, [<Struct>] ?value: int)
+      : Goo.Widgets.Layout.AppBar =
+      let mutable copy = this
+      copy.TitleFontWeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2546,6 +3954,16 @@ module Widgets =
       : Goo.Widgets.Layout.AppBar =
       let mutable copy = this
       copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type CardExtensions =
+    [<Extension>]
+    static member inline padding
+      (this: Goo.Widgets.Layout.Card, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.Card =
+      let mutable copy = this
+      copy.Padding <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -2729,6 +4147,22 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Layout.Drawer, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.Drawer =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingVertical
+      (this: Goo.Widgets.Layout.Drawer, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.Drawer =
+      let mutable copy = this
+      copy.PaddingVertical <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline transitionEasing
       (this: Goo.Widgets.Layout.Drawer, [<Struct>] ?value: Goo.Easing)
       : Goo.Widgets.Layout.Drawer =
@@ -2744,14 +4178,38 @@ module Widgets =
       copy.TransitionMs <- ValueOption.toNullable value
       copy
 
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Layout.Drawer, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.Drawer =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
   [<Extension; Sealed>]
   type GridExtensions =
+    [<Extension>]
+    static member inline columnGap
+      (this: Goo.Widgets.Layout.Grid, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.Grid =
+      let mutable copy = this
+      copy.ColumnGap <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline height
       (this: Goo.Widgets.Layout.Grid, [<Struct>] ?value: Goo.Length)
       : Goo.Widgets.Layout.Grid =
       let mutable copy = this
       copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline rowGap
+      (this: Goo.Widgets.Layout.Grid, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.Grid =
+      let mutable copy = this
+      copy.RowGap <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2791,6 +4249,32 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
+  type HoverCardInputExtensions =
+    [<Extension>]
+    static member inline closeDelayMs
+      (this: Goo.Widgets.Layout.HoverCardInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.HoverCardInput =
+      let mutable copy = this
+      copy.CloseDelayMs <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline openDelayMs
+      (this: Goo.Widgets.Layout.HoverCardInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.HoverCardInput =
+      let mutable copy = this
+      copy.OpenDelayMs <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Layout.HoverCardInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.HoverCardInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
   type ListRowExtensions =
     [<Extension>]
     static member inline backgroundColor
@@ -2817,11 +4301,83 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline captionFontSize
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.CaptionFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline captionFontWeight
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: int)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.CaptionFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline contentGap
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.ContentGap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline gap
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline hoverBackgroundColor
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.HoverBackgroundColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minHeight
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.MinHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
       : Goo.Widgets.Layout.ListRow =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingHorizontal
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.PaddingHorizontal <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline paddingVertical
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.PaddingVertical <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline pressedBackgroundColor
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.PressedBackgroundColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2841,11 +4397,35 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline showActionsOnHover
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: bool)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.ShowActionsOnHover <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline textColor
       (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Layout.ListRow =
       let mutable copy = this
       copy.TextColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline titleFontSize
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.TitleFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline titleFontWeight
+      (this: Goo.Widgets.Layout.ListRow, [<Struct>] ?value: int)
+      : Goo.Widgets.Layout.ListRow =
+      let mutable copy = this
+      copy.TitleFontWeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -2882,6 +4462,14 @@ module Widgets =
 
   [<Extension; Sealed>]
   type MasterDetailExtensions =
+    [<Extension>]
+    static member inline backHeight
+      (this: Goo.Widgets.Layout.MasterDetail, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.MasterDetail =
+      let mutable copy = this
+      copy.BackHeight <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline backgroundColor
       (this: Goo.Widgets.Layout.MasterDetail, [<Struct>] ?value: Goo.Color)
@@ -2920,6 +4508,14 @@ module Widgets =
       : Goo.Widgets.Layout.MasterDetail =
       let mutable copy = this
       copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline masterWidth
+      (this: Goo.Widgets.Layout.MasterDetail, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.MasterDetail =
+      let mutable copy = this
+      copy.MasterWidth <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -2988,8 +4584,23 @@ module Widgets =
       copy.Padding <- ValueOption.toNullable value
       copy
 
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Layout.ModalDialog, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.ModalDialog =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
   [<Extension; Sealed>]
   type PopoverInputExtensions =
+    [<Extension>]
+    static member inline anchorRect
+      (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.ElementRect) : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.AnchorRect <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline backgroundColor
       (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.Color)
@@ -3023,11 +4634,53 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline maxHeight
+      (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.MaxHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline maxWidth
+      (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.MaxWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline minWidth
+      (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.MinWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline padding
       (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: float)
       : Goo.Widgets.Layout.PopoverInput =
       let mutable copy = this
       copy.Padding <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline scrollbarVisibilityY
+      (
+        this: Goo.Widgets.Layout.PopoverInput,
+        [<Struct>] ?value: Goo.ScrollbarVisibility
+      ) : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.ScrollbarVisibilityY <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline takeFocus
+      (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.TakeFocus <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3046,11 +4699,29 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.PopoverInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline windowPoint
       (this: Goo.Widgets.Layout.PopoverInput, [<Struct>] ?value: Goo.Point)
       : Goo.Widgets.Layout.PopoverInput =
       let mutable copy = this
       copy.WindowPoint <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type PropertyGridExtensions =
+    [<Extension>]
+    static member inline labelWidth
+      (this: Goo.Widgets.Layout.PropertyGrid, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.PropertyGrid =
+      let mutable copy = this
+      copy.LabelWidth <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -3096,11 +4767,43 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline labelFontSize
+      (this: Goo.Widgets.Layout.SectionHeader, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.SectionHeader =
+      let mutable copy = this
+      copy.LabelFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline labelFontWeight
+      (this: Goo.Widgets.Layout.SectionHeader, [<Struct>] ?value: int)
+      : Goo.Widgets.Layout.SectionHeader =
+      let mutable copy = this
+      copy.LabelFontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline metaColor
       (this: Goo.Widgets.Layout.SectionHeader, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Layout.SectionHeader =
       let mutable copy = this
       copy.MetaColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline metaFontSize
+      (this: Goo.Widgets.Layout.SectionHeader, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.SectionHeader =
+      let mutable copy = this
+      copy.MetaFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline metaFontWeight
+      (this: Goo.Widgets.Layout.SectionHeader, [<Struct>] ?value: int)
+      : Goo.Widgets.Layout.SectionHeader =
+      let mutable copy = this
+      copy.MetaFontWeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3143,6 +4846,32 @@ module Widgets =
       : Goo.Widgets.Layout.SectionHeader =
       let mutable copy = this
       copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type SettingsLayoutInputExtensions =
+    [<Extension>]
+    static member inline labelWidth
+      (this: Goo.Widgets.Layout.SettingsLayoutInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.SettingsLayoutInput =
+      let mutable copy = this
+      copy.LabelWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline narrowWidth
+      (this: Goo.Widgets.Layout.SettingsLayoutInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.SettingsLayoutInput =
+      let mutable copy = this
+      copy.NarrowWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline sidebarWidth
+      (this: Goo.Widgets.Layout.SettingsLayoutInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.SettingsLayoutInput =
+      let mutable copy = this
+      copy.SidebarWidth <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -3229,6 +4958,22 @@ module Widgets =
       : Goo.Widgets.Layout.WindowChrome =
       let mutable copy = this
       copy.ControlColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline controlWidth
+      (this: Goo.Widgets.Layout.WindowChrome, [<Struct>] ?value: float)
+      : Goo.Widgets.Layout.WindowChrome =
+      let mutable copy = this
+      copy.ControlWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Layout.WindowChrome, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Layout.WindowChrome =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3322,6 +5067,30 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Media.AsyncImage, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.AsyncImage =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Media.AsyncImage, [<Struct>] ?value: int)
+      : Goo.Widgets.Media.AsyncImage =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Media.AsyncImage, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Media.AsyncImage =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Media.AsyncImage, [<Struct>] ?value: float)
       : Goo.Widgets.Media.AsyncImage =
@@ -3360,6 +5129,14 @@ module Widgets =
       copy.TransitionMs <- ValueOption.toNullable value
       copy
 
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Media.AsyncImage, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Media.AsyncImage =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
   [<Extension; Sealed>]
   type AvatarExtensions =
     [<Extension>]
@@ -3387,6 +5164,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline borderWidth
+      (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.BorderWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline fit
       (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: Goo.ImageFit)
       : Goo.Widgets.Media.Avatar =
@@ -3395,11 +5180,61 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline fontSize
+      (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: int)
+      : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline nameTone
+      (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: Goo.Widgets.Tone)
+      : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.NameTone <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline opacity
       (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: float)
       : Goo.Widgets.Media.Avatar =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline presence
+      (
+        this: Goo.Widgets.Media.Avatar,
+        [<Struct>] ?value: Goo.Widgets.Feedback.StatusState
+      ) : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.Presence <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline ringColor
+      (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.RingColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline size
+      (this: Goo.Widgets.Media.Avatar, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.Avatar =
+      let mutable copy = this
+      copy.Size <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3419,6 +5254,32 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
+  type AvatarGroupExtensions =
+    [<Extension>]
+    static member inline max
+      (this: Goo.Widgets.Media.AvatarGroup, [<Struct>] ?value: int)
+      : Goo.Widgets.Media.AvatarGroup =
+      let mutable copy = this
+      copy.Max <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline overlap
+      (this: Goo.Widgets.Media.AvatarGroup, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.AvatarGroup =
+      let mutable copy = this
+      copy.Overlap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline size
+      (this: Goo.Widgets.Media.AvatarGroup, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.AvatarGroup =
+      let mutable copy = this
+      copy.Size <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
   type MediaCardExtensions =
     [<Extension>]
     static member inline backgroundColor
@@ -3434,6 +5295,14 @@ module Widgets =
       : Goo.Widgets.Media.MediaCard =
       let mutable copy = this
       copy.BorderRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline contentHeight
+      (this: Goo.Widgets.Media.MediaCard, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.MediaCard =
+      let mutable copy = this
+      copy.ContentHeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3469,11 +5338,43 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline supportingFontSize
+      (this: Goo.Widgets.Media.MediaCard, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.MediaCard =
+      let mutable copy = this
+      copy.SupportingFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline thumbnailHeight
+      (this: Goo.Widgets.Media.MediaCard, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.MediaCard =
+      let mutable copy = this
+      copy.ThumbnailHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline titleColor
       (this: Goo.Widgets.Media.MediaCard, [<Struct>] ?value: Goo.Color)
       : Goo.Widgets.Media.MediaCard =
       let mutable copy = this
       copy.TitleColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline titleFontSize
+      (this: Goo.Widgets.Media.MediaCard, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.MediaCard =
+      let mutable copy = this
+      copy.TitleFontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Media.MediaCard, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Media.MediaCard =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
@@ -3498,6 +5399,14 @@ module Widgets =
       (this: Goo.Widgets.Media.MediaTransportInput, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Media.MediaTransportInput =
       let mutable copy = this
       copy.ActionHoverBackgroundColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline actionSize
+      (this: Goo.Widgets.Media.MediaTransportInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.MediaTransportInput =
+      let mutable copy = this
+      copy.ActionSize <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3578,6 +5487,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline primaryActionSize
+      (this: Goo.Widgets.Media.MediaTransportInput, [<Struct>] ?value: float)
+      : Goo.Widgets.Media.MediaTransportInput =
+      let mutable copy = this
+      copy.PrimaryActionSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline primaryActionTextColor
       (this: Goo.Widgets.Media.MediaTransportInput, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Media.MediaTransportInput =
       let mutable copy = this
@@ -3609,6 +5526,40 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
+  type CommandItemExtensions =
+    [<Extension>]
+    static member inline shortcut
+      (
+        this: Goo.Widgets.Navigation.CommandItem,
+        [<Struct>] ?value: Goo.KeyBinding
+      ) : Goo.Widgets.Navigation.CommandItem =
+      let mutable copy = this
+      copy.Shortcut <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type CommandPaletteInputExtensions =
+    [<Extension>]
+    static member inline height
+      (
+        this: Goo.Widgets.Navigation.CommandPaletteInput,
+        [<Struct>] ?value: Goo.Length
+      ) : Goo.Widgets.Navigation.CommandPaletteInput =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline width
+      (
+        this: Goo.Widgets.Navigation.CommandPaletteInput,
+        [<Struct>] ?value: Goo.Length
+      ) : Goo.Widgets.Navigation.CommandPaletteInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
   type MenuInputExtensions =
     [<Extension>]
     static member inline dismissOnActivate
@@ -3616,6 +5567,14 @@ module Widgets =
       : Goo.Widgets.Navigation.MenuInput =
       let mutable copy = this
       copy.DismissOnActivate <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline maxHeight
+      (this: Goo.Widgets.Navigation.MenuInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Navigation.MenuInput =
+      let mutable copy = this
+      copy.MaxHeight <- ValueOption.toNullable value
       copy
 
     [<Extension>]
@@ -3639,6 +5598,14 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline width
+      (this: Goo.Widgets.Navigation.MenuInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Navigation.MenuInput =
+      let mutable copy = this
+      copy.Width <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline windowPoint
       (this: Goo.Widgets.Navigation.MenuInput, [<Struct>] ?value: Goo.Point)
       : Goo.Widgets.Navigation.MenuInput =
@@ -3647,18 +5614,78 @@ module Widgets =
       copy
 
   [<Extension; Sealed>]
-  type NavigationRailExtensions =
+  type MenuItemExtensions =
+    [<Extension>]
+    static member inline shortcut
+      (this: Goo.Widgets.Navigation.MenuItem, [<Struct>] ?value: Goo.KeyBinding)
+      : Goo.Widgets.Navigation.MenuItem =
+      let mutable copy = this
+      copy.Shortcut <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type NavigationRailInputExtensions =
+    [<Extension>]
+    static member inline activeMarker
+      (this: Goo.Widgets.Navigation.NavigationRailInput, [<Struct>] ?value: bool) : Goo.Widgets.Navigation.NavigationRailInput =
+      let mutable copy = this
+      copy.ActiveMarker <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline backgroundColor
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: Goo.Color
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.BackgroundColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
+    static member inline collapsedWidth
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
+      let mutable copy = this
+      copy.CollapsedWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline expandedWidth
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
+      let mutable copy = this
+      copy.ExpandedWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontSize
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
+      let mutable copy = this
+      copy.FontSize <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline fontWeight
+      (this: Goo.Widgets.Navigation.NavigationRailInput, [<Struct>] ?value: int)
+      : Goo.Widgets.Navigation.NavigationRailInput =
+      let mutable copy = this
+      copy.FontWeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline gap
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: float)
-      : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.Gap <- ValueOption.toNullable value
       copy
@@ -3666,76 +5693,109 @@ module Widgets =
     [<Extension>]
     static member inline height
       (
-        this: Goo.Widgets.Navigation.NavigationRail,
+        this: Goo.Widgets.Navigation.NavigationRailInput,
         [<Struct>] ?value: Goo.Length
-      ) : Goo.Widgets.Navigation.NavigationRail =
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.Height <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline hoverBackgroundColor
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: Goo.Color
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.HoverBackgroundColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline itemBackgroundColor
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: Goo.Color
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.ItemBackgroundColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline itemBorderRadius
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: float)
-      : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.ItemBorderRadius <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline itemGap
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: float)
-      : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.ItemGap <- ValueOption.toNullable value
       copy
 
     [<Extension>]
+    static member inline itemHeight
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
+      let mutable copy = this
+      copy.ItemHeight <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline itemPaddingHorizontal
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: float)
-      : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.ItemPaddingHorizontal <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline opacity
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: float)
-      : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: float
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.Opacity <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline selectedBackgroundColor
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: Goo.Color
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.SelectedBackgroundColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline selectedTextColor
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: Goo.Color
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.SelectedTextColor <- ValueOption.toNullable value
       copy
 
     [<Extension>]
     static member inline textColor
-      (this: Goo.Widgets.Navigation.NavigationRail, [<Struct>] ?value: Goo.Color) : Goo.Widgets.Navigation.NavigationRail =
+      (
+        this: Goo.Widgets.Navigation.NavigationRailInput,
+        [<Struct>] ?value: Goo.Color
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.TextColor <- ValueOption.toNullable value
       copy
@@ -3743,15 +5803,23 @@ module Widgets =
     [<Extension>]
     static member inline transform
       (
-        this: Goo.Widgets.Navigation.NavigationRail,
+        this: Goo.Widgets.Navigation.NavigationRailInput,
         [<Struct>] ?value: Goo.PanelTransform
-      ) : Goo.Widgets.Navigation.NavigationRail =
+      ) : Goo.Widgets.Navigation.NavigationRailInput =
       let mutable copy = this
       copy.Transform <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]
   type TabBarInputExtensions =
+    [<Extension>]
+    static member inline height
+      (this: Goo.Widgets.Navigation.TabBarInput, [<Struct>] ?value: Goo.Length)
+      : Goo.Widgets.Navigation.TabBarInput =
+      let mutable copy = this
+      copy.Height <- ValueOption.toNullable value
+      copy
+
     [<Extension>]
     static member inline itemHeight
       (this: Goo.Widgets.Navigation.TabBarInput, [<Struct>] ?value: float)
@@ -3761,9 +5829,131 @@ module Widgets =
       copy
 
     [<Extension>]
+    static member inline showIndicator
+      (this: Goo.Widgets.Navigation.TabBarInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Navigation.TabBarInput =
+      let mutable copy = this
+      copy.ShowIndicator <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline width
       (this: Goo.Widgets.Navigation.TabBarInput, [<Struct>] ?value: Goo.Length)
       : Goo.Widgets.Navigation.TabBarInput =
       let mutable copy = this
       copy.Width <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type RovingFocusExtensions =
+    [<Extension>]
+    static member inline orientation
+      (
+        this: Goo.Widgets.RovingFocus,
+        [<Struct>] ?value: Goo.AccessibilityOrientation
+      ) : Goo.Widgets.RovingFocus =
+      let mutable copy = this
+      copy.Orientation <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline wrap
+      (this: Goo.Widgets.RovingFocus, [<Struct>] ?value: bool)
+      : Goo.Widgets.RovingFocus =
+      let mutable copy = this
+      copy.Wrap <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ThemeExtensions =
+    [<Extension>]
+    static member inline controlRadius
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: float)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.ControlRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline glassColor
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.GlassColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline panelRadius
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: float)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.PanelRadius <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline radiusLg
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: float)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.RadiusLg <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline radiusMd
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: float)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.RadiusMd <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline radiusSm
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: float)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.RadiusSm <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline radiusXl
+      (this: Goo.Widgets.Theme, [<Struct>] ?value: float)
+      : Goo.Widgets.Theme =
+      let mutable copy = this
+      copy.RadiusXl <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type ThemeScopeExtensions =
+    [<Extension>]
+    static member inline density
+      (this: Goo.Widgets.ThemeScope, [<Struct>] ?value: Goo.Widgets.Density)
+      : Goo.Widgets.ThemeScope =
+      let mutable copy = this
+      copy.Density <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline value
+      (this: Goo.Widgets.ThemeScope, [<Struct>] ?value: Goo.Widgets.Theme)
+      : Goo.Widgets.ThemeScope =
+      let mutable copy = this
+      copy.Value <- ValueOption.toNullable value
+      copy
+
+  [<Extension; Sealed>]
+  type TypographyExtensions =
+    [<Extension>]
+    static member inline color
+      (this: Goo.Widgets.Typography, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Typography =
+      let mutable copy = this
+      copy.Color <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline headingLevel
+      (this: Goo.Widgets.Typography, [<Struct>] ?value: int)
+      : Goo.Widgets.Typography =
+      let mutable copy = this
+      copy.HeadingLevel <- ValueOption.toNullable value
       copy

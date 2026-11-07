@@ -5,6 +5,7 @@ open Goo
 open Goo.Widgets.Layout
 open GooRes.Types
 open FunGoo.Children
+open FunGoo.Interop
 open FunGoo.Widgets
 open Mibo.Adaptive
 
@@ -30,8 +31,8 @@ let inline row
     ListRow(
       Title = song.Name,
       Selected = isSelected,
-      MinHeight = 36.0,
-      PaddingVertical = 8.0
+      MinHeight = Nullable(lengthFromFloat 36.0),
+      PaddingVertical = Nullable 8.0
     )
       .backgroundColor(Color.Rgb(24, 31, 43))
       .selectedBackgroundColor(Color.Rgb(40, 52, 74))

@@ -59,9 +59,9 @@ let inline create
                 OnPlayPause = onPlayPause,
                 OnNext = onNext,
                 OnPrevious = onPrevious,
-                OnSeekCommitted = onSeekCommitted,
-                OnVolumeChanged = onVolumeChanged,
-                OnVolumeCommitted = onVolumeChanged
+                OnPositionCommit = onSeekCommitted,
+                OnVolumeChange = onVolumeChanged,
+                OnVolumeCommit = onVolumeChanged
               )
             )
           )

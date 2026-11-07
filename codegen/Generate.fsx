@@ -9,7 +9,7 @@
 #r "nuget: Fabulous.AST, 2.0.0-pre08"
 #r "nuget: Hexa.NET.SDL3, 1.2.17"
 #r "nuget: HexaGen.Runtime, 1.1.24"
-#r "nuget: Unicode.Bidi, 0.3.18"
+#r "nuget: Unicode.Bidi, 0.4.0"
 
 #I __SOURCE_DIRECTORY__
 #r "../Goo/Goo/bin/Debug/net10.0/Yoga.Net.dll"
@@ -105,19 +105,28 @@ let setterGroups =
 
 /// Public Try* methods with exactly one out parameter, excluding Deconstruct-style
 /// compiler sugar. Returns (type, method, outParameter).
+/// Generic type definitions are skipped (e.g. Context<T>.TryRead): their type
+/// parameters have no FullName and FunGoo extensions cannot declare new F#
+/// type parameters for them.
 let tryMethods =
   exportedTypes
   |> Array.collect(fun t ->
-    t.GetMethods(allFlags)
-    |> Array.choose(fun m ->
-      if m.IsSpecialName || not(m.Name.StartsWith("Try")) then
-        None
-      else
-        let outs = m.GetParameters() |> Array.filter(fun p -> p.IsOut)
+    if t.IsGenericTypeDefinition then
+      [||]
+    else
+      t.GetMethods(allFlags)
+      |> Array.choose(fun m ->
+        if m.IsSpecialName || not(m.Name.StartsWith("Try")) then
+          None
+        else
+          let outs = m.GetParameters() |> Array.filter(fun p -> p.IsOut)
 
-        match outs with
-        | [| out |] -> Some(t, m, out)
-        | _ -> None))
+          match outs with
+          | [| out |] when
+            not(out.ParameterType.GetElementType().IsGenericParameter)
+            ->
+            Some(t, m, out)
+          | _ -> None))
   |> Array.sortBy(fun (t, m, _) -> t.Name, m.Name)
 
 /// Implicit conversion operators across the surface: (fromType, toType).
@@ -282,6 +291,17 @@ let rec fsType(t: Type) =
 
 // ---------------------------------------------------------------------------
 // Emission: Fabulous.AST widgets
+
+// The namespace-qualified F# identifier of one Goo type. Goo 0.16.0 moved the
+// former optional packages into the assembly under sub-namespaces (e.g.
+// Goo.SpellCheck.SpellCheckSession), so the bare "Goo.{Name}" prefix no
+// longer resolves for every setter type.
+let gooTypeOf(t: Type) : string =
+  if isNull t.FullName then
+    "Goo." + t.Name.Split('`')[0]
+  else
+    t.FullName.Replace('+', '.')
+
 // ---------------------------------------------------------------------------
 
 let headerFrom source moduleName (nowarnCodes: string list) =
@@ -489,10 +509,7 @@ let childrenMember
     [
       ParenPat(
         TuplePat(
-          [
-            ParameterPat("this", LongIdent($"Goo.{t.Name}"))
-            childrenParameter
-          ]
+          [ ParameterPat("this", LongIdent(gooTypeOf t)); childrenParameter ]
         )
       )
     ],
@@ -506,7 +523,7 @@ let childrenMember
       )
       OtherExpr("this")
     ],
-    $"Goo.{t.Name}"
+    gooTypeOf t
   )
   |> _.attribute(Attribute("Extension"))
   |> _.toStatic()
@@ -532,8 +549,8 @@ let childrenFsiType(t: Type) =
 
     fsiMemberSlot
       "Children"
-      [ SignatureParameter("this", LongIdent($"Goo.{t.Name}")); parameter ]
-      (LongIdent($"Goo.{t.Name}"))
+      [ SignatureParameter("this", LongIdent(gooTypeOf t)); parameter ]
+      (LongIdent(gooTypeOf t))
 
   TypeDefn($"{t.Name}Extensions") {
     slot (AppPrefix("seq", "Goo.Blob")) ValueNone
@@ -552,7 +569,7 @@ let setterMember(t: Type, p: PropertyInfo) =
       ParenPat(
         TuplePat(
           [
-            ParameterPat("this", LongIdent($"Goo.{t.Name}"))
+            ParameterPat("this", LongIdent(gooTypeOf t))
             ParameterPat(camelCase p.Name, LongIdent(fsType p.PropertyType))
           ]
         )
@@ -562,7 +579,7 @@ let setterMember(t: Type, p: PropertyInfo) =
       OtherExpr(SetExpr($"this.{p.Name}", camelCase p.Name))
       OtherExpr("this")
     ],
-    $"Goo.{t.Name}"
+    gooTypeOf t
   )
   |> _.attribute(Attribute("Extension"))
   |> _.toStatic()
@@ -577,10 +594,10 @@ let setterFsiType(t: Type, props: PropertyInfo[]) =
       fsiMemberSlot
         p.Name
         [
-          SignatureParameter("this", LongIdent($"Goo.{t.Name}"))
+          SignatureParameter("this", LongIdent(gooTypeOf t))
           SignatureParameter(camelCase p.Name, fsiType p.PropertyType)
         ]
-        (LongIdent($"Goo.{t.Name}"))
+        (LongIdent(gooTypeOf t))
   }
   |> _.attributes([ Attribute("Extension"); Attribute("Sealed") ])
 
@@ -606,7 +623,7 @@ let tryMember(t: Type, m: MethodInfo, out: ParameterInfo) =
     [
       ParenPat(
         TuplePat [
-          ParameterPat("this", LongIdent $"Goo.{t.Name}")
+          ParameterPat("this", LongIdent(gooTypeOf t))
 
           for p in normal do
             ParameterPat(p.Name, LongIdent(fsType p.ParameterType))
@@ -668,7 +685,7 @@ let staticTryFunction(t: Type, m: MethodInfo, out: ParameterInfo) =
       OtherExpr(
         IfThenElseExpr(
           AppExpr(
-            $"Goo.{plainName t}.{m.Name}",
+            $"{gooTypeOf t}.{m.Name}",
             [ ParenExpr(TupleExpr callArguments) ]
           ),
           "ValueSome value",
@@ -745,7 +762,7 @@ let tryFsiSlot(t: Type, m: MethodInfo, _) =
   fsiMemberSlot
     m.Name
     [
-      yield SignatureParameter("this", LongIdent($"Goo.{t.Name}"))
+      yield SignatureParameter("this", LongIdent(gooTypeOf t))
 
       for p in normal do
         yield SignatureParameter(p.Name, fsiType p.ParameterType)

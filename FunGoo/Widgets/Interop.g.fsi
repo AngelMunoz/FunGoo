@@ -30,6 +30,10 @@ module Interop =
       space: Goo.TextCoordinateSpace ->
         Goo.TextPosition voption
 
+    [<Extension>]
+    static member inline TryGetTextStyle:
+      this: Goo.Style -> Goo.TextStyleProperties voption
+
   val inline tryCreate:
     values: System.Collections.Generic.IReadOnlyList<string> ->
       Goo.NativeFileDrag voption

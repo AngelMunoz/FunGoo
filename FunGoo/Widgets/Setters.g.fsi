@@ -7,6 +7,13 @@ module Setters =
   open System.Runtime.CompilerServices
 
   [<Extension; Sealed>]
+  type RichTextClipboardExtensions =
+    [<Extension>]
+    static member inline ReadOnly:
+      this: Goo.RichText.RichTextClipboard * readOnly: bool ->
+        Goo.RichText.RichTextClipboard
+
+  [<Extension; Sealed>]
   type ShaderEffectExtensions =
     [<Extension>]
     static member inline ElapsedSeconds:
@@ -15,6 +22,18 @@ module Setters =
     [<Extension>]
     static member inline Playing:
       this: Goo.ShaderEffect * playing: bool -> Goo.ShaderEffect
+
+  [<Extension; Sealed>]
+  type SpellCheckSessionExtensions =
+    [<Extension>]
+    static member inline Language:
+      this: Goo.SpellCheck.SpellCheckSession * language: string ->
+        Goo.SpellCheck.SpellCheckSession
+
+    [<Extension>]
+    static member inline ReadOnly:
+      this: Goo.SpellCheck.SpellCheckSession * readOnly: bool ->
+        Goo.SpellCheck.SpellCheckSession
 
   [<Extension; Sealed>]
   type TextCommandEventExtensions =
@@ -58,6 +77,25 @@ module Setters =
       this: Goo.TextEditorController * useTabs: bool -> Goo.TextEditorController
 
   [<Extension; Sealed>]
+  type VirtualOutputExtensions =
+    [<Extension>]
+    static member inline AnchorKey:
+      this: Goo.VirtualOutput * anchorKey: string -> Goo.VirtualOutput
+
+    [<Extension>]
+    static member inline ContentSize:
+      this: Goo.VirtualOutput * contentSize: Goo.LayoutSize -> Goo.VirtualOutput
+
+    [<Extension>]
+    static member inline ItemCount:
+      this: Goo.VirtualOutput * itemCount: int -> Goo.VirtualOutput
+
+    [<Extension>]
+    static member inline ScrollOffset:
+      this: Goo.VirtualOutput * scrollOffset: Nullable<Goo.Point> ->
+        Goo.VirtualOutput
+
+  [<Extension; Sealed>]
   type WindowExtensions =
     [<Extension>]
     static member inline AccessibilityAdapter:
@@ -65,20 +103,48 @@ module Setters =
         Goo.Window
 
     [<Extension>]
+    static member inline Backdrop:
+      this: Goo.Window * backdrop: Goo.WindowBackdrop -> Goo.Window
+
+    [<Extension>]
+    static member inline BackdropFallbackColor:
+      this: Goo.Window * backdropFallbackColor: Goo.Color -> Goo.Window
+
+    [<Extension>]
     static member inline Background:
       this: Goo.Window * background: Goo.Color -> Goo.Window
+
+    [<Extension>]
+    static member inline ContentUnderTitlebar:
+      this: Goo.Window * contentUnderTitlebar: bool -> Goo.Window
 
     [<Extension>]
     static member inline Decorated:
       this: Goo.Window * decorated: bool -> Goo.Window
 
     [<Extension>]
+    static member inline DragStartDistance:
+      this: Goo.Window * dragStartDistance: float32 -> Goo.Window
+
+    [<Extension>]
     static member inline Focusable:
       this: Goo.Window * focusable: bool -> Goo.Window
 
     [<Extension>]
+    static member inline Foreground:
+      this: Goo.Window * foreground: Goo.Color -> Goo.Window
+
+    [<Extension>]
+    static member inline ForeignParentHandle:
+      this: Goo.Window * foreignParentHandle: string -> Goo.Window
+
+    [<Extension>]
     static member inline FramePacing:
       this: Goo.Window * framePacing: Goo.WindowFramePacing -> Goo.Window
+
+    [<Extension>]
+    static member inline FrameTheme:
+      this: Goo.Window * frameTheme: Goo.SystemTheme -> Goo.Window
 
     [<Extension>]
     static member inline Height: this: Goo.Window * height: int -> Goo.Window
@@ -86,6 +152,10 @@ module Setters =
     [<Extension>]
     static member inline InitiallyVisible:
       this: Goo.Window * initiallyVisible: bool -> Goo.Window
+
+    [<Extension>]
+    static member inline MacOSBackdrop:
+      this: Goo.Window * macOSBackdrop: Goo.MacOSBackdropOptions -> Goo.Window
 
     [<Extension>]
     static member inline MaxHeight:
@@ -145,7 +215,16 @@ module Setters =
       this: Goo.Window * transparent: bool -> Goo.Window
 
     [<Extension>]
+    static member inline UiScale:
+      this: Goo.Window * uiScale: float32 -> Goo.Window
+
+    [<Extension>]
     static member inline VSync: this: Goo.Window * vSync: bool -> Goo.Window
+
+    [<Extension>]
+    static member inline WaylandBackdrop:
+      this: Goo.Window * waylandBackdrop: Goo.WaylandBackdropOptions ->
+        Goo.Window
 
     [<Extension>]
     static member inline WheelScrollScale:
@@ -153,6 +232,11 @@ module Setters =
 
     [<Extension>]
     static member inline Width: this: Goo.Window * width: int -> Goo.Window
+
+    [<Extension>]
+    static member inline WindowsBackdrop:
+      this: Goo.Window * windowsBackdrop: Goo.WindowsBackdropOptions ->
+        Goo.Window
 
     [<Extension>]
     static member inline X: this: Goo.Window * x: int -> Goo.Window

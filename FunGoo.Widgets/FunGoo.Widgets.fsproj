@@ -17,13 +17,15 @@
   <ItemGroup>
     <Compile Include="Widgets.g.fsi" />
     <Compile Include="Widgets.g.fs" />
+    <Compile Include="Virtual.fsi" />
+    <Compile Include="Virtual.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Goo.Widgets comes from the published package; the goo-widgets
          submodule is a source reference used only by codegen/Generate.fsx. -->
-    <PackageReference Include="Goo.Widgets" Version="0.2.9" />
-    <PackageReference Include="Goo" Version="0.7.9" />
+    <PackageReference Include="Goo.Widgets" Version="0.19.3" />
+    <PackageReference Include="Goo" Version="0.28.3" />
     <None Include="../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 

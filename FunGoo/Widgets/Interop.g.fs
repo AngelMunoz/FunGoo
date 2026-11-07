@@ -53,6 +53,17 @@ module Interop =
       else
         ValueNone
 
+    [<Extension>]
+    static member inline TryGetTextStyle
+      (this: Goo.Style)
+      : Goo.TextStyleProperties voption =
+      let mutable value = Unchecked.defaultof<Goo.TextStyleProperties>
+
+      if this.TryGetTextStyle(&value) then
+        ValueSome value
+      else
+        ValueNone
+
   let inline tryCreate
     (values: System.Collections.Generic.IReadOnlyList<string>)
     : Goo.NativeFileDrag voption =

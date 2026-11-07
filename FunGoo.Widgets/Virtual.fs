@@ -4,6 +4,7 @@ module Virtual =
 
   open System.Collections.Generic
   open Goo
+  open Goo.Widgets.Data
 
   let inline create
     (items: IReadOnlyList<'T>)
@@ -12,7 +13,7 @@ module Virtual =
     (itemKey: 'T -> string)
     (itemBuilder: 'T -> Blob)
     : Blob =
-    Goo.``<Program>``.Virtual<'T>(
+    ``<Program>``.VirtualItems<'T>(
       items,
       itemWidth,
       itemHeight,

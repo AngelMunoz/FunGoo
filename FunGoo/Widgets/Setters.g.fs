@@ -7,6 +7,15 @@ module Setters =
   open System.Runtime.CompilerServices
 
   [<Extension; Sealed>]
+  type RichTextClipboardExtensions =
+    [<Extension>]
+    static member inline ReadOnly
+      (this: Goo.RichText.RichTextClipboard, readOnly: bool)
+      : Goo.RichText.RichTextClipboard =
+      this.ReadOnly <- readOnly
+      this
+
+  [<Extension; Sealed>]
   type ShaderEffectExtensions =
     [<Extension>]
     static member inline ElapsedSeconds
@@ -20,6 +29,22 @@ module Setters =
       (this: Goo.ShaderEffect, playing: bool)
       : Goo.ShaderEffect =
       this.Playing <- playing
+      this
+
+  [<Extension; Sealed>]
+  type SpellCheckSessionExtensions =
+    [<Extension>]
+    static member inline Language
+      (this: Goo.SpellCheck.SpellCheckSession, language: string)
+      : Goo.SpellCheck.SpellCheckSession =
+      this.Language <- language
+      this
+
+    [<Extension>]
+    static member inline ReadOnly
+      (this: Goo.SpellCheck.SpellCheckSession, readOnly: bool)
+      : Goo.SpellCheck.SpellCheckSession =
+      this.ReadOnly <- readOnly
       this
 
   [<Extension; Sealed>]
@@ -83,12 +108,56 @@ module Setters =
       this
 
   [<Extension; Sealed>]
+  type VirtualOutputExtensions =
+    [<Extension>]
+    static member inline AnchorKey
+      (this: Goo.VirtualOutput, anchorKey: string)
+      : Goo.VirtualOutput =
+      this.AnchorKey <- anchorKey
+      this
+
+    [<Extension>]
+    static member inline ContentSize
+      (this: Goo.VirtualOutput, contentSize: Goo.LayoutSize)
+      : Goo.VirtualOutput =
+      this.ContentSize <- contentSize
+      this
+
+    [<Extension>]
+    static member inline ItemCount
+      (this: Goo.VirtualOutput, itemCount: int)
+      : Goo.VirtualOutput =
+      this.ItemCount <- itemCount
+      this
+
+    [<Extension>]
+    static member inline ScrollOffset
+      (this: Goo.VirtualOutput, scrollOffset: Nullable<Goo.Point>)
+      : Goo.VirtualOutput =
+      this.ScrollOffset <- scrollOffset
+      this
+
+  [<Extension; Sealed>]
   type WindowExtensions =
     [<Extension>]
     static member inline AccessibilityAdapter
       (this: Goo.Window, accessibilityAdapter: Goo.AccessibilityAdapter)
       : Goo.Window =
       this.AccessibilityAdapter <- accessibilityAdapter
+      this
+
+    [<Extension>]
+    static member inline Backdrop
+      (this: Goo.Window, backdrop: Goo.WindowBackdrop)
+      : Goo.Window =
+      this.Backdrop <- backdrop
+      this
+
+    [<Extension>]
+    static member inline BackdropFallbackColor
+      (this: Goo.Window, backdropFallbackColor: Goo.Color)
+      : Goo.Window =
+      this.BackdropFallbackColor <- backdropFallbackColor
       this
 
     [<Extension>]
@@ -99,10 +168,24 @@ module Setters =
       this
 
     [<Extension>]
+    static member inline ContentUnderTitlebar
+      (this: Goo.Window, contentUnderTitlebar: bool)
+      : Goo.Window =
+      this.ContentUnderTitlebar <- contentUnderTitlebar
+      this
+
+    [<Extension>]
     static member inline Decorated
       (this: Goo.Window, decorated: bool)
       : Goo.Window =
       this.Decorated <- decorated
+      this
+
+    [<Extension>]
+    static member inline DragStartDistance
+      (this: Goo.Window, dragStartDistance: float32)
+      : Goo.Window =
+      this.DragStartDistance <- dragStartDistance
       this
 
     [<Extension>]
@@ -113,10 +196,31 @@ module Setters =
       this
 
     [<Extension>]
+    static member inline Foreground
+      (this: Goo.Window, foreground: Goo.Color)
+      : Goo.Window =
+      this.Foreground <- foreground
+      this
+
+    [<Extension>]
+    static member inline ForeignParentHandle
+      (this: Goo.Window, foreignParentHandle: string)
+      : Goo.Window =
+      this.ForeignParentHandle <- foreignParentHandle
+      this
+
+    [<Extension>]
     static member inline FramePacing
       (this: Goo.Window, framePacing: Goo.WindowFramePacing)
       : Goo.Window =
       this.FramePacing <- framePacing
+      this
+
+    [<Extension>]
+    static member inline FrameTheme
+      (this: Goo.Window, frameTheme: Goo.SystemTheme)
+      : Goo.Window =
+      this.FrameTheme <- frameTheme
       this
 
     [<Extension>]
@@ -129,6 +233,13 @@ module Setters =
       (this: Goo.Window, initiallyVisible: bool)
       : Goo.Window =
       this.InitiallyVisible <- initiallyVisible
+      this
+
+    [<Extension>]
+    static member inline MacOSBackdrop
+      (this: Goo.Window, macOSBackdrop: Goo.MacOSBackdropOptions)
+      : Goo.Window =
+      this.MacOSBackdrop <- macOSBackdrop
       this
 
     [<Extension>]
@@ -231,8 +342,22 @@ module Setters =
       this
 
     [<Extension>]
+    static member inline UiScale
+      (this: Goo.Window, uiScale: float32)
+      : Goo.Window =
+      this.UiScale <- uiScale
+      this
+
+    [<Extension>]
     static member inline VSync(this: Goo.Window, vSync: bool) : Goo.Window =
       this.VSync <- vSync
+      this
+
+    [<Extension>]
+    static member inline WaylandBackdrop
+      (this: Goo.Window, waylandBackdrop: Goo.WaylandBackdropOptions)
+      : Goo.Window =
+      this.WaylandBackdrop <- waylandBackdrop
       this
 
     [<Extension>]
@@ -245,6 +370,13 @@ module Setters =
     [<Extension>]
     static member inline Width(this: Goo.Window, width: int) : Goo.Window =
       this.Width <- width
+      this
+
+    [<Extension>]
+    static member inline WindowsBackdrop
+      (this: Goo.Window, windowsBackdrop: Goo.WindowsBackdropOptions)
+      : Goo.Window =
+      this.WindowsBackdrop <- windowsBackdrop
       this
 
     [<Extension>]
