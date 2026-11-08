@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Widgets:** New optional setter `handleColor` for the SplitPane divider color. Call it with a color to paint the divider, or with no argument to keep the theme border color.
+
+### Changed
+
+- **Core:** The Goo dependency is now 0.28.7 (was 0.28.3). Apps gain Goo's rendering and input fixes: focus rings stay inside rounded clipping parents, scrolling moves whole physical pixels without relayout, deferred virtual rows realize before the next render, element handles report clamped scroll offsets, VSync works on software Vulkan devices, and initial windows stay inside the display's usable area.
+- **Widgets:** The Goo.Widgets dependency is now 0.19.8 (was 0.19.3). Widgets gain inset row focus rings, content-sized Checkbox and RadioButton focus rings, a SplitPane divider drawn as a hover-highlighting theme-width line (`HandleSize` now sizes the pointer target), Banner dismiss buttons that stay inside their bounds, and tighter Markdown line spacing with content-sized list markers.
+- **Samples:** RaznorGoo moves to Goo 0.28.7.
+
 ## [0.5.0] - 2026-11-06
 
 ### Changed

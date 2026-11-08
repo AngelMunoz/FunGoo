@@ -3090,6 +3090,11 @@ module Widgets =
   [<Extension; Sealed>]
   type SplitPaneInputExtensions =
     [<Extension>]
+    static member inline handleColor:
+      this: Goo.Widgets.Layout.SplitPaneInput * [<Struct>] ?value: Goo.Color ->
+        Goo.Widgets.Layout.SplitPaneInput
+
+    [<Extension>]
     static member inline handleSize:
       this: Goo.Widgets.Layout.SplitPaneInput * [<Struct>] ?value: float ->
         Goo.Widgets.Layout.SplitPaneInput

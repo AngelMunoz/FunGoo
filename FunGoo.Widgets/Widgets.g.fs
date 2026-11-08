@@ -4877,6 +4877,14 @@ module Widgets =
   [<Extension; Sealed>]
   type SplitPaneInputExtensions =
     [<Extension>]
+    static member inline handleColor
+      (this: Goo.Widgets.Layout.SplitPaneInput, [<Struct>] ?value: Goo.Color)
+      : Goo.Widgets.Layout.SplitPaneInput =
+      let mutable copy = this
+      copy.HandleColor <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline handleSize
       (this: Goo.Widgets.Layout.SplitPaneInput, [<Struct>] ?value: float)
       : Goo.Widgets.Layout.SplitPaneInput =
