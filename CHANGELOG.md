@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-07
+
 ### Added
 
 - **Widgets:** New optional setter `handleColor` for the SplitPane divider color. Call it with a color to paint the divider, or with no argument to keep the theme border color.
