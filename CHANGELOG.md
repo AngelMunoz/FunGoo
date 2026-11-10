@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-09
+
 ### Changed
 
 - **Core:** **Breaking:** The Goo dependency is now 0.29.1 (was 0.28.7). Goo 0.29 removes `Goo.Tokens`, `Cell.MountSeeded`, and `Goo.Command` with `Button.Command` and `KeyBinding.Command`; apps that use those APIs must move to direct token values, `Cell.Mount`, and `OnClick` or `Action`. `Window.Post` now returns `bool`. Apps gain callback ownership fixes, so an input callback rebuilds the cell that made the content, and headless render support. The generated FunGoo setter, children, and interop surface is unchanged, so no FunGoo call site must change.
