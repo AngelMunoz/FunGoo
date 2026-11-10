@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Core:** **Breaking:** The Goo dependency is now 0.29.1 (was 0.28.7). Goo 0.29 removes `Goo.Tokens`, `Cell.MountSeeded`, and `Goo.Command` with `Button.Command` and `KeyBinding.Command`; apps that use those APIs must move to direct token values, `Cell.Mount`, and `OnClick` or `Action`. `Window.Post` now returns `bool`. Apps gain callback ownership fixes, so an input callback rebuilds the cell that made the content, and headless render support. The generated FunGoo setter, children, and interop surface is unchanged, so no FunGoo call site must change.
+- **Widgets:** The Goo.Widgets dependency is now 0.21.0 (was 0.19.8). Widgets gain theme depth shadows, a `TextField` handle for focus control, ComboBox popup padding, and crisp WindowChrome caption icons. The generated FunGoo.Widgets binding surface is unchanged, so no FunGoo.Widgets call site must change.
+- **Samples:** RaznorGoo moves to Goo 0.29.1.
+
 ## [0.6.0] - 2026-11-07
 
 ### Added
