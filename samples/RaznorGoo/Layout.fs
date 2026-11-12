@@ -1,16 +1,22 @@
 module GooRes.Layout
 
+open System
 open Goo
 open FunGoo.Children
 open FunGoo.Style
-open GooRes.Types
 open GooRes.Widgets
 open GooRes.Widgets.FilePicker
 
 // The root cell: static chrome plus the stateful cells. The chrome carries
 // no state, so a root rebuild only re-runs this build; the cells rebuild
 // themselves through their own events.
-let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
+let view(picker: FilePickerWidget, playlist: Cell, bottomBar: Cell) : Cell =
+  // Mount factories created once, beside the cells they build: a factory
+  // written inside `Build` would allocate a fresh closure every rebuild.
+  let pickerFactory = fun () -> picker.cell
+  let playlistFactory = fun () -> playlist
+  let bottomBarFactory = fun () -> bottomBar
+
   let middleView =
     Container(
       Key = "middle-view",
@@ -34,12 +40,10 @@ let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
           FlexShrink = 1.0,
           MinWidth = 0
         )
-          .Children(Cell.Mount<Cell>((fun () -> playlist), "playlist"))
+          .Children(Cell.Mount(playlistFactory, "playlist"))
       )
 
-  // Unkeyed mounts: the root children keep positional identity, and Goo
-  // rejects child lists that mix keyed and unkeyed siblings.
-  let bottomBarView = Cell.Mount<Cell>((fun () -> bottomBar), "bottom-bar")
+  let bottomBarView = Cell.Mount(bottomBarFactory, "bottom-bar")
 
   {
     new Cell() with
@@ -53,11 +57,11 @@ let view (picker: FilePickerWidget) (playlist: Cell) (bottomBar: Cell) : Cell =
           BackgroundColor = Color.Rgb(20, 27, 39)
         )
           .Children(
-            MenuBar.create {
-              onSelectFiles = fun _ -> picker.openPicker PickFiles
-              onSelectFolder = fun _ -> picker.openPicker PickFolder
-            },
-            picker.view(),
+            MenuBar.create(
+              (fun () -> picker.openPicker PickFiles),
+              (fun () -> picker.openPicker PickFolder)
+            ),
+            Cell.Mount(pickerFactory, "picker"),
             middleView,
             bottomBarView
           )

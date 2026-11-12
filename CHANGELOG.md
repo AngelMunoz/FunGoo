@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Samples:** RaznorGoo now follows the `goo-fsharp` skill shape: shared playback state lives in one store record read inside `Build` (no adaptive values), widget callbacks arrive as function parameters instead of record fields, dependencies flow through capability interfaces with a single UI marshaller, playback subscriptions go through the `IPlayback` worker interface instead of a loose function returned beside it, and the file picker is its own mounted cell so background loads no longer rebuild the whole window.
+
 ## [0.8.0] - 2026-11-11
 
 ### Changed

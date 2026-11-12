@@ -4,16 +4,10 @@ open System
 open Goo
 open Goo.Widgets.Layout
 open GooRes.Types
+open GooRes.Player
 open FunGoo.Children
 open FunGoo.Interop
 open FunGoo.Widgets
-open Mibo.Adaptive
-
-type MediaListProps = {
-  songs: alist<Song>
-  selected: int voption aval
-  onSelect: Song -> unit
-}
 
 let inline clickable
   (id: string, child: Blob, [<InlineIfLambda>] onClick: unit -> unit)
@@ -21,11 +15,12 @@ let inline clickable
   Container(Key = id, OnClick = fun _ -> onClick()).Children child
 
 let inline row
-  (song: Song)
-  (index: int)
-  (isSelected: bool)
-  ([<InlineIfLambda>] onSelect: Song -> unit)
-  : Blob =
+  (
+    song: Song,
+    index: int,
+    isSelected: bool,
+    [<InlineIfLambda>] onSelect: Song -> unit
+  ) : Blob =
   clickable(
     $"song-{index}",
     ListRow(
@@ -41,15 +36,13 @@ let inline row
     fun () -> onSelect song
   )
 
-// The playlist is one mounted cell: its build pulls the songs and the
-// selection from the long-lived sources in the props, and a row click
-// rebuilds it through the owner rule. Selecting a row only raises the
-// event; the parent decides what it means.
-let create(p: MediaListProps) : Cell = {
+// The playlist is one mounted cell: its build reads the player store, and a
+// row click rebuilds it through the owner rule. Selecting a row only raises
+// the event; the parent decides what it means.
+let create(player: PlayerState, onSelect: Song -> unit) : Cell = {
   new Cell() with
     override _.Build() : Blob =
-      let songs = AList.toList p.songs
-      let selected = AVal.getValue p.selected |> ValueOption.defaultValue -1
+      let selected = player.Selected |> ValueOption.defaultValue -1
 
       Container(
         FlexDirection = FlexDirection.Column,
@@ -69,6 +62,7 @@ let create(p: MediaListProps) : Cell = {
         Gap = 2
       )
         .Children(
-          songs |> List.mapi(fun i s -> row s i (i = selected) p.onSelect)
+          player.Songs
+          |> Array.mapi(fun i s -> row(s, i, i = selected, onSelect))
         )
 }

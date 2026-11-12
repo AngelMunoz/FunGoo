@@ -10,29 +10,26 @@ open GooRes.Types
 open FunGoo.Children
 open FunGoo.Interop
 open FunGoo.Widgets
-open Mibo.Adaptive
 open GooRes
 
 type PickerMode =
   | PickFolder
   | PickFiles
 
+// Data only: the callbacks travel as parameters of `create`.
 type FilePickerProps = {
   filters: string list
   startIn: string
-  onFilesSelected: FsEntry[] -> unit
-  onFolderSelected: string -> unit
 }
 
-// The handle a caller keeps: what to render, and how to open the picker.
+// The handle a caller keeps: the mounted cell, and how to open the picker.
 type FilePickerWidget = {
-  view: unit -> Blob
+  cell: Cell
   openPicker: PickerMode -> unit
 }
 
 let inline actionButton
-  (label: string)
-  ([<InlineIfLambda>] onClick: unit -> unit)
+  (label: string, [<InlineIfLambda>] onClick: unit -> unit)
   : Blob =
   ActionButton(Content = label, OnClick = fun _ -> onClick())
     .backgroundColor(Color.Rgb(30, 38, 54))
@@ -45,14 +42,14 @@ let inline clickable
   : Blob =
   Container(Key = id, OnClick = fun _ -> onClick()).Children child
 
-
 let inline entryRow
-  (m: PickerMode)
-  (currentPicked: FsEntry[])
-  ([<InlineIfLambda>] onOpenFolder: string -> unit)
-  ([<InlineIfLambda>] onToggleFile: FsEntry -> unit)
-  (e: FsEntry)
-  : Blob =
+  (
+    m: PickerMode,
+    currentPicked: FsEntry[],
+    e: FsEntry,
+    [<InlineIfLambda>] onOpenFolder: string -> unit,
+    [<InlineIfLambda>] onToggleFile: FsEntry -> unit
+  ) : Blob =
   let isPicked = Array.exists (fun x -> x.Path = e.Path) currentPicked
 
   if e.IsFolder then
@@ -96,107 +93,111 @@ let inline entryRow
       .opacity(0.7)
       .Build()
 
-// Infrastructure comes in through the environment; props carry data and
-// events only.
-let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
-  let isOpen = CVal.create false
-  let mode = CVal.create PickFolder
+// The picker keeps its view state at birth (class form): the loads and the
+// open command sit beside the state they write. `Open` runs from the root's
+// menu callbacks, so the owner rule rebuilds the root, not this cell —
+// `Open` rebuilds it explicitly. Row clicks are authored inside `Build`, so
+// the owner rule covers them and they need no rebuild call.
+type PickerCell<'env when 'env :> IProvideFileSystem and 'env :> IProvidePostUI>
+  (
+    env: 'env,
+    props: FilePickerProps,
+    onFilesSelected: FsEntry[] -> unit,
+    onFolderSelected: string -> unit
+  ) as this =
+  inherit Cell()
+
+  let mutable isOpen = false
+  let mutable mode = PickFolder
 
   // `ValueNone` is the drives view: the list shows one row per ready drive.
-  let directory = CVal.create(ValueSome p.startIn)
-  let entries = CVal.create Array.empty<FsEntry>
-  let picked = CVal.create Array.empty<FsEntry>
+  let mutable directory: string voption = ValueSome props.startIn
+  let mutable entries = Array.empty<FsEntry>
+  let mutable picked = Array.empty<FsEntry>
 
-  let inline loadDirectory path =
+  // Loads run on background threads; the results return through PostUI,
+  // write the state, and rebuild this cell explicitly.
+  let loadDirectory path =
     async {
-      let found = env.FileSystem.List(path, p.filters)
+      let found = env.FileSystem.List(path, props.filters)
 
-      env.PostUI(fun () ->
-        CVal.set found entries
-        CVal.set (ValueSome path) directory)
+      env.PostUI.Post(fun () ->
+        entries <- found
+        directory <- ValueSome path
+        this.Rebuild())
     }
     |> Async.Start
 
-  let inline loadDrives() =
+  let loadDrives() =
     async {
       let found = env.FileSystem.Drives()
 
-      env.PostUI(fun () ->
-        CVal.set found entries
-        CVal.set ValueNone directory)
+      env.PostUI.Post(fun () ->
+        entries <- found
+        directory <- ValueNone
+        this.Rebuild())
     }
     |> Async.Start
 
-  let inline openPicker m =
-    CVal.set m mode
-    CVal.set Array.empty<FsEntry> picked
-    CVal.set true isOpen
+  member _.Open(m: PickerMode) =
+    mode <- m
+    picked <- Array.empty<FsEntry>
+    isOpen <- true
 
-    match AVal.getValue directory with
+    // The root's menu callback rebuilds the root through the owner rule;
+    // this cell needs the explicit rebuild.
+    this.Rebuild()
+
+    match directory with
     | ValueSome dir -> loadDirectory dir
     | ValueNone -> loadDrives()
 
-  let inline closePicker() = CVal.set false isOpen
-
-  let inline view() : Blob =
-    if not(AVal.getValue isOpen) then
+  override _.Build() : Blob =
+    if not isOpen then
       Container()
     else
-      let currentMode = AVal.getValue mode
-      let currentDir = AVal.getValue directory
-      let currentEntries = AVal.getValue entries
-      let currentPicked = AVal.getValue picked
+      let confirmLabel = if mode = PickFolder then "Use Folder" else "Add Files"
 
-      let confirmLabel =
-        if currentMode = PickFolder then
-          "Use Folder"
+      let goUp() =
+        directory
+        |> ValueOption.bind(fun dir -> env.FileSystem.Parent dir)
+        |> function
+          | ValueSome parent -> loadDirectory parent
+          | ValueNone -> loadDrives()
+
+      // Author rule: the click that toggles a row rebuilds this cell.
+      let toggle(e: FsEntry) =
+        if Array.exists (fun x -> x.Path = e.Path) picked then
+          picked <- Array.filter (fun x -> x.Path <> e.Path) picked
         else
-          "Add Files"
+          picked <- Array.append [| e |] picked
 
-      let inline goUp() =
-        let parent =
-          currentDir |> ValueOption.bind(fun dir -> env.FileSystem.Parent dir)
+      let closePicker() = isOpen <- false
 
-        match parent with
-        | ValueSome parent -> loadDirectory parent
-        | ValueNone -> loadDrives()
-
-      let inline toggle(e: FsEntry) =
-        let next =
-          if Array.exists (fun x -> x.Path = e.Path) currentPicked then
-            Array.filter (fun x -> x.Path <> e.Path) currentPicked
-          else
-            let array = Array.zeroCreate(currentPicked.Length + 1)
-            array[0] <- e
-            Array.insertManyAt 1 currentPicked array
-
-        CVal.set next picked
-
-      let inline confirm() =
-        currentDir
+      let confirm() =
+        directory
         |> ValueOption.iter(fun dir ->
-          if currentMode = PickFolder then
-            p.onFolderSelected dir
+          if mode = PickFolder then
+            onFolderSelected dir
           else
-            p.onFilesSelected(Array.sortBy (fun e -> e.Path) currentPicked)
-            CVal.set Array.empty<FsEntry> picked
+            onFilesSelected(Array.sortBy (fun e -> e.Path) picked)
+            picked <- Array.empty<FsEntry>
 
           closePicker())
 
+      let locationText = directory |> ValueOption.defaultValue "This PC"
 
-      let locationText = currentDir |> ValueOption.defaultValue "This PC"
-
-      let filterText = String.Join(", ", p.filters)
+      let filterText = String.Join(", ", props.filters)
       let filterMessage = $"No {filterText} files in this folder"
 
       let emptyTitle, emptyDescription =
-        if currentDir.IsNone then
+        if directory.IsNone then
           "No drives found", "No ready drives on this system"
         else
           "No media here", filterMessage
 
       let rows =
-        if Array.isEmpty currentEntries then
+        if Array.isEmpty entries then
           EmptyState(
             Title = emptyTitle,
             Description = emptyDescription,
@@ -205,8 +206,9 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
             .Build()
           |> Array.singleton
         else
-          currentEntries
-          |> Array.map(entryRow currentMode currentPicked loadDirectory toggle)
+          entries
+          |> Array.map(fun e ->
+            entryRow(mode, picked, e, loadDirectory, toggle))
 
       Container(
         FlexDirection = FlexDirection.Column,
@@ -228,9 +230,9 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
                 Color = Color.Rgb(150, 160, 180),
                 FlexGrow = 1.0
               ),
-              actionButton "Up" goUp,
-              actionButton "Cancel" closePicker,
-              actionButton confirmLabel confirm
+              actionButton("Up", goUp),
+              actionButton("Cancel", closePicker),
+              actionButton(confirmLabel, confirm)
             ),
           Container(
             FlexDirection = FlexDirection.Column,
@@ -252,4 +254,18 @@ let inline create (env: Env) (p: FilePickerProps) : FilePickerWidget =
             .Children(rows)
         )
 
-  { view = view; openPicker = openPicker }
+// Infrastructure comes in through the environment; data and events arrive
+// as separate parameters.
+let create<'env when 'env :> IProvideFileSystem and 'env :> IProvidePostUI>
+  (
+    env: 'env,
+    props: FilePickerProps,
+    onFilesSelected: FsEntry[] -> unit,
+    onFolderSelected: string -> unit
+  ) : FilePickerWidget =
+  let picker = PickerCell(env, props, onFilesSelected, onFolderSelected)
+
+  {
+    cell = picker :> Cell
+    openPicker = fun mode -> picker.Open mode
+  }

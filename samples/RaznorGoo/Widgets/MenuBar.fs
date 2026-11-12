@@ -5,14 +5,8 @@ open Goo.Widgets.Actions
 open FunGoo.Children
 open FunGoo.Widgets
 
-type MenuBarProps = {
-  onSelectFiles: unit -> unit
-  onSelectFolder: unit -> unit
-}
-
 let inline item
-  (label: string)
-  ([<InlineIfLambda>] onClick: unit -> unit)
+  (label: string, [<InlineIfLambda>] onClick: unit -> unit)
   : Blob =
   ActionButton(Content = label, OnClick = fun _ -> onClick())
     .backgroundColor(Color.Rgb(30, 38, 54))
@@ -20,7 +14,12 @@ let inline item
     .hoverBackgroundColor(Color.Rgb(40, 52, 74))
     .Build()
 
-let inline create(p: MenuBarProps) : Blob =
+// Data-free bar: the two menu destinations arrive as callback parameters.
+let inline create
+  (
+    [<InlineIfLambda>] onSelectFiles: unit -> unit,
+    [<InlineIfLambda>] onSelectFolder: unit -> unit
+  ) : Blob =
   Container(
     Key = "menu-bar",
     FlexDirection = FlexDirection.Row,
@@ -29,6 +28,6 @@ let inline create(p: MenuBarProps) : Blob =
     BackgroundColor = Color.Rgb(16, 21, 31)
   )
     .Children(
-      item "Select Files" p.onSelectFiles,
-      item "Select Folder" p.onSelectFolder
+      item("Select Files", onSelectFiles),
+      item("Select Folder", onSelectFolder)
     )

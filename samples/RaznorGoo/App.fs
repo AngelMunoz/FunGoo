@@ -3,7 +3,6 @@ module GooRes.App
 open System
 
 open Goo
-open Mibo.Adaptive
 open GooRes.Types
 open GooRes.Widgets
 open GooRes.Widgets.FilePicker
@@ -16,51 +15,30 @@ let run() =
     "io.github.angelmunoz.raznor"
   )
 
-  let musicFilters = [ "*.mp3"; "*.wav" ]
-  let player = Player.create()
-
-  // The one late binding the window forces: Root is init-only, so the
-  // window is built last while the marshal below is needed first. Declared
-  // up front, assigned once, read only at call time.
-  let mutable gooWindow: Window voption = ValueNone
-
-  // Foreign threads (VLC, async loads) may only marshal work to the UI
-  // thread through here. What the work touches is the caller's decision.
-  let inline marshal(action: unit -> unit) =
-    gooWindow
-    |> ValueOption.iter(fun window ->
-      window.TryPost(fun () -> action()) |> ignore)
-
-  // The picker body is still a root blob until it becomes a cell, so its
-  // loads are the only remaining root rebuilds.
-  let inline post(action: unit -> unit) =
-    gooWindow
-    |> ValueOption.iter(fun window ->
-      window.TryPost(fun () ->
-        action()
-        window.Root.Rebuild())
-      |> ignore)
-
+  // Services and the marshaller come first: the cells receive env, and the
+  // window attaches last because Root is init-only.
+  let marshaller = UiMarshaller()
   let fileSystem = FileSystem.create()
 
-  // Construction is linear: service, environment, stateful cells, picker.
+  // Construction is linear: service, environment, store, cells, picker.
   // Nothing references a value defined after it.
-  let playback, subscribePlayback = Playback.create marshal
+  let playback = Playback.create marshaller.Post
 
-  let env: Env = {
-    PostUI = post
-    Playback = playback
-    FileSystem = fileSystem
+  let env = {
+    new IAppEnv with
+      member _.Playback = playback
+      member _.FileSystem = fileSystem
+      member _.PostUI = marshaller :> IPostUI
   }
 
-  let playlist =
-    MediaList.create {
-      songs = player.songs
-      selected = player.selected
-      onSelect = fun song -> Player.playSong env player song
-    }
+  let player = Player.create()
 
-  let bottomBar = BottomBar.create env player (fun () -> playlist.Rebuild())
+  let playlist =
+    MediaList.create(player, fun song -> Player.playSong(env, player, song))
+
+  let bottomBar = BottomBar.create(env, player, fun () -> playlist.Rebuild())
+
+  let musicFilters = [ "*.mp3"; "*.wav" ]
 
   let loadSongsFromFolder(dir: string) =
     async {
@@ -69,51 +47,56 @@ let run() =
         |> Array.filter(fun e -> not e.IsFolder)
         |> Array.map(fun e -> { Name = e.Name; Path = e.Path })
 
-      marshal(fun () ->
-        Player.replaceSongs player songs
+      env.PostUI.Post(fun () ->
+        Player.replaceSongs(player, songs)
         playlist.Rebuild())
     }
     |> Async.Start
 
   let filesPicked(entries: FsEntry[]) =
-    Player.replaceSongs
-      player
-      (entries |> Array.map(fun e -> { Name = e.Name; Path = e.Path }))
+    Player.replaceSongs(
+      player,
+      entries |> Array.map(fun e -> { Name = e.Name; Path = e.Path })
+    )
 
     playlist.Rebuild()
 
   let picker =
-    FilePicker.create env {
-      filters = musicFilters
-      startIn = Environment.GetFolderPath Environment.SpecialFolder.MyMusic
-      onFilesSelected = filesPicked
-      onFolderSelected = loadSongsFromFolder
-    }
+    FilePicker.create(
+      env,
+      {
+        filters = musicFilters
+        startIn = Environment.GetFolderPath Environment.SpecialFolder.MyMusic
+      },
+      filesPicked,
+      loadSongsFromFolder
+    )
 
-  let root = Layout.view picker playlist bottomBar
+  let root = Layout.view(picker, playlist, bottomBar)
 
   let window =
     Window(Title = "RaznorGoo", Width = 720, Height = 480, Root = root)
 
-  gooWindow <- ValueSome window
+  marshaller.Attach(window)
 
   // Subscriptions come last: every value the handlers touch exists, so no
   // handler needs a slot to reach its targets. The service delivers them
-  // on the UI thread.
-  subscribePlayback {
+  // on the UI thread, and the wiring goes through the capability — the
+  // service contract, not a function kept beside it.
+  env.Playback.Subscribe {
     OnPosition =
       fun percent lengthMs ->
         let length = float32 lengthMs / 1000.0f
-        CVal.set length player.length
-        CVal.set (percent / 100.0f * length) player.position
+        player.Length <- length
+        player.Position <- percent / 100.0f * length
         bottomBar.Rebuild()
     OnState =
       fun playing ->
-        CVal.set playing player.playing
+        player.Playing <- playing
         bottomBar.Rebuild()
     OnEnded =
       fun () ->
-        Player.skipNext env player
+        Player.skipNext(env, player)
         playlist.Rebuild()
     OnError = fun message -> eprintfn "playback: %s" message
   }

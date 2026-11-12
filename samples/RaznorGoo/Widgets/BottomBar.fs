@@ -3,7 +3,6 @@ module GooRes.Widgets.BottomBar
 open Goo
 open FunGoo.Children
 open FunGoo.Style
-open Mibo.Adaptive
 open GooRes.Types
 open GooRes.Player
 open Goo.Widgets.Media
@@ -12,27 +11,32 @@ open Goo.Widgets.Media
 // state events, and only then. The transport callbacks are created once
 // here, so every input snapshot carries the same delegate instances and a
 // clean diff can skip the rebuild.
-let inline create
-  (env: Env)
-  (player: PlayerState)
-  ([<InlineIfLambda>] onTrackChanged: unit -> unit)
+let create
+  (env: #IProvidePlayback, player: PlayerState, onTrackChanged: unit -> unit)
   : Cell =
-  let inline onPlayPause() = playPause env player
+  let onPlayPause() = playPause(env, player)
 
-  let inline onNext() =
-    skipNext env player
+  let onNext() =
+    skipNext(env, player)
     onTrackChanged()
 
-  let inline onPrevious() =
-    skipPrevious env player
+  let onPrevious() =
+    skipPrevious(env, player)
     onTrackChanged()
 
-  let inline onSeekCommitted seconds = seek env seconds
-  let inline onVolumeChanged value = setVolume env value
+  let onSeekCommitted seconds = seek(env, seconds)
+  let onVolumeChanged value = setVolume(env, value)
 
   {
     new Cell() with
       override _.Build() : Blob =
+        let nowPlaying =
+          player.Selected
+          |> ValueOption.bind(fun index ->
+            Array.tryItem index player.Songs |> ValueOption.ofOption)
+          |> ValueOption.map(fun song -> $"Playing: {song.Name}")
+          |> ValueOption.defaultValue "Nothing loaded"
+
         Container(
           FlexDirection = FlexDirection.Column,
           Gap = 8,
@@ -45,16 +49,16 @@ let inline create
           .Children(
             Text(
               Key = "now-playing",
-              Content = (player.nowPlaying |> AVal.getValue),
+              Content = nowPlaying,
               FontSize = 15,
               Color = Color.White
             ),
             Cell.Mount<MediaTransportInput, MediaTransport>(
               "media-transport",
               MediaTransportInput(
-                Playing = AVal.getValue player.playing,
-                Position = float(AVal.getValue player.position),
-                Duration = float(AVal.getValue player.length),
+                Playing = player.Playing,
+                Position = float player.Position,
+                Duration = float player.Length,
                 Volume = env.Playback.Volume(),
                 OnPlayPause = onPlayPause,
                 OnNext = onNext,
