@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-11
+
 ### Changed
 
 - **Core:** **Breaking (behavioral):** The Goo dependency is now 0.30.0 (was 0.29.1). Two layout defaults change: `FlexShrink` now defaults to 1, and elements with `Scroll` or `Hidden` overflow no longer get an automatic minimum size. Set `FlexShrink = 0` or explicit `MinWidth`/`MinHeight` values where the old defaults mattered. Apps also gain sharper text and border alignment at fractional display scales, mipmap smoothing for downscaled images, device-pixel snapping for custom layouts and anchored popups, GPU image caches that follow the driver memory budget, and inherited style changes that apply in one pass. New Goo APIs of this release (`Window.PixelScale`, `ElementHandle.RawBorderBox`, `Window.MeasureText`) need no FunGoo wrappers. The generated binding surface is unchanged.
