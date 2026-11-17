@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Goo" Version="0.30.0" />
+    <PackageReference Include="Goo" Version="0.31.0" />
     <PackageReference Include="Elmish" Version="5.0.2" />
     <None Include="../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>

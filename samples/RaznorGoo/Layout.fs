@@ -40,10 +40,11 @@ let view(picker: FilePickerWidget, playlist: Cell, bottomBar: Cell) : Cell =
           FlexShrink = 1.0,
           MinWidth = 0
         )
-          .Children(Cell.Mount(playlistFactory, "playlist"))
+          .Children(Cell.Mount<Cell>("playlist", Func<Cell>(playlistFactory)))
       )
 
-  let bottomBarView = Cell.Mount(bottomBarFactory, "bottom-bar")
+  let bottomBarView =
+    Cell.Mount<Cell>("bottom-bar", Func<Cell>(bottomBarFactory))
 
   {
     new Cell() with
@@ -61,7 +62,7 @@ let view(picker: FilePickerWidget, playlist: Cell, bottomBar: Cell) : Cell =
               (fun () -> picker.openPicker PickFiles),
               (fun () -> picker.openPicker PickFolder)
             ),
-            Cell.Mount(pickerFactory, "picker"),
+            Cell.Mount<Cell>("picker", Func<Cell>(pickerFactory)),
             middleView,
             bottomBarView
           )

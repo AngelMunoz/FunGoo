@@ -84,8 +84,7 @@ type UiMarshaller() =
 
   let post(action: unit -> unit) =
     window
-    |> ValueOption.iter(fun window ->
-      window.TryPost(fun () -> action()) |> ignore)
+    |> ValueOption.iter(fun window -> window.Post(fun () -> action()) |> ignore)
 
   member _.Attach(w: Window) = window <- ValueSome w
 

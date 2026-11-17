@@ -1,5 +1,6 @@
 module MvuSpike.App
 
+open System
 open Goo
 open FunGoo.Children
 open FunGoo.Mvu
@@ -8,13 +9,13 @@ open FunGoo.Mvu
 // The window attaches last because Root is init-only, and the cells post
 // through the slot until the window exists.
 let run() =
-  Window.ConfigureApplication("MvuSpike", "0.1.0", "io.github.fungoo.mvuspike")
+  Application.Configure("MvuSpike", "0.1.0", "io.github.fungoo.mvuspike")
 
   let mutable target: Window voption = ValueNone
 
   let post action =
     target
-    |> ValueOption.map(fun window -> window.TryPost(fun () -> action()))
+    |> ValueOption.map(fun window -> window.Post(fun () -> action()))
     |> ValueOption.defaultValue false
 
   let counter =
@@ -45,13 +46,13 @@ let run() =
         Container(Padding = 24, Gap = 12, FlexDirection = FlexDirection.Column)
           .Children(
             Text("Goo Plus MVU", AlignSelf = AlignSelf.Center),
-            Cell.Mount(counterFactory, "counter"),
-            Cell.Mount(clockFactory, "clock")
+            Cell.Mount<Cell>("counter", Func<Cell>(fun () -> counter :> Cell)),
+            Cell.Mount<Cell>("clock", Func<Cell>(fun () -> clock :> Cell))
           )
   }
 
   let window =
-    Window(Title = "MvuSpike", Width = 640, Height = 480, Root = root)
+    Window(Title = "MvuSpike", Size = LayoutSize(640, 480), Root = root)
 
   target <- ValueSome window
-  window.Run()
+  Application.Run window

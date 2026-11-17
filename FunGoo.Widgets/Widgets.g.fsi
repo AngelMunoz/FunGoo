@@ -1595,6 +1595,11 @@ module Widgets =
   [<Extension; Sealed>]
   type ComboBoxInputExtensions =
     [<Extension>]
+    static member inline matchTriggerWidth:
+      this: Goo.Widgets.Inputs.ComboBoxInput * [<Struct>] ?value: bool ->
+        Goo.Widgets.Inputs.ComboBoxInput
+
+    [<Extension>]
     static member inline ``open``:
       this: Goo.Widgets.Inputs.ComboBoxInput * [<Struct>] ?value: bool ->
         Goo.Widgets.Inputs.ComboBoxInput
@@ -3124,6 +3129,12 @@ module Widgets =
     [<Extension>]
     static member inline gap:
       this: Goo.Widgets.Layout.TooltipInput * [<Struct>] ?value: float ->
+        Goo.Widgets.Layout.TooltipInput
+
+    [<Extension>]
+    static member inline placement:
+      this: Goo.Widgets.Layout.TooltipInput *
+      [<Struct>] ?value: Goo.PortalPlacement ->
         Goo.Widgets.Layout.TooltipInput
 
   [<Extension; Sealed>]

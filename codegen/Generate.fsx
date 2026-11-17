@@ -89,18 +89,24 @@ let childrenTypes =
   |> Array.sortBy(fun t -> t.Name)
 
 /// Public instance properties with a real (non-init-only) setter, grouped by type.
+/// Generic type definitions are skipped (e.g. State<T>): their type
+/// parameters have no FullName and FunGoo extensions cannot declare new F#
+/// type parameters for them.
 let setterGroups =
   exportedTypes
   |> Array.choose(fun t ->
-    let props =
-      t.GetProperties(instanceFlags)
-      |> Array.filter(fun p ->
-        match p.GetSetMethod() with
-        | null -> false
-        | setter -> not(isInitOnly setter))
-      |> Array.sortBy(fun p -> p.Name)
+    if t.IsGenericTypeDefinition then
+      None
+    else
+      let props =
+        t.GetProperties(instanceFlags)
+        |> Array.filter(fun p ->
+          match p.GetSetMethod() with
+          | null -> false
+          | setter -> not(isInitOnly setter))
+        |> Array.sortBy(fun p -> p.Name)
 
-    if props.Length = 0 then None else Some(t, props))
+      if props.Length = 0 then None else Some(t, props))
   |> Array.sortBy(fun (t, _) -> t.Name)
 
 /// Public Try* methods with exactly one out parameter, excluding Deconstruct-style
@@ -130,17 +136,26 @@ let tryMethods =
   |> Array.sortBy(fun (t, m, _) -> t.Name, m.Name)
 
 /// Implicit conversion operators across the surface: (fromType, toType).
+/// Operators on generic type definitions are skipped (e.g. State<T> to T):
+/// a conversion through a type parameter has no F# helper shape here.
 let implicitOperators =
   exportedTypes
   |> Array.collect(fun t ->
-    t.GetMethods(allFlags)
-    |> Array.choose(fun m ->
-      if m.Name <> "op_Implicit" then
-        None
-      else
-        match m.GetParameters() with
-        | [| from |] -> Some(from.ParameterType, m.ReturnType)
-        | _ -> None))
+    if t.IsGenericTypeDefinition then
+      [||]
+    else
+      t.GetMethods(allFlags)
+      |> Array.choose(fun m ->
+        if m.Name <> "op_Implicit" then
+          None
+        else
+          match m.GetParameters() with
+          | [| from |] when
+            not(from.ParameterType.IsGenericParameter)
+            && not(m.ReturnType.IsGenericParameter)
+            ->
+            Some(from.ParameterType, m.ReturnType)
+          | _ -> None))
   |> Array.distinct
   |> Array.sortBy(fun (from, to_) -> to_.Name, from.Name)
 
@@ -252,6 +267,13 @@ let widgetMemberName(f: FieldInfo) =
   else
     name
 
+// Setter value identifiers follow the same rule: a property such as End
+// lowercases to an F# keyword, so the parameter name needs backticks.
+let setterParamName(name: string) =
+  let n = camelCase name
+
+  if Set.contains n fsharpKeywords then $"``%s{n}``" else n
+
 let rec fsType(t: Type) =
   if t = typeof<bool> then
     "bool"
@@ -362,7 +384,14 @@ let rec fsiType(t: Type) : WidgetBuilder<SyntaxOak.Type> =
       else
         definition.Namespace + "."
 
-    AppPrefix($"{ns}{name}", fsType(t.GetGenericArguments()[0]))
+    let args = t.GetGenericArguments()
+
+    if args.Length = 1 then
+      AppPrefix($"{ns}{name}", fsType(args[0]))
+    else
+      // AppPrefix carries one type argument. Wider generics (Func<A, B>)
+      // render whole through the string renderer, as member bodies do.
+      LongIdent(fsType t)
   else
     LongIdent(t.FullName)
 
@@ -570,13 +599,16 @@ let setterMember(t: Type, p: PropertyInfo) =
         TuplePat(
           [
             ParameterPat("this", LongIdent(gooTypeOf t))
-            ParameterPat(camelCase p.Name, LongIdent(fsType p.PropertyType))
+            ParameterPat(
+              setterParamName p.Name,
+              LongIdent(fsType p.PropertyType)
+            )
           ]
         )
       )
     ],
     CompExprBodyExpr [
-      OtherExpr(SetExpr($"this.{p.Name}", camelCase p.Name))
+      OtherExpr(SetExpr($"this.{p.Name}", setterParamName p.Name))
       OtherExpr("this")
     ],
     gooTypeOf t
@@ -595,7 +627,7 @@ let setterFsiType(t: Type, props: PropertyInfo[]) =
         p.Name
         [
           SignatureParameter("this", LongIdent(gooTypeOf t))
-          SignatureParameter(camelCase p.Name, fsiType p.PropertyType)
+          SignatureParameter(setterParamName p.Name, fsiType p.PropertyType)
         ]
         (LongIdent(gooTypeOf t))
   }

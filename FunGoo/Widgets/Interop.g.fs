@@ -74,10 +74,15 @@ module Interop =
     else
       ValueNone
 
-  let inline colorFromString(value: string) : Goo.Color = Goo.Color.Parse value
+  let inline blobFromAccessibilityAttachment
+    (value: Goo.AccessibilityAttachment)
+    : Goo.Blob =
+    value
+
   let inline edgesFromFloat(value: float) : Goo.Edges = value
   let inline edgesFromInt(value: int) : Goo.Edges = value
   let inline edgesFromLength(value: Goo.Length) : Goo.Edges = value
   let inline edgesFromColor(value: Goo.Color) : Goo.Edges<Goo.Color> = value
   let inline lengthFromFloat(value: float) : Goo.Length = value
   let inline lengthFromInt(value: int) : Goo.Length = value
+  let inline textSpanFromString(value: string) : Goo.TextSpan = value

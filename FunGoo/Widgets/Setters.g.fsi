@@ -7,11 +7,528 @@ module Setters =
   open System.Runtime.CompilerServices
 
   [<Extension; Sealed>]
+  type AccessibilityExtensions =
+    [<Extension>]
+    static member inline Actions:
+      this: Goo.Accessibility * actions: Goo.AccessibilityAction[] ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline Atomic:
+      this: Goo.Accessibility * atomic: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Busy:
+      this: Goo.Accessibility * busy: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Checked:
+      this: Goo.Accessibility * checked: Goo.AccessibilityChecked ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline ColumnCount:
+      this: Goo.Accessibility * columnCount: Nullable<int> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline ColumnIndex:
+      this: Goo.Accessibility * columnIndex: Nullable<int> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline CustomRole:
+      this: Goo.Accessibility * customRole: string -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Description:
+      this: Goo.Accessibility * description: string -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Expanded:
+      this: Goo.Accessibility * expanded: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline HasPopup:
+      this: Goo.Accessibility * hasPopup: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Hidden:
+      this: Goo.Accessibility * hidden: bool -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Invalid:
+      this: Goo.Accessibility * invalid: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Level:
+      this: Goo.Accessibility * level: Nullable<int> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Live:
+      this: Goo.Accessibility * live: Goo.AccessibilityLive -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Modal:
+      this: Goo.Accessibility * modal: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline MultiSelectable:
+      this: Goo.Accessibility * multiSelectable: Nullable<bool> ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline Multiline:
+      this: Goo.Accessibility * multiline: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Name:
+      this: Goo.Accessibility * name: string -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline OnAction:
+      this: Goo.Accessibility *
+      onAction: Func<Goo.AccessibilityActionRequest, bool> ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline Orientation:
+      this: Goo.Accessibility * orientation: Goo.AccessibilityOrientation ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline PositionInSet:
+      this: Goo.Accessibility * positionInSet: Nullable<int> ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline Range:
+      this: Goo.Accessibility * range: Goo.AccessibilityValue ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline ReadOnly:
+      this: Goo.Accessibility * readOnly: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Relationships:
+      this: Goo.Accessibility * relationships: Goo.AccessibilityRelationships ->
+        Goo.Accessibility
+
+    [<Extension>]
+    static member inline Required:
+      this: Goo.Accessibility * required: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Role:
+      this: Goo.Accessibility * role: Goo.AccessibilityRole -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline RowCount:
+      this: Goo.Accessibility * rowCount: Nullable<int> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline RowIndex:
+      this: Goo.Accessibility * rowIndex: Nullable<int> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Selected:
+      this: Goo.Accessibility * selected: Nullable<bool> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline SizeOfSet:
+      this: Goo.Accessibility * sizeOfSet: Nullable<int> -> Goo.Accessibility
+
+    [<Extension>]
+    static member inline Value:
+      this: Goo.Accessibility * value: string -> Goo.Accessibility
+
+  [<Extension; Sealed>]
+  type AccessibilityRelationshipsExtensions =
+    [<Extension>]
+    static member inline ActiveDescendant:
+      this: Goo.AccessibilityRelationships * activeDescendant: Goo.ElementHandle ->
+        Goo.AccessibilityRelationships
+
+    [<Extension>]
+    static member inline Controls:
+      this: Goo.AccessibilityRelationships * controls: Goo.ElementHandle[] ->
+        Goo.AccessibilityRelationships
+
+    [<Extension>]
+    static member inline DescribedBy:
+      this: Goo.AccessibilityRelationships * describedBy: Goo.ElementHandle[] ->
+        Goo.AccessibilityRelationships
+
+    [<Extension>]
+    static member inline ErrorMessage:
+      this: Goo.AccessibilityRelationships * errorMessage: Goo.ElementHandle[] ->
+        Goo.AccessibilityRelationships
+
+    [<Extension>]
+    static member inline FlowTo:
+      this: Goo.AccessibilityRelationships * flowTo: Goo.ElementHandle[] ->
+        Goo.AccessibilityRelationships
+
+    [<Extension>]
+    static member inline LabelledBy:
+      this: Goo.AccessibilityRelationships * labelledBy: Goo.ElementHandle[] ->
+        Goo.AccessibilityRelationships
+
+    [<Extension>]
+    static member inline Owns:
+      this: Goo.AccessibilityRelationships * owns: Goo.ElementHandle[] ->
+        Goo.AccessibilityRelationships
+
+  [<Extension; Sealed>]
+  type AccessibilityValueExtensions =
+    [<Extension>]
+    static member inline Maximum:
+      this: Goo.AccessibilityValue * maximum: Nullable<float> ->
+        Goo.AccessibilityValue
+
+    [<Extension>]
+    static member inline Minimum:
+      this: Goo.AccessibilityValue * minimum: Nullable<float> ->
+        Goo.AccessibilityValue
+
+    [<Extension>]
+    static member inline Now:
+      this: Goo.AccessibilityValue * now: Nullable<float> ->
+        Goo.AccessibilityValue
+
+    [<Extension>]
+    static member inline Text:
+      this: Goo.AccessibilityValue * text: string -> Goo.AccessibilityValue
+
+  [<Extension; Sealed>]
+  type BlobExtensions =
+    [<Extension>]
+    static member inline Accessibility:
+      this: Goo.Blob * accessibility: Goo.Accessibility -> Goo.Blob
+
+    [<Extension>]
+    static member inline AccessibilityName:
+      this: Goo.Blob * accessibilityName: string -> Goo.Blob
+
+    [<Extension>]
+    static member inline AccessibilityRole:
+      this: Goo.Blob * accessibilityRole: Goo.AccessibilityRole -> Goo.Blob
+
+    [<Extension>]
+    static member inline ActiveStyle:
+      this: Goo.Blob * activeStyle: Goo.Style -> Goo.Blob
+
+    [<Extension>]
+    static member inline AutoFocus: this: Goo.Blob * autoFocus: bool -> Goo.Blob
+
+    [<Extension>]
+    static member inline Disabled: this: Goo.Blob * disabled: bool -> Goo.Blob
+
+    [<Extension>]
+    static member inline DisabledStyle:
+      this: Goo.Blob * disabledStyle: Goo.Style -> Goo.Blob
+
+    [<Extension>]
+    static member inline DragSource:
+      this: Goo.Blob * dragSource: Goo.DragSource -> Goo.Blob
+
+    [<Extension>]
+    static member inline DropTarget:
+      this: Goo.Blob * dropTarget: Goo.DropTarget -> Goo.Blob
+
+    [<Extension>]
+    static member inline FocusStyle:
+      this: Goo.Blob * focusStyle: Goo.Style -> Goo.Blob
+
+    [<Extension>]
+    static member inline FocusTarget:
+      this: Goo.Blob * focusTarget: Goo.ElementHandle -> Goo.Blob
+
+    [<Extension>]
+    static member inline Focusable: this: Goo.Blob * focusable: bool -> Goo.Blob
+
+    [<Extension>]
+    static member inline Gestures:
+      this: Goo.Blob *
+      gestures: System.Collections.Generic.IReadOnlyList<Goo.GestureRecognizer> ->
+        Goo.Blob
+
+    [<Extension>]
+    static member inline Handle:
+      this: Goo.Blob * handle: Goo.ElementHandle -> Goo.Blob
+
+    [<Extension>]
+    static member inline HoverStyle:
+      this: Goo.Blob * hoverStyle: Goo.Style -> Goo.Blob
+
+    [<Extension>]
+    static member inline Key: this: Goo.Blob * key: string -> Goo.Blob
+
+    [<Extension>]
+    static member inline KeyBindings:
+      this: Goo.Blob * keyBindings: Goo.KeyBinding[] -> Goo.Blob
+
+    [<Extension>]
+    static member inline LayoutTransition:
+      this: Goo.Blob * layoutTransition: Nullable<Goo.LayoutTransition> ->
+        Goo.Blob
+
+    [<Extension>]
+    static member inline OnBlur:
+      this: Goo.Blob * onBlur: Action<Goo.FocusEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnClick:
+      this: Goo.Blob * onClick: System.Action -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnFocus:
+      this: Goo.Blob * onFocus: Action<Goo.FocusEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnKeyDown:
+      this: Goo.Blob * onKeyDown: Action<Goo.KeyEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnKeyUp:
+      this: Goo.Blob * onKeyUp: Action<Goo.KeyEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerCancel:
+      this: Goo.Blob * onPointerCancel: Action<Goo.PointerEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerDown:
+      this: Goo.Blob * onPointerDown: Action<Goo.PointerEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerDrag:
+      this: Goo.Blob * onPointerDrag: Action<Goo.PointerDragEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerEnter:
+      this: Goo.Blob * onPointerEnter: Action<Goo.PointerEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerLeave:
+      this: Goo.Blob * onPointerLeave: Action<Goo.PointerEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerMove:
+      this: Goo.Blob * onPointerMove: Action<Goo.PointerEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnPointerUp:
+      this: Goo.Blob * onPointerUp: Action<Goo.PointerEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnTextCandidates:
+      this: Goo.Blob * onTextCandidates: Action<Goo.TextCandidateEvent> ->
+        Goo.Blob
+
+    [<Extension>]
+    static member inline OnTextComposition:
+      this: Goo.Blob * onTextComposition: Action<Goo.TextCompositionEvent> ->
+        Goo.Blob
+
+    [<Extension>]
+    static member inline OnTextCompositionCancel:
+      this: Goo.Blob * onTextCompositionCancel: System.Action -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnTextInput:
+      this: Goo.Blob * onTextInput: Action<string> -> Goo.Blob
+
+    [<Extension>]
+    static member inline OnWheel:
+      this: Goo.Blob * onWheel: Action<Goo.WheelEvent> -> Goo.Blob
+
+    [<Extension>]
+    static member inline PointerDragAxis:
+      this: Goo.Blob * pointerDragAxis: Nullable<Goo.LayoutAxis> -> Goo.Blob
+
+    [<Extension>]
+    static member inline PointerDragThreshold:
+      this: Goo.Blob * pointerDragThreshold: float -> Goo.Blob
+
+    [<Extension>]
+    static member inline TabStop: this: Goo.Blob * tabStop: bool -> Goo.Blob
+
+    [<Extension>]
+    static member inline TransitionDelayMs:
+      this: Goo.Blob * transitionDelayMs: float -> Goo.Blob
+
+    [<Extension>]
+    static member inline TransitionEasing:
+      this: Goo.Blob * transitionEasing: Goo.Easing -> Goo.Blob
+
+    [<Extension>]
+    static member inline TransitionMs:
+      this: Goo.Blob * transitionMs: float -> Goo.Blob
+
+    [<Extension>]
+    static member inline TransitionProperties:
+      this: Goo.Blob * transitionProperties: Goo.TransitionProperty[] ->
+        Goo.Blob
+
+  [<Extension; Sealed>]
+  type ButtonExtensions =
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Button * children: System.Collections.Generic.IList<Goo.Blob> ->
+        Goo.Button
+
+  [<Extension; Sealed>]
+  type ColumnExtensions =
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Column * children: System.Collections.Generic.IList<Goo.Blob> ->
+        Goo.Column
+
+    [<Extension>]
+    static member inline HitTestSelf:
+      this: Goo.Column * hitTestSelf: bool -> Goo.Column
+
+  [<Extension; Sealed>]
+  type ContainerExtensions =
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Container * children: System.Collections.Generic.IList<Goo.Blob> ->
+        Goo.Container
+
+    [<Extension>]
+    static member inline HitTestSelf:
+      this: Goo.Container * hitTestSelf: bool -> Goo.Container
+
+    [<Extension>]
+    static member inline Layout:
+      this: Goo.Container * layout: Goo.LayoutAlgorithm -> Goo.Container
+
+  [<Extension; Sealed>]
+  type FocusScopeOptionsExtensions =
+    [<Extension>]
+    static member inline InitialFocus:
+      this: Goo.FocusScopeOptions * initialFocus: Goo.ElementHandle ->
+        Goo.FocusScopeOptions
+
+    [<Extension>]
+    static member inline Modal:
+      this: Goo.FocusScopeOptions * modal: bool -> Goo.FocusScopeOptions
+
+    [<Extension>]
+    static member inline RestoreFocus:
+      this: Goo.FocusScopeOptions * restoreFocus: bool -> Goo.FocusScopeOptions
+
+  [<Extension; Sealed>]
+  type ImageExtensions =
+    [<Extension>]
+    static member inline Fallback:
+      this: Goo.Image * fallback: Goo.Blob -> Goo.Image
+
+    [<Extension>]
+    static member inline Fit: this: Goo.Image * fit: Goo.ImageFit -> Goo.Image
+
+    [<Extension>]
+    static member inline PixelsPerUnit:
+      this: Goo.Image * pixelsPerUnit: float -> Goo.Image
+
+    [<Extension>]
+    static member inline Placeholder:
+      this: Goo.Image * placeholder: Goo.Blob -> Goo.Image
+
+    [<Extension>]
+    static member inline Source:
+      this: Goo.Image * source: Goo.ImageSourceProvider -> Goo.Image
+
+  [<Extension; Sealed>]
+  type PortalExtensions =
+    [<Extension>]
+    static member inline Anchor:
+      this: Goo.Portal * anchor: Goo.ElementHandle -> Goo.Portal
+
+    [<Extension>]
+    static member inline AnchorRect:
+      this: Goo.Portal * anchorRect: Nullable<Goo.ElementRect> -> Goo.Portal
+
+    [<Extension>]
+    static member inline CollisionBounds:
+      this: Goo.Portal * collisionBounds: Nullable<Goo.ElementRect> ->
+        Goo.Portal
+
+    [<Extension>]
+    static member inline FocusScope:
+      this: Goo.Portal * focusScope: Goo.FocusScopeOptions -> Goo.Portal
+
+    [<Extension>]
+    static member inline HideWhenAnchorClipped:
+      this: Goo.Portal * hideWhenAnchorClipped: bool -> Goo.Portal
+
+    [<Extension>]
+    static member inline OnDismiss:
+      this: Goo.Portal * onDismiss: Action<Goo.PopupDismissReason> -> Goo.Portal
+
+    [<Extension>]
+    static member inline Placement:
+      this: Goo.Portal * placement: Goo.PortalPlacement -> Goo.Portal
+
+    [<Extension>]
+    static member inline Scrim:
+      this: Goo.Portal * scrim: Nullable<Goo.Color> -> Goo.Portal
+
+  [<Extension; Sealed>]
   type RichTextClipboardExtensions =
     [<Extension>]
     static member inline ReadOnly:
       this: Goo.RichText.RichTextClipboard * readOnly: bool ->
         Goo.RichText.RichTextClipboard
+
+  [<Extension; Sealed>]
+  type RowExtensions =
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Row * children: System.Collections.Generic.IList<Goo.Blob> ->
+        Goo.Row
+
+    [<Extension>]
+    static member inline HitTestSelf:
+      this: Goo.Row * hitTestSelf: bool -> Goo.Row
+
+  [<Extension; Sealed>]
+  type ScrollbarExtensions =
+    [<Extension>]
+    static member inline FadeMs:
+      this: Goo.Scrollbar * fadeMs: float -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline HideDelayMs:
+      this: Goo.Scrollbar * hideDelayMs: float -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline HitThickness:
+      this: Goo.Scrollbar * hitThickness: float -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline Inset:
+      this: Goo.Scrollbar * inset: float -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline MinThumbLength:
+      this: Goo.Scrollbar * minThumbLength: float -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline ReserveSpace:
+      this: Goo.Scrollbar * reserveSpace: bool -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline Thickness:
+      this: Goo.Scrollbar * thickness: float -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline Thumb:
+      this: Goo.Scrollbar * thumb: Goo.Container -> Goo.Scrollbar
+
+    [<Extension>]
+    static member inline Track:
+      this: Goo.Scrollbar * track: Goo.Container -> Goo.Scrollbar
 
   [<Extension; Sealed>]
   type ShaderEffectExtensions =
@@ -22,6 +539,43 @@ module Setters =
     [<Extension>]
     static member inline Playing:
       this: Goo.ShaderEffect * playing: bool -> Goo.ShaderEffect
+
+  [<Extension; Sealed>]
+  type ShapeExtensions =
+    [<Extension>]
+    static member inline CornerRadius:
+      this: Goo.Shape * cornerRadius: float -> Goo.Shape
+
+    [<Extension>]
+    static member inline Fill:
+      this: Goo.Shape * fill: Goo.VectorPaint -> Goo.Shape
+
+    [<Extension>]
+    static member inline FillRule:
+      this: Goo.Shape * fillRule: Goo.FillRule -> Goo.Shape
+
+    [<Extension>]
+    static member inline Fit: this: Goo.Shape * fit: Goo.ShapeFit -> Goo.Shape
+
+    [<Extension>]
+    static member inline Path:
+      this: Goo.Shape * path: Goo.VectorPath -> Goo.Shape
+
+    [<Extension>]
+    static member inline Stroke:
+      this: Goo.Shape * stroke: Goo.VectorStroke -> Goo.Shape
+
+    [<Extension>]
+    static member inline StrokeEnd:
+      this: Goo.Shape * strokeEnd: float -> Goo.Shape
+
+    [<Extension>]
+    static member inline StrokeStart:
+      this: Goo.Shape * strokeStart: float -> Goo.Shape
+
+    [<Extension>]
+    static member inline UseCurrentColor:
+      this: Goo.Shape * useCurrentColor: bool -> Goo.Shape
 
   [<Extension; Sealed>]
   type SpellCheckSessionExtensions =
@@ -36,10 +590,516 @@ module Setters =
         Goo.SpellCheck.SpellCheckSession
 
   [<Extension; Sealed>]
+  type StyleExtensions =
+    [<Extension>]
+    static member inline AlignContent:
+      this: Goo.Style * alignContent: Goo.AlignContent -> Goo.Style
+
+    [<Extension>]
+    static member inline AlignItems:
+      this: Goo.Style * alignItems: Goo.AlignItems -> Goo.Style
+
+    [<Extension>]
+    static member inline AlignSelf:
+      this: Goo.Style * alignSelf: Goo.AlignSelf -> Goo.Style
+
+    [<Extension>]
+    static member inline AspectRatio:
+      this: Goo.Style * aspectRatio: float -> Goo.Style
+
+    [<Extension>]
+    static member inline BackdropBlur:
+      this: Goo.Style * backdropBlur: float -> Goo.Style
+
+    [<Extension>]
+    static member inline BackgroundColor:
+      this: Goo.Style * backgroundColor: Goo.Color -> Goo.Style
+
+    [<Extension>]
+    static member inline BackgroundColorAnim:
+      this: Goo.Style * backgroundColorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline BackgroundGradient:
+      this: Goo.Style * backgroundGradient: Goo.Gradient -> Goo.Style
+
+    [<Extension>]
+    static member inline BackgroundImageFit:
+      this: Goo.Style * backgroundImageFit: Goo.ImageFit -> Goo.Style
+
+    [<Extension>]
+    static member inline BackgroundImageSource:
+      this: Goo.Style * backgroundImageSource: Goo.ImageSourceProvider ->
+        Goo.Style
+
+    [<Extension>]
+    static member inline BasedOn:
+      this: Goo.Style * basedOn: Goo.Style -> Goo.Style
+
+    [<Extension>]
+    static member inline BlendMode:
+      this: Goo.Style * blendMode: Goo.BlendMode -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderBottomLeftRadius:
+      this: Goo.Style * borderBottomLeftRadius: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderBottomRightRadius:
+      this: Goo.Style * borderBottomRightRadius: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderColor:
+      this: Goo.Style * borderColor: Goo.Edges<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderColorAnim:
+      this: Goo.Style * borderColorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderEndColor:
+      this: Goo.Style * borderEndColor: Goo.Color -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderEndColorAnim:
+      this: Goo.Style * borderEndColorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderEndWidth:
+      this: Goo.Style * borderEndWidth: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderRadius:
+      this: Goo.Style * borderRadius: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderStartColor:
+      this: Goo.Style * borderStartColor: Goo.Color -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderStartColorAnim:
+      this: Goo.Style * borderStartColorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderStartWidth:
+      this: Goo.Style * borderStartWidth: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderStyle:
+      this: Goo.Style * borderStyle: Goo.BorderStyle -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderTopLeftRadius:
+      this: Goo.Style * borderTopLeftRadius: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderTopRightRadius:
+      this: Goo.Style * borderTopRightRadius: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BorderWidth:
+      this: Goo.Style * borderWidth: Goo.Edges -> Goo.Style
+
+    [<Extension>]
+    static member inline Bottom:
+      this: Goo.Style * bottom: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline BoxShadow:
+      this: Goo.Style * boxShadow: Goo.BoxShadow -> Goo.Style
+
+    [<Extension>]
+    static member inline BoxShadows:
+      this: Goo.Style * boxShadows: Goo.BoxShadow[] -> Goo.Style
+
+    [<Extension>]
+    static member inline ClipPath:
+      this: Goo.Style * clipPath: Goo.VectorPath -> Goo.Style
+
+    [<Extension>]
+    static member inline ClipPathFillRule:
+      this: Goo.Style * clipPathFillRule: Goo.FillRule -> Goo.Style
+
+    [<Extension>]
+    static member inline ClipPathFit:
+      this: Goo.Style * clipPathFit: Goo.ShapeFit -> Goo.Style
+
+    [<Extension>]
+    static member inline Color: this: Goo.Style * color: Goo.Color -> Goo.Style
+
+    [<Extension>]
+    static member inline ColorAnim:
+      this: Goo.Style * colorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline ColumnGap:
+      this: Goo.Style * columnGap: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Cursor:
+      this: Goo.Style * cursor: Goo.Cursor -> Goo.Style
+
+    [<Extension>]
+    static member inline Direction:
+      this: Goo.Style * direction: Goo.Direction -> Goo.Style
+
+    [<Extension>]
+    static member inline Display:
+      this: Goo.Style * display: Goo.Display -> Goo.Style
+
+    [<Extension>]
+    static member inline End: this: Goo.Style * ``end``: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Flex: this: Goo.Style * flex: float -> Goo.Style
+
+    [<Extension>]
+    static member inline FlexBasis:
+      this: Goo.Style * flexBasis: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline FlexDirection:
+      this: Goo.Style * flexDirection: Goo.FlexDirection -> Goo.Style
+
+    [<Extension>]
+    static member inline FlexGrow:
+      this: Goo.Style * flexGrow: float -> Goo.Style
+
+    [<Extension>]
+    static member inline FlexShrink:
+      this: Goo.Style * flexShrink: float -> Goo.Style
+
+    [<Extension>]
+    static member inline FlexWrap:
+      this: Goo.Style * flexWrap: Goo.FlexWrap -> Goo.Style
+
+    [<Extension>]
+    static member inline FontFamily:
+      this: Goo.Style * fontFamily: string -> Goo.Style
+
+    [<Extension>]
+    static member inline FontSize:
+      this: Goo.Style * fontSize: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline FontStyle:
+      this: Goo.Style * fontStyle: Goo.FontStyle -> Goo.Style
+
+    [<Extension>]
+    static member inline FontWeight:
+      this: Goo.Style * fontWeight: float -> Goo.Style
+
+    [<Extension>]
+    static member inline Gap: this: Goo.Style * gap: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Height:
+      this: Goo.Style * height: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Inset: this: Goo.Style * inset: Goo.Edges -> Goo.Style
+
+    [<Extension>]
+    static member inline JustifyContent:
+      this: Goo.Style * justifyContent: Goo.JustifyContent -> Goo.Style
+
+    [<Extension>]
+    static member inline Language:
+      this: Goo.Style * language: string -> Goo.Style
+
+    [<Extension>]
+    static member inline Left: this: Goo.Style * left: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline LetterSpacing:
+      this: Goo.Style * letterSpacing: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline LineHeight:
+      this: Goo.Style * lineHeight: float -> Goo.Style
+
+    [<Extension>]
+    static member inline Margin:
+      this: Goo.Style * margin: Goo.Edges -> Goo.Style
+
+    [<Extension>]
+    static member inline MarginEnd:
+      this: Goo.Style * marginEnd: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline MarginStart:
+      this: Goo.Style * marginStart: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline MaxHeight:
+      this: Goo.Style * maxHeight: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline MaxWidth:
+      this: Goo.Style * maxWidth: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline MinHeight:
+      this: Goo.Style * minHeight: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline MinWidth:
+      this: Goo.Style * minWidth: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Opacity: this: Goo.Style * opacity: float -> Goo.Style
+
+    [<Extension>]
+    static member inline OpacityAnim:
+      this: Goo.Style * opacityAnim: Goo.Anim<float> -> Goo.Style
+
+    [<Extension>]
+    static member inline OutlineColor:
+      this: Goo.Style * outlineColor: Goo.Color -> Goo.Style
+
+    [<Extension>]
+    static member inline OutlineColorAnim:
+      this: Goo.Style * outlineColorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline OutlineOffset:
+      this: Goo.Style * outlineOffset: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline OutlineWidth:
+      this: Goo.Style * outlineWidth: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Overflow:
+      this: Goo.Style * overflow: Goo.Overflow -> Goo.Style
+
+    [<Extension>]
+    static member inline OverflowX:
+      this: Goo.Style * overflowX: Goo.Overflow -> Goo.Style
+
+    [<Extension>]
+    static member inline OverflowY:
+      this: Goo.Style * overflowY: Goo.Overflow -> Goo.Style
+
+    [<Extension>]
+    static member inline Padding:
+      this: Goo.Style * padding: Goo.Edges -> Goo.Style
+
+    [<Extension>]
+    static member inline PaddingEnd:
+      this: Goo.Style * paddingEnd: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline PaddingStart:
+      this: Goo.Style * paddingStart: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Position:
+      this: Goo.Style * position: Goo.PositionType -> Goo.Style
+
+    [<Extension>]
+    static member inline Right: this: Goo.Style * right: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline RowGap:
+      this: Goo.Style * rowGap: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline ScaleAnim:
+      this: Goo.Style * scaleAnim: Goo.Anim<float> -> Goo.Style
+
+    [<Extension>]
+    static member inline Scrollbar:
+      this: Goo.Style * scrollbar: Goo.Scrollbar -> Goo.Style
+
+    [<Extension>]
+    static member inline ScrollbarVisibility:
+      this: Goo.Style * scrollbarVisibility: Goo.ScrollbarVisibility ->
+        Goo.Style
+
+    [<Extension>]
+    static member inline ScrollbarVisibilityX:
+      this: Goo.Style * scrollbarVisibilityX: Goo.ScrollbarVisibility ->
+        Goo.Style
+
+    [<Extension>]
+    static member inline ScrollbarVisibilityY:
+      this: Goo.Style * scrollbarVisibilityY: Goo.ScrollbarVisibility ->
+        Goo.Style
+
+    [<Extension>]
+    static member inline ScrollbarX:
+      this: Goo.Style * scrollbarX: Goo.Scrollbar -> Goo.Style
+
+    [<Extension>]
+    static member inline ScrollbarY:
+      this: Goo.Style * scrollbarY: Goo.Scrollbar -> Goo.Style
+
+    [<Extension>]
+    static member inline ShaderEffect:
+      this: Goo.Style * shaderEffect: Goo.ShaderEffect -> Goo.Style
+
+    [<Extension>]
+    static member inline Start: this: Goo.Style * start: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline TextAlign:
+      this: Goo.Style * textAlign: Goo.TextAlign -> Goo.Style
+
+    [<Extension>]
+    static member inline TextDecoration:
+      this: Goo.Style * textDecoration: Goo.TextDecoration -> Goo.Style
+
+    [<Extension>]
+    static member inline TextMaxLines:
+      this: Goo.Style * textMaxLines: int -> Goo.Style
+
+    [<Extension>]
+    static member inline TextShadow:
+      this: Goo.Style * textShadow: Goo.TextShadow -> Goo.Style
+
+    [<Extension>]
+    static member inline TextShadows:
+      this: Goo.Style * textShadows: Goo.TextShadow[] -> Goo.Style
+
+    [<Extension>]
+    static member inline TextStrokeColor:
+      this: Goo.Style * textStrokeColor: Goo.Color -> Goo.Style
+
+    [<Extension>]
+    static member inline TextStrokeColorAnim:
+      this: Goo.Style * textStrokeColorAnim: Goo.Anim<Goo.Color> -> Goo.Style
+
+    [<Extension>]
+    static member inline TextStrokeWidth:
+      this: Goo.Style * textStrokeWidth: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline TextTransform:
+      this: Goo.Style * textTransform: Goo.TextTransform -> Goo.Style
+
+    [<Extension>]
+    static member inline TextTrimming:
+      this: Goo.Style * textTrimming: Goo.TextTrimming -> Goo.Style
+
+    [<Extension>]
+    static member inline TextWrap:
+      this: Goo.Style * textWrap: Goo.TextWrap -> Goo.Style
+
+    [<Extension>]
+    static member inline Top: this: Goo.Style * top: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline Transform:
+      this: Goo.Style * transform: Goo.PanelTransform -> Goo.Style
+
+    [<Extension>]
+    static member inline TransformOriginX:
+      this: Goo.Style * transformOriginX: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline TransformOriginY:
+      this: Goo.Style * transformOriginY: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline TranslateAnim:
+      this: Goo.Style * translateAnim: Goo.Anim<Goo.Point> -> Goo.Style
+
+    [<Extension>]
+    static member inline Visibility:
+      this: Goo.Style * visibility: Goo.Visibility -> Goo.Style
+
+    [<Extension>]
+    static member inline Width: this: Goo.Style * width: Goo.Length -> Goo.Style
+
+    [<Extension>]
+    static member inline ZIndex: this: Goo.Style * zIndex: int -> Goo.Style
+
+  [<Extension; Sealed>]
+  type TextExtensions =
+    [<Extension>]
+    static member inline Content: this: Goo.Text * content: string -> Goo.Text
+
+    [<Extension>]
+    static member inline Selectable:
+      this: Goo.Text * selectable: bool -> Goo.Text
+
+    [<Extension>]
+    static member inline SelectionColor:
+      this: Goo.Text * selectionColor: Goo.Color -> Goo.Text
+
+    [<Extension>]
+    static member inline StyleRanges:
+      this: Goo.Text * styleRanges: Goo.TextStyleRange[] -> Goo.Text
+
+  [<Extension; Sealed>]
   type TextCommandEventExtensions =
     [<Extension>]
     static member inline Cancel:
       this: Goo.TextCommandEvent * cancel: bool -> Goo.TextCommandEvent
+
+  [<Extension; Sealed>]
+  type TextEditorExtensions =
+    [<Extension>]
+    static member inline CaretColor:
+      this: Goo.TextEditor * caretColor: Goo.Color -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline Controller:
+      this: Goo.TextEditor * controller: Goo.TextEditorController ->
+        Goo.TextEditor
+
+    [<Extension>]
+    static member inline CurrentLineColor:
+      this: Goo.TextEditor * currentLineColor: Goo.Color -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline InputOptions:
+      this: Goo.TextEditor * inputOptions: Goo.TextInputOptions ->
+        Goo.TextEditor
+
+    [<Extension>]
+    static member inline Layers:
+      this: Goo.TextEditor * layers: Goo.TextPresentationLayer[] ->
+        Goo.TextEditor
+
+    [<Extension>]
+    static member inline LineNumberColor:
+      this: Goo.TextEditor * lineNumberColor: Goo.Color -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline OnChange:
+      this: Goo.TextEditor * onChange: Action<Goo.TextDocumentChange> ->
+        Goo.TextEditor
+
+    [<Extension>]
+    static member inline OnSubmit:
+      this: Goo.TextEditor * onSubmit: System.Action -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline OverscanLines:
+      this: Goo.TextEditor * overscanLines: int -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline Placeholder:
+      this: Goo.TextEditor * placeholder: string -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline PlaceholderColor:
+      this: Goo.TextEditor * placeholderColor: Nullable<Goo.Color> ->
+        Goo.TextEditor
+
+    [<Extension>]
+    static member inline ReadOnly:
+      this: Goo.TextEditor * readOnly: bool -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline SelectionColor:
+      this: Goo.TextEditor * selectionColor: Goo.Color -> Goo.TextEditor
+
+    [<Extension>]
+    static member inline ShowLineNumbers:
+      this: Goo.TextEditor * showLineNumbers: bool -> Goo.TextEditor
 
   [<Extension; Sealed>]
   type TextEditorControllerExtensions =
@@ -75,6 +1135,95 @@ module Setters =
     [<Extension>]
     static member inline UseTabs:
       this: Goo.TextEditorController * useTabs: bool -> Goo.TextEditorController
+
+  [<Extension; Sealed>]
+  type TextEntryExtensions =
+    [<Extension>]
+    static member inline Controlled:
+      this: Goo.TextEntry * controlled: bool -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline InputOptions:
+      this: Goo.TextEntry * inputOptions: Goo.TextInputOptions -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline OnChange:
+      this: Goo.TextEntry * onChange: Action<string> -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline OnSubmit:
+      this: Goo.TextEntry * onSubmit: Action<string> -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline Password:
+      this: Goo.TextEntry * password: bool -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline Placeholder:
+      this: Goo.TextEntry * placeholder: string -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline PlaceholderColor:
+      this: Goo.TextEntry * placeholderColor: Nullable<Goo.Color> ->
+        Goo.TextEntry
+
+    [<Extension>]
+    static member inline ReadOnly:
+      this: Goo.TextEntry * readOnly: bool -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline SelectionColor:
+      this: Goo.TextEntry * selectionColor: Goo.Color -> Goo.TextEntry
+
+    [<Extension>]
+    static member inline Value:
+      this: Goo.TextEntry * value: string -> Goo.TextEntry
+
+  [<Extension; Sealed>]
+  type TextInputOptionsExtensions =
+    [<Extension>]
+    static member inline AutofillHints:
+      this: Goo.TextInputOptions * autofillHints: string[] ->
+        Goo.TextInputOptions
+
+    [<Extension>]
+    static member inline EnterAction:
+      this: Goo.TextInputOptions * enterAction: Goo.EnterAction ->
+        Goo.TextInputOptions
+
+    [<Extension>]
+    static member inline Purpose:
+      this: Goo.TextInputOptions * purpose: Goo.InputPurpose ->
+        Goo.TextInputOptions
+
+  [<Extension; Sealed>]
+  type VectorStrokeExtensions =
+    [<Extension>]
+    static member inline Cap:
+      this: Goo.VectorStroke * cap: Goo.StrokeCap -> Goo.VectorStroke
+
+    [<Extension>]
+    static member inline Dashes:
+      this: Goo.VectorStroke * dashes: Goo.DashPattern -> Goo.VectorStroke
+
+    [<Extension>]
+    static member inline Join:
+      this: Goo.VectorStroke * join: Goo.StrokeJoin -> Goo.VectorStroke
+
+    [<Extension>]
+    static member inline MiterLimit:
+      this: Goo.VectorStroke * miterLimit: float -> Goo.VectorStroke
+
+    [<Extension>]
+    static member inline VectorEffect:
+      this: Goo.VectorStroke * vectorEffect: Goo.VectorEffect ->
+        Goo.VectorStroke
+
+  [<Extension; Sealed>]
+  type VirtualExtensions =
+    [<Extension>]
+    static member inline Source:
+      this: Goo.Virtual * source: Goo.VirtualSource -> Goo.Virtual
 
   [<Extension; Sealed>]
   type VirtualOutputExtensions =
@@ -115,6 +1264,10 @@ module Setters =
       this: Goo.Window * background: Goo.Color -> Goo.Window
 
     [<Extension>]
+    static member inline CloseDrainMs:
+      this: Goo.Window * closeDrainMs: float -> Goo.Window
+
+    [<Extension>]
     static member inline ContentUnderTitlebar:
       this: Goo.Window * contentUnderTitlebar: bool -> Goo.Window
 
@@ -124,7 +1277,7 @@ module Setters =
 
     [<Extension>]
     static member inline DragStartDistance:
-      this: Goo.Window * dragStartDistance: float32 -> Goo.Window
+      this: Goo.Window * dragStartDistance: float -> Goo.Window
 
     [<Extension>]
     static member inline Focusable:
@@ -147,9 +1300,6 @@ module Setters =
       this: Goo.Window * frameTheme: Goo.SystemTheme -> Goo.Window
 
     [<Extension>]
-    static member inline Height: this: Goo.Window * height: int -> Goo.Window
-
-    [<Extension>]
     static member inline InitiallyVisible:
       this: Goo.Window * initiallyVisible: bool -> Goo.Window
 
@@ -158,20 +1308,12 @@ module Setters =
       this: Goo.Window * macOSBackdrop: Goo.MacOSBackdropOptions -> Goo.Window
 
     [<Extension>]
-    static member inline MaxHeight:
-      this: Goo.Window * maxHeight: int -> Goo.Window
+    static member inline MaxSize:
+      this: Goo.Window * maxSize: Goo.LayoutSize -> Goo.Window
 
     [<Extension>]
-    static member inline MaxWidth:
-      this: Goo.Window * maxWidth: int -> Goo.Window
-
-    [<Extension>]
-    static member inline MinHeight:
-      this: Goo.Window * minHeight: int -> Goo.Window
-
-    [<Extension>]
-    static member inline MinWidth:
-      this: Goo.Window * minWidth: int -> Goo.Window
+    static member inline MinSize:
+      this: Goo.Window * minSize: Goo.LayoutSize -> Goo.Window
 
     [<Extension>]
     static member inline Modal: this: Goo.Window * modal: bool -> Goo.Window
@@ -194,7 +1336,11 @@ module Setters =
 
     [<Extension>]
     static member inline ResizeBand:
-      this: Goo.Window * resizeBand: float32 -> Goo.Window
+      this: Goo.Window * resizeBand: float -> Goo.Window
+
+    [<Extension>]
+    static member inline Size:
+      this: Goo.Window * size: Goo.LayoutSize -> Goo.Window
 
     [<Extension>]
     static member inline SmoothScrolling:
@@ -208,15 +1354,12 @@ module Setters =
     static member inline Title: this: Goo.Window * title: string -> Goo.Window
 
     [<Extension>]
-    static member inline Topmost: this: Goo.Window * topmost: bool -> Goo.Window
-
-    [<Extension>]
     static member inline Transparent:
       this: Goo.Window * transparent: bool -> Goo.Window
 
     [<Extension>]
     static member inline UiScale:
-      this: Goo.Window * uiScale: float32 -> Goo.Window
+      this: Goo.Window * uiScale: float -> Goo.Window
 
     [<Extension>]
     static member inline VSync: this: Goo.Window * vSync: bool -> Goo.Window
@@ -228,10 +1371,7 @@ module Setters =
 
     [<Extension>]
     static member inline WheelScrollScale:
-      this: Goo.Window * wheelScrollScale: float32 -> Goo.Window
-
-    [<Extension>]
-    static member inline Width: this: Goo.Window * width: int -> Goo.Window
+      this: Goo.Window * wheelScrollScale: float -> Goo.Window
 
     [<Extension>]
     static member inline WindowsBackdrop:

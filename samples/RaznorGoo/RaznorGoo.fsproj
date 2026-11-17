@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Goo" Version="0.30.0" />
+    <PackageReference Include="Goo" Version="0.31.0" />
     <PackageReference Include="LibVLCSharp" Version="3.10.1" />
   </ItemGroup>
 

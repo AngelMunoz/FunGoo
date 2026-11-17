@@ -2522,6 +2522,14 @@ module Widgets =
   [<Extension; Sealed>]
   type ComboBoxInputExtensions =
     [<Extension>]
+    static member inline matchTriggerWidth
+      (this: Goo.Widgets.Inputs.ComboBoxInput, [<Struct>] ?value: bool)
+      : Goo.Widgets.Inputs.ComboBoxInput =
+      let mutable copy = this
+      copy.MatchTriggerWidth <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
     static member inline ``open``
       (this: Goo.Widgets.Inputs.ComboBoxInput, [<Struct>] ?value: bool)
       : Goo.Widgets.Inputs.ComboBoxInput =
@@ -4932,6 +4940,16 @@ module Widgets =
       : Goo.Widgets.Layout.TooltipInput =
       let mutable copy = this
       copy.Gap <- ValueOption.toNullable value
+      copy
+
+    [<Extension>]
+    static member inline placement
+      (
+        this: Goo.Widgets.Layout.TooltipInput,
+        [<Struct>] ?value: Goo.PortalPlacement
+      ) : Goo.Widgets.Layout.TooltipInput =
+      let mutable copy = this
+      copy.Placement <- ValueOption.toNullable value
       copy
 
   [<Extension; Sealed>]

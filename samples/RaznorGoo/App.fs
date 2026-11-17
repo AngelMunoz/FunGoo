@@ -9,11 +9,7 @@ open GooRes.Widgets.FilePicker
 open GooRes.Layout
 
 let run() =
-  Window.ConfigureApplication(
-    "RaznorGoo",
-    "0.1.0",
-    "io.github.angelmunoz.raznor"
-  )
+  Application.Configure("RaznorGoo", "0.1.0", "io.github.angelmunoz.raznor")
 
   // Services and the marshaller come first: the cells receive env, and the
   // window attaches last because Root is init-only.
@@ -75,7 +71,7 @@ let run() =
   let root = Layout.view(picker, playlist, bottomBar)
 
   let window =
-    Window(Title = "RaznorGoo", Width = 720, Height = 480, Root = root)
+    Window(Title = "RaznorGoo", Size = LayoutSize(720, 480), Root = root)
 
   marshaller.Attach(window)
 
@@ -101,4 +97,4 @@ let run() =
     OnError = fun message -> eprintfn "playback: %s" message
   }
 
-  window.Run()
+  Application.Run window

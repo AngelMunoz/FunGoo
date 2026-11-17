@@ -8,6 +8,10 @@
 
 ### Changed
 
+- **Core:** **Breaking:** The Goo dependency is now 0.31.0 (was 0.30.0). App startup moves to `Application.Configure` and `Application.Run`, window size uses `Size` with `LayoutSize`, `Window.TryPost` is now `Window.Post`, and `Cell.Mount` takes the key before the factory. The generated surface gains `Row` and `Column` children helpers and follows the new setter shapes.
+- **Widgets:** **Breaking:** The Goo.Widgets dependency is now 0.22.2 (was 0.21.0). The generated surface follows the upstream rename of `Create*` element hooks to `Configure*` and drops the removed `Avatar.ImagePath` and `AsyncImage.ImagePath` setters.
+- **MVU:** `FunGoo.Mvu` follows Goo 0.31.0. The post shape is `Window.Post`, and factory mounts take the key first.
+- **Samples:** RaznorGoo and MvuSpike move to Goo 0.31.0 and the new startup, size, post, and mount call shapes.
 - **Samples:** RaznorGoo now follows the `goo-fsharp` skill shape: shared playback state lives in one store record read inside `Build` (no adaptive values), widget callbacks arrive as function parameters instead of record fields, dependencies flow through capability interfaces with a single UI marshaller, playback subscriptions go through the `IPlayback` worker interface instead of a loose function returned beside it, and the file picker is its own mounted cell so background loads no longer rebuild the whole window.
 
 ## [0.8.0] - 2026-11-11

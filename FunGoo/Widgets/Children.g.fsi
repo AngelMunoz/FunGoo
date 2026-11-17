@@ -17,6 +17,16 @@ module Children =
       this: Goo.Button * [<ParamArray>] children: Goo.Blob[] -> Goo.Button
 
   [<Extension; Sealed>]
+  type ColumnExtensions =
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Column * children: seq<Goo.Blob> -> Goo.Column
+
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Column * [<ParamArray>] children: Goo.Blob[] -> Goo.Column
+
+  [<Extension; Sealed>]
   type ContainerExtensions =
     [<Extension>]
     static member inline Children:
@@ -25,3 +35,13 @@ module Children =
     [<Extension>]
     static member inline Children:
       this: Goo.Container * [<ParamArray>] children: Goo.Blob[] -> Goo.Container
+
+  [<Extension; Sealed>]
+  type RowExtensions =
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Row * children: seq<Goo.Blob> -> Goo.Row
+
+    [<Extension>]
+    static member inline Children:
+      this: Goo.Row * [<ParamArray>] children: Goo.Blob[] -> Goo.Row

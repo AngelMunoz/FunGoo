@@ -12,7 +12,7 @@ open Goo
 /// the MVU store, and it is the only reassignment in the adapter.
 ///
 /// Dispatch serialization: every dispatch posts the message through the
-/// post function given at creation (the Window.TryPost shape), so update
+/// post function given at creation (the Window.Post shape), so update
 /// never runs on the caller thread, including inside Build. A dispatch
 /// whose post call returns false (no window yet, or the window has closed)
 /// drops the message and reports the drop through the program error handler.
