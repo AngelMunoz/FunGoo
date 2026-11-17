@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-16
+
 ### Added
 
 - **MVU:** New `FunGoo.Mvu` package: run stock Elmish programs on Goo with `MvuCell`, which mounts a program as a cell and rebuilds it on each model change. Each cell owns its model, so a window can compose several MVU cells and a message in one cell rebuilds that cell only. The package adds subscription helpers for timers and Goo `Action` events, plus a `Cmd.ofAction` helper. See `samples/MvuSpike` for a counter and a timer as two independent cells.
