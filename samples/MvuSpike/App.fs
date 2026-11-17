@@ -37,8 +37,8 @@ let run() =
   // The composition cell owns no model. It mounts the MVU cells through
   // factories made once, beside the cells they return, so a child rebuild
   // never runs this cell build and one child never touches the other.
-  let counterFactory = fun () -> counter
-  let clockFactory = fun () -> clock
+  let counterFactory: unit -> Cell = fun () -> counter
+  let clockFactory: unit -> Cell = fun () -> clock
 
   let root = {
     new Cell() with
@@ -46,8 +46,8 @@ let run() =
         Container(Padding = 24, Gap = 12, FlexDirection = FlexDirection.Column)
           .Children(
             Text("Goo Plus MVU", AlignSelf = AlignSelf.Center),
-            Cell.Mount<Cell>("counter", Func<Cell>(fun () -> counter :> Cell)),
-            Cell.Mount<Cell>("clock", Func<Cell>(fun () -> clock :> Cell))
+            Cell.Mount<Cell>("counter", counterFactory),
+            Cell.Mount<Cell>("clock", clockFactory)
           )
   }
 
