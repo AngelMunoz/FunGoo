@@ -1,7 +1,9 @@
 <Solution>
   <Project Path="FunGoo/FunGoo.fsproj" />
+  <Project Path="FunGoo.Mvu/FunGoo.Mvu.fsproj" />
   <Project Path="FunGoo.Widgets/FunGoo.Widgets.fsproj" />
   <Folder Name="/samples/">
+    <Project Path="samples/MvuSpike/MvuSpike.fsproj" />
     <Project Path="samples\RaznorGoo\RaznorGoo.fsproj" />
   </Folder>
 </Solution>

@@ -80,6 +80,7 @@ jobs:
         run: |
           dotnet pack --configuration Release --no-build --output nupkgs FunGoo/FunGoo.fsproj
           dotnet pack --configuration Release --no-build --output nupkgs FunGoo.Widgets/FunGoo.Widgets.fsproj
+          dotnet pack --configuration Release --no-build --output nupkgs FunGoo.Mvu/FunGoo.Mvu.fsproj
 
       - name: NuGet login (trusted publishing)
         if: steps.check_tag.outputs.exists == 'false'

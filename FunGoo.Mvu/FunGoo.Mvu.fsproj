@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The package version comes from the latest released section of the
+         repository changelog (Ionide.KeepAChangelog.Tasks below). -->
+    <ChangelogFile>$(MSBuildThisFileDirectory)../CHANGELOG.md</ChangelogFile>
+    <Authors>Angel D. Munoz</Authors>
+    <Description>Elmish MVU programs on the Goo UI framework, for F#.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/AngelMunoz/FunGoo</RepositoryUrl>
+    <PackageTags>goo;fsharp;elmish;mvu;desktop;ui</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="MvuCell.fsi" />
+    <Compile Include="MvuCell.fs" />
+    <Compile Include="MvuSub.fsi" />
+    <Compile Include="MvuSub.fs" />
+    <Compile Include="MvuCmd.fsi" />
+    <Compile Include="MvuCmd.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Goo" Version="0.30.0" />
+    <PackageReference Include="Elmish" Version="5.0.2" />
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ionide.KeepAChangelog.Tasks" Version="0.3.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
