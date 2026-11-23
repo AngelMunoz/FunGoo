@@ -30,38 +30,27 @@ type MetroPivotInput = {
 
 /// Stateful Metro Pivot navigation cell with peeking light-weight headers,
 /// keyboard and pointer-swipe navigation, and animated content transitions.
-[<Sealed>]
+/// <c>MetroPivot.create</c> makes the cell. The type holds the surface that
+/// hosts and tests use.
+[<AbstractClass>]
 type MetroPivotCell =
   inherit Cell<MetroPivotInput>
 
-  /// Creates a pivot cell invoking <paramref name="onSelect"/> on navigation
-  /// and building the active panel via <paramref name="renderContent"/>.
-  /// Inactive tab content unmounts on switch, so any <c>Cell.Mount</c> factory
-  /// inside <paramref name="renderContent"/> must return a fresh <c>Cell</c>.
-  /// The cell calls <paramref name="renderContent"/> inside its own
-  /// <c>Build</c>. A callback that <paramref name="renderContent"/> creates
-  /// belongs to this cell, so the owner rule rebuilds this cell and not the
-  /// caller. Such a callback must rebuild the caller cell when it changes the
-  /// state of the caller cell.
-  new:
-    onSelect: (string -> unit) * renderContent: (string -> Blob) ->
-      MetroPivotCell
+  /// Current paint-bound content translation animation. A test reads it.
+  abstract ContentTranslate: Anim<Point>
 
-  /// Current paint-bound content translation animation.
-  member ContentTranslate: Anim<Point>
+  /// Current paint-bound content opacity animation. A test reads it.
+  abstract ContentOpacity: Anim<float>
 
-  /// Current paint-bound content opacity animation.
-  member ContentOpacity: Anim<float>
+  /// The tree of the current input: the title, the horizontal header strip,
+  /// and the active content panel. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
 
-  /// Triggers the directional content entrance transition when
-  /// <see cref="MetroPivotInput.SelectedId"/> changes.
-  override InputChanged: input: MetroPivotInput -> unit
-
-  /// Resets pointer swipe state, selection tracking, and animations on unmount.
-  override Unmounting: unit -> unit
-
-  /// Builds the pivot title, horizontal header strip, and active content panel.
-  override Build: input: MetroPivotInput -> Blob
+  /// Gives one selection of this cell to the host cell, as a Goo.Widgets
+  /// control does. The owner rule then rebuilds the host cell, so a host
+  /// does not call <c>Rebuild</c> on itself in the selection callback.
+  member Raise: callback: Action<string> * value: string -> unit
 
 /// Construction and mounting helpers for <see cref="MetroPivotCell"/>.
 [<RequireQualifiedAccess>]
@@ -72,6 +61,20 @@ module MetroPivot =
   /// looping enabled.
   val defaults:
     items: MetroPivotItem array * selectedId: string -> MetroPivotInput
+
+  /// Creates a pivot cell. The cell gives each navigation to
+  /// <paramref name="onSelect"/>, and the owner rule then rebuilds the host
+  /// cell. It builds the active panel through <paramref name="renderContent"/>.
+  /// Inactive tab content unmounts on switch, so any <c>Cell.Mount</c> factory
+  /// inside <paramref name="renderContent"/> must return a fresh <c>Cell</c>.
+  /// The cell calls <paramref name="renderContent"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="renderContent"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
+  val create:
+    onSelect: (string -> unit) * renderContent: (string -> Blob) ->
+      MetroPivotCell
 
   /// Creates a reusable cell factory for <see cref="MetroPivotCell"/>. Cache
   /// the returned factory outside <c>Build</c>.

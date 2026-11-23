@@ -39,77 +39,102 @@ module private HubInternals =
     else
       320.0
 
-[<Sealed>]
-type MetroHubCell(renderSection: string -> Blob) as this =
+[<AbstractClass>]
+type MetroHubCell() =
   inherit Cell<MetroHubInput>()
 
-  let scrollHandle = ElementHandle()
-  let headerTranslate = this.AnimateValue(HubInternals.zeroPoint)
+  abstract ScrollHandle: ElementHandle
 
-  let mutable attachedHost: Window voption = ValueNone
-  let mutable subscribed = false
-  let mutable lastReducedMotion = false
-  let mutable scopedReducedMotion = false
-  let mutable activeParallax = 0.35
+  abstract HeaderTranslate: Anim<Point>
 
-  let isReducedMotion() =
-    scopedReducedMotion
-    || (attachedHost
+[<RequireQualifiedAccess>]
+module MetroHub =
+
+  let defaults(title: string, sections: MetroHubSection array) : MetroHubInput = {
+    Title = title
+    Sections = sections
+    ParallaxFactor = 0.35
+    SectionGap = 32.0
+    AccessibilityName = ValueNone
+  }
+
+  /// State of a Hub cell. One mutable field per concern.
+  type private HubState = {
+    ScrollHandle: ElementHandle
+    mutable AttachedHost: Window voption
+    mutable Subscribed: bool
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    mutable ActiveParallax: float
+    // A slot for the animation value. `create` fills it after the cell exists.
+    mutable HeaderTranslate: Anim<Point>
+  }
+
+  /// The values that the functions of a Hub cell work on.
+  type private HubContext = {
+    State: HubState
+    RenderSection: string -> Blob
+    /// One delegate for the life of the cell. The handle subscribes to it.
+    OnMetricsChanged: Action<ElementMetrics>
+  }
+
+  let private initialState() : HubState = {
+    ScrollHandle = ElementHandle()
+    AttachedHost = ValueNone
+    Subscribed = false
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    ActiveParallax = 0.35
+    HeaderTranslate = Unchecked.defaultof<Anim<Point>>
+  }
+
+  /// <c>true</c> when a scope or the host window asks for reduced motion.
+  let private isReducedMotion(state: HubState) : bool =
+    state.ScopedReducedMotion
+    || (state.AttachedHost
         |> ValueOption.map(fun w -> Metro.readWindow(w).ReducedMotion)
-        |> ValueOption.defaultValue lastReducedMotion)
+        |> ValueOption.defaultValue state.LastReducedMotion)
 
-  let updateParallax(scrollX: float) =
-    if isReducedMotion() then
-      headerTranslate.Snap(HubInternals.zeroPoint)
+  /// Moves the header against the scroll offset. The animation is
+  /// paint-bound, thus the scroll causes no cell rebuild.
+  let private updateParallax(state: HubState, scrollX: float) : unit =
+    if isReducedMotion state then
+      state.HeaderTranslate.Snap(HubInternals.zeroPoint)
     else
       let x =
         if Double.IsFinite scrollX then
-          -scrollX * activeParallax
+          -scrollX * state.ActiveParallax
         else
           0.0
 
-      headerTranslate.Snap(Point(X = x, Y = 0.0))
+      state.HeaderTranslate.Snap(Point(X = x, Y = 0.0))
 
-  let onMetricsChanged =
-    Action<ElementMetrics>(fun metrics -> updateParallax metrics.ScrollOffset.X)
+  /// Subscribes the handle to its scroll metrics when the cell mounts.
+  let private mounted(ctx: HubContext, host: Window voption) : unit =
+    let state = ctx.State
+    state.AttachedHost <- host
 
-  member _.ScrollHandle = scrollHandle
-  member _.HeaderTranslate = headerTranslate
+    if not state.Subscribed then
+      state.ScrollHandle.add_MetricsChanged ctx.OnMetricsChanged
+      state.Subscribed <- true
 
-  override this.Mounted() =
-    attachedHost <- if isNull this.Host then ValueNone else ValueSome this.Host
+    updateParallax(state, state.ScrollHandle.ScrollOffset.X)
 
-    if not subscribed then
-      scrollHandle.add_MetricsChanged onMetricsChanged
-      subscribed <- true
+  /// Unsubscribes the handle and puts the header at rest.
+  let private unmounting(ctx: HubContext) : unit =
+    let state = ctx.State
 
-    updateParallax scrollHandle.ScrollOffset.X
+    if state.Subscribed then
+      state.ScrollHandle.remove_MetricsChanged ctx.OnMetricsChanged
+      state.Subscribed <- false
 
-  override _.Unmounting() =
-    if subscribed then
-      scrollHandle.remove_MetricsChanged onMetricsChanged
-      subscribed <- false
+    state.AttachedHost <- ValueNone
+    state.ScopedReducedMotion <- false
+    state.HeaderTranslate.Snap(HubInternals.zeroPoint)
 
-    attachedHost <- ValueNone
-    scopedReducedMotion <- false
-    headerTranslate.Snap(HubInternals.zeroPoint)
-
-  override this.Build(input: MetroHubInput) : Blob =
-    let theme = Metro.read()
-
-    let windowReduced =
-      if not(isNull this.Host) then
-        Metro.readWindow(this.Host).ReducedMotion
-      else
-        false
-
-    scopedReducedMotion <- theme.ReducedMotion && not windowReduced
-    lastReducedMotion <- theme.ReducedMotion
-    activeParallax <- HubInternals.resolveParallax input.ParallaxFactor
-
-    if theme.ReducedMotion then
-      headerTranslate.Snap(HubInternals.zeroPoint)
-
+  let private buildTree
+    (ctx: HubContext, input: MetroHubInput, theme: MetroTheme)
+    : Blob =
     let titleText = if isNull input.Title then "" else input.Title
 
     let sections =
@@ -137,7 +162,7 @@ type MetroHubCell(renderSection: string -> Blob) as this =
           )
       )
         .Children(
-          Container(TranslateAnim = headerTranslate, FlexShrink = 0.0)
+          Container(TranslateAnim = ctx.State.HeaderTranslate, FlexShrink = 0.0)
             .Children(
               MetroText.build {
                 MetroText.defaults(titleText, MetroTextRole.Hero) with
@@ -148,7 +173,7 @@ type MetroHubCell(renderSection: string -> Blob) as this =
 
     let viewport =
       Container(
-        Handle = scrollHandle,
+        Handle = ctx.State.ScrollHandle,
         FlexDirection = FlexDirection.Row,
         FlexWrap = FlexWrap.NoWrap,
         AlignItems = AlignItems.Stretch,
@@ -180,7 +205,7 @@ type MetroHubCell(renderSection: string -> Blob) as this =
           Width = Length.Pixels secWidth,
           Gap = Length.Pixels 12.0
         )
-          .Children(MetroText.header secHeader, renderSection section.Id)
+          .Children(MetroText.header secHeader, ctx.RenderSection section.Id)
 
       viewport.Add(sectionNode)
 
@@ -194,19 +219,66 @@ type MetroHubCell(renderSection: string -> Blob) as this =
     )
       .Children(headerLayer, viewport)
 
-[<RequireQualifiedAccess>]
-module MetroHub =
+  /// Reads the theme and the parallax factor, then builds the tree.
+  let private build
+    (ctx: HubContext, input: MetroHubInput, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
+    state.ActiveParallax <- HubInternals.resolveParallax input.ParallaxFactor
 
-  let defaults(title: string, sections: MetroHubSection array) : MetroHubInput = {
-    Title = title
-    Sections = sections
-    ParallaxFactor = 0.35
-    SectionGap = 32.0
-    AccessibilityName = ValueNone
-  }
+    if theme.ReducedMotion then
+      state.HeaderTranslate.Snap(HubInternals.zeroPoint)
+
+    buildTree(ctx, input, theme)
+
+  /// The reduced motion preference of the host window. <c>ValueNone</c> when
+  /// the cell has no window.
+  let private reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  /// The window of a cell as a value option.
+  let private hostOf(host: Window) : Window voption =
+    if isNull host then ValueNone else ValueSome host
+
+  let create(renderSection: string -> Blob) : MetroHubCell =
+    let state = initialState()
+
+    let onMetricsChanged =
+      Action<ElementMetrics>(fun metrics ->
+        updateParallax(state, metrics.ScrollOffset.X))
+
+    let context: HubContext = {
+      State = state
+      RenderSection = renderSection
+      OnMetricsChanged = onMetricsChanged
+    }
+
+    let cell = {
+      new MetroHubCell() with
+        override _.ScrollHandle = state.ScrollHandle
+        override _.HeaderTranslate = state.HeaderTranslate
+
+        override this.Mounted() = mounted(context, hostOf this.Host)
+
+        override _.Unmounting() = unmounting context
+
+        override this.Build(input) : Blob =
+          build(context, input, reducedMotionOf this.Host)
+    }
+
+    // The cell exists now: Goo ties the animation to it.
+    state.HeaderTranslate <- cell.AnimateValue(HubInternals.zeroPoint)
+    cell
 
   let createFactory(renderSection: string -> Blob) : Func<MetroHubCell> =
-    Func<MetroHubCell>(fun () -> MetroHubCell(renderSection))
+    Func<MetroHubCell>(fun () -> create renderSection)
 
   let mount
     (key: string, input: MetroHubInput, factory: Func<MetroHubCell>)

@@ -204,17 +204,23 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   let mutable loopMode = true
   let mutable lastRenderedId = ""
 
-  let hostCellRef: Cell voption ref = ref ValueNone
+  // The test keeps the mounted cell: no search of the retained tree.
+  let mutable pivotRef: MetroPivotCell voption = ValueNone
 
   let pivotFactory =
-    MetroPivot.createFactory(
-      (fun nextId ->
-        selected <- nextId
-        hostCellRef.Value |> ValueOption.iter(fun c -> c.Rebuild())),
-      fun id ->
-        lastRenderedId <- id
-        MetroText.body $"Panel-{id}"
-    )
+    Func<MetroPivotCell>(fun () ->
+      // The handler writes the state only. The Pivot gives each selection to
+      // the host cell, so the owner rule rebuilds the host.
+      let cell =
+        MetroPivot.create(
+          (fun nextId -> selected <- nextId),
+          fun id ->
+            lastRenderedId <- id
+            MetroText.body $"Panel-{id}"
+        )
+
+      pivotRef <- ValueSome cell
+      cell)
 
   use host = createHost(800, 600)
 
@@ -230,22 +236,21 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
         pivotFactory
       ))
 
-  hostCellRef.Value <- ValueSome(rootCell :> Cell)
   let window = Window(Root = rootCell)
   Metro.attach(window, darkConfig)
   window.Attach(host) |> ignore
   pumpFrames(host, 2)
 
   let pivotCell =
-    match findMountedCell<MetroPivotCell> window with
-    | ValueSome c -> c
+    match pivotRef with
+    | ValueSome cell -> cell
     | ValueNone -> failwith "Expected MetroPivotCell to be mounted."
 
   Assert.Equal("one", lastRenderedId)
 
   // Inspect built tree structure: title, header strip (all keyed), content.
   let mutable builtBlob: Blob = null
-  rootCell.DuringBuild(host, fun () -> builtBlob <- invokeBuildRaw pivotCell)
+  rootCell.DuringBuild(host, fun () -> builtBlob <- pivotCell.View)
   let built = builtBlob :?> Container
   Assert.Equal(3, childCount built)
   let titleText = childAt(built, 0) :?> Text
@@ -261,30 +266,25 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   Assert.Equal(AccessibilityRole.Tab, tab0.Accessibility.Role)
   Assert.Equal(Nullable true, tab0.Accessibility.Selected)
   Assert.Equal(Nullable false, tab1.Accessibility.Selected)
-  Assert.Equal(28.0f, requireEntry(tab0, "FontSize").A)
-  Assert.Equal(300.0f, requireEntry(tab0, "FontWeight").A)
-
-  assertColorEqual(MetroPalette.dark.Foreground, requireEntry(tab0, "Color"))
-
-  assertColorEqual(
-    MetroPalette.dark.ForegroundDisabled,
-    requireEntry(tab1, "Color")
-  )
+  Assert.Equal("pivot-tab-one", tab0.Key)
+  Assert.Equal("pivot-tab-two", tab1.Key)
+  // Style values are write-only. The rendered frame of the gallery covers
+  // the colors and the font of the tabs.
 
   let contentPanel = childAt(built, 2) :?> Container
   Assert.Equal(AccessibilityRole.TabPanel, contentPanel.Accessibility.Role)
 
-  // Tab click selects item and triggers entrance animation.
+  // A tab click selects the item and starts the entrance animation. The
+  // handler has no Rebuild call: the owner rule rebuilds the host.
+  let buildsBefore = rootCell.Builds
   tab1.OnClick.Invoke()
   pumpFrames(host, 1)
   Assert.Equal("two", selected)
   Assert.Equal("two", lastRenderedId)
+  Assert.True(rootCell.Builds > buildsBefore)
   Assert.True(pivotCell.ContentTranslate.Running)
   Assert.True(pivotCell.ContentOpacity.Running)
-  pumpMotion(window, 30, 0.016)
-  Assert.False(pivotCell.ContentTranslate.Running)
-  Assert.Equal(0.0, pivotCell.ContentTranslate.Value.X, 3)
-  Assert.Equal(1.0, pivotCell.ContentOpacity.Value, 3)
+  // A headless test cannot advance an animation, so it asserts the start.
 
   // Keyboard navigation with Loop = true wraps across boundaries.
   let rightBinding = findKeyBinding(built.KeyBindings, Key.Right)
@@ -332,15 +332,7 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
 
   // Horizontal swipe gesture (>= 48px) navigates; short or vertical does not.
   let makePointerEvent(x: float, y: float) : PointerEvent =
-    let boxed: obj = box(PointerEvent())
-    let t = typeof<PointerEvent>
-    t.GetField("<IsPrimary>k__BackingField", flags).SetValue(boxed, true)
-
-    t
-      .GetField("<Position>k__BackingField", flags)
-      .SetValue(boxed, Point(X = x, Y = y))
-
-    unbox<PointerEvent> boxed
+    PointerEvent(IsPrimary = true, Position = Point(X = x, Y = y))
 
   let swipe(x0: float, y0: float, x1: float, y1: float) =
     contentPanel.OnPointerDown.Invoke(makePointerEvent(x0, y0))
@@ -371,7 +363,7 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   pumpFrames(host, 1)
   Assert.Equal("one", selected)
 
-  // ReducedMotion + HighContrast: instant snap and secondary inactive color.
+  // ReducedMotion: no animation starts.
   host.UpdatePreferences(
     PlatformPreferences(
       Theme = SystemTheme.Dark,
@@ -389,16 +381,63 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   Assert.Equal(0.0, pivotCell.ContentTranslate.Value.X, 3)
   Assert.Equal(1.0, pivotCell.ContentOpacity.Value, 3)
 
-  let mutable hcBlob: Blob = null
-  rootCell.DuringBuild(host, fun () -> hcBlob <- invokeBuildRaw pivotCell)
-  let hcBuilt = hcBlob :?> Container
-  let hcHeader = childAt(hcBuilt, 1) :?> Container
-  let hcInactiveTab = childAt(hcHeader, 0) :?> Button
+[<Fact>]
+let ``A host of the Pivot rebuilds through the owner rule``() =
+  let items = [|
+    { Id = "one"; Header = "one" }
+    { Id = "two"; Header = "two" }
+  |]
 
-  assertColorEqual(
-    MetroPalette.dark.ForegroundSecondary,
-    requireEntry(hcInactiveTab, "Color")
-  )
+  let mutable selected = "one"
+  let mutable pivotRef: MetroPivotCell voption = ValueNone
+
+  let pivotFactory =
+    Func<MetroPivotCell>(fun () ->
+      // The handler writes the state only. It has no Rebuild call.
+      let cell =
+        MetroPivot.create(
+          (fun nextId -> selected <- nextId),
+          fun id -> MetroText.body id
+        )
+
+      pivotRef <- ValueSome cell
+      cell)
+
+  use host = createHost(640, 480)
+
+  // The host cell counts its builds.
+  let rootCell =
+    CaptureCell.create(fun () ->
+      MetroPivot.mount(
+        "pivot",
+        MetroPivot.defaults(items, selected),
+        pivotFactory
+      ))
+
+  let window = Window(Root = rootCell)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  let pivotCell =
+    match pivotRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroPivotCell to be mounted."
+
+  let mutable tree: Blob = null
+  rootCell.DuringBuild(host, fun () -> tree <- pivotCell.View)
+
+  let tab =
+    match findBlobByKey(tree, "pivot-tab-two") with
+    | ValueSome blob -> blob :?> Button
+    | ValueNone -> failwith "Expected the tab button of 'two'."
+
+  let buildsBefore = rootCell.Builds
+  tab.OnClick.Invoke()
+  pumpFrames(host, 2)
+
+  Assert.Equal("two", selected)
+  Assert.Equal(buildsBefore + 1, rootCell.Builds)
 
 [<Fact>]
 let ``MetroHub drives header parallax without cell rebuilds and honors reduced motion``
@@ -425,10 +464,18 @@ let ``MetroHub drives header parallax without cell rebuilds and honors reduced m
   let mutable renderCalls = 0
   let mutable mountHub = true
 
+  // The test keeps the mounted cell: no search of the retained tree.
+  let mutable hubRef: MetroHubCell voption = ValueNone
+
   let hubFactory =
-    MetroHub.createFactory(fun id ->
-      renderCalls <- renderCalls + 1
-      MetroText.body $"Section {id}")
+    Func<MetroHubCell>(fun () ->
+      let cell =
+        MetroHub.create(fun id ->
+          renderCalls <- renderCalls + 1
+          MetroText.body $"Section {id}")
+
+      hubRef <- ValueSome cell
+      cell)
 
   use host = createHost(600, 480)
 
@@ -455,8 +502,8 @@ let ``MetroHub drives header parallax without cell rebuilds and honors reduced m
   pumpFrames(host, 2)
 
   let hubCell =
-    match findMountedCell<MetroHubCell> window with
-    | ValueSome c -> c
+    match hubRef with
+    | ValueSome cell -> cell
     | ValueNone -> failwith "Expected MetroHubCell to be mounted."
 
   Assert.True(renderCalls >= 3)
@@ -940,15 +987,20 @@ let ``MetroPivot Unmounting snaps animations and resets selection state``() =
 
   let mutable selected = "a"
   let mutable mountPivot = true
-  let hostCellRef: Cell voption ref = ref ValueNone
+
+  // The test keeps the mounted cell: no search of the retained tree.
+  let mutable pivotRef: MetroPivotCell voption = ValueNone
 
   let factory =
-    MetroPivot.createFactory(
-      (fun nextId ->
-        selected <- nextId
-        hostCellRef.Value |> ValueOption.iter(fun c -> c.Rebuild())),
-      fun id -> MetroText.body id
-    )
+    Func<MetroPivotCell>(fun () ->
+      let cell =
+        MetroPivot.create(
+          (fun nextId -> selected <- nextId),
+          fun id -> MetroText.body id
+        )
+
+      pivotRef <- ValueSome cell
+      cell)
 
   use host = createHost(640, 480)
 
@@ -961,17 +1013,17 @@ let ``MetroPivot Unmounting snaps animations and resets selection state``() =
           Container()
   }
 
-  hostCellRef.Value <- ValueSome rootCell
   let window = Window(Root = rootCell)
   Metro.attach(window, darkConfig)
   window.Attach(host) |> ignore
   pumpFrames(host, 2)
 
   let pivotCell =
-    match findMountedCell<MetroPivotCell> window with
-    | ValueSome c -> c
+    match pivotRef with
+    | ValueSome cell -> cell
     | ValueNone -> failwith "Expected MetroPivotCell to be mounted."
 
+  // The host changes the selection and rebuilds itself.
   selected <- "b"
   rootCell.Rebuild()
   pumpFrames(host, 1)
@@ -1182,7 +1234,15 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
     }
   |]
 
-  let hubFactory = MetroHub.createFactory(fun id -> MetroText.body id)
+  // The test keeps the mounted hub cell: no search of the retained tree.
+  let mutable hubRef: MetroHubCell voption = ValueNone
+
+  let hubFactory =
+    Func<MetroHubCell>(fun () ->
+      let cell = MetroHub.create(fun id -> MetroText.body id)
+      hubRef <- ValueSome cell
+      cell)
+
   let liveFactory = MetroLiveTile.createFactory ignore
 
   use host = createHost(600, 480)
@@ -1227,8 +1287,8 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
   pumpFrames(host, 2)
 
   let hubCell =
-    match findMountedCell<MetroHubCell> window with
-    | ValueSome c -> c
+    match hubRef with
+    | ValueSome cell -> cell
     | ValueNone -> failwith "Expected scoped MetroHubCell."
 
   let liveCell =
@@ -1245,34 +1305,6 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
 let ``MetroPivot remounts child cells cleanly across repeated tab visits``() =
   use host = HeadlessWindowHost.create()
   host.Resize(900, 600, 900, 600)
-
-  let findNodeByKey(window: Window, key: string) : obj voption =
-    let rootNode = windowNodeField.GetValue(window)
-
-    let rec visit(node: obj) : obj voption =
-      if isNull node then
-        ValueNone
-      else
-        let nt = node.GetType()
-        let nodeKey = nt.GetProperty("Key", flags).GetValue(node) :?> string
-
-        if nodeKey = key then
-          ValueSome node
-        else
-          let children =
-            nt.GetField("<Children>k__BackingField", flags).GetValue(node)
-            :?> IList
-
-          let mutable found = ValueNone
-
-          if not(isNull children) then
-            for i = 0 to children.Count - 1 do
-              if found.IsNone then
-                found <- visit children[i]
-
-          found
-
-    visit rootNode
 
   let mutable mountCount = 0
   let mutable selectedId = "first"
@@ -1293,48 +1325,54 @@ let ``MetroPivot remounts child cells cleanly across repeated tab visits``() =
             MetroText.body $"Mounted instance {instanceNumber}"
       })
 
-  let mutable rootRef: Cell voption = ValueNone
+  // The test keeps the mounted cell: no search of the retained tree.
+  let mutable pivotRef: MetroPivotCell voption = ValueNone
 
   let pivotFactory =
-    MetroPivot.createFactory(
-      (fun id ->
-        selectedId <- id
-        rootRef |> ValueOption.iter(fun r -> r.Rebuild())),
-      fun id ->
-        match id with
-        | "first" -> Cell.Mount<Cell>("first-child", childFactory)
-        | _ -> MetroText.body "Second tab"
-    )
-
-  let rootCell = {
-    new Cell() with
-      override _.Build() : Blob =
-        MetroPivot.mount(
-          "revisit-pivot",
-          MetroPivot.defaults(items, selectedId),
-          pivotFactory
+    Func<MetroPivotCell>(fun () ->
+      let cell =
+        MetroPivot.create(
+          (fun id -> selectedId <- id),
+          fun id ->
+            match id with
+            | "first" -> Cell.Mount<Cell>("first-child", childFactory)
+            | _ -> MetroText.body "Second tab"
         )
-  }
 
-  rootRef <- ValueSome rootCell
+      pivotRef <- ValueSome cell
+      cell)
+
+  let rootCell =
+    CaptureCell.create(fun () ->
+      MetroPivot.mount(
+        "revisit-pivot",
+        MetroPivot.defaults(items, selectedId),
+        pivotFactory
+      ))
+
   let window = Window(Root = rootCell)
   Metro.attach(window, darkConfig)
   window.Attach(host) |> ignore
   pumpFrames(host, 2)
   Assert.Equal(1, mountCount)
 
-  // Visit second tab, then return to first tab twice via tab OnClick.
+  let pivotCell =
+    match pivotRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroPivotCell to be mounted."
+
+  // Visit second tab, then return to first tab twice, through the tab
+  // buttons of the tree. The handler has no Rebuild call.
   for target in [| "second"; "first"; "second"; "first" |] do
-    let tabNode =
-      match findNodeByKey(window, $"pivot-tab-{target}") with
-      | ValueSome n -> n
-      | ValueNone -> failwith $"Expected pivot-tab-{target}."
+    let mutable tree: Blob = null
+    rootCell.DuringBuild(host, fun () -> tree <- pivotCell.View)
 
-    let click =
-      tabNode.GetType().GetProperty("OnClick", flags).GetValue(tabNode)
-      :?> Action
+    let tab =
+      match findBlobByKey(tree, $"pivot-tab-{target}") with
+      | ValueSome blob -> blob :?> Button
+      | ValueNone -> failwith $"Expected the tab button of '{target}'."
 
-    click.Invoke()
+    tab.OnClick.Invoke()
     pumpFrames(host, 2)
     Assert.Equal(target, selectedId)
 

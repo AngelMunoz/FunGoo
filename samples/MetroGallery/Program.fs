@@ -753,7 +753,7 @@ type private GalleryCell
 
   let hubFactory =
     Func<MetroHubCell>(fun () ->
-      let cell = MetroHubCell(renderHubSection)
+      let cell = MetroHub.create renderHubSection
       hubCellRef <- ValueSome cell
       cell)
 
@@ -870,13 +870,10 @@ type private GalleryCell
     | "motion" -> renderMotionTab()
     | _ -> renderTypographyTab()
 
+  // The Pivot gives each selection to this cell through InvokeInputCallback,
+  // so the owner rule rebuilds this cell.
   let pivotFactory =
-    MetroPivot.createFactory(
-      (fun id ->
-        activeTab <- id
-        this.Rebuild()),
-      renderPivotContent
-    )
+    MetroPivot.createFactory((fun id -> activeTab <- id), renderPivotContent)
 
   let renderSettingsContent() : Blob =
     let theme = Metro.read()
@@ -1215,7 +1212,8 @@ let private runChecks() : int =
     failwith $"Expected scenes {sceneTabs}, got '{registeredScenes}'."
 
   // 1. Click a real Pivot tab header via retained Node OnClick to verify
-  // cross-cell rebuild from MetroPivotCell -> GalleryCell.
+  // that the Pivot gives the selection to GalleryCell, which the owner rule
+  // then rebuilds.
   let flags =
     BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
 

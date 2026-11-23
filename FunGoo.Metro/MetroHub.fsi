@@ -34,35 +34,18 @@ type MetroHubInput = {
 }
 
 /// Stateful Metro Hub (Panorama) layout cell with a paint-bound parallax
-/// header and horizontally scrolling peeking sections.
-[<Sealed>]
+/// header and horizontally scrolling peeking sections. <c>MetroHub.create</c>
+/// makes the cell. The type holds the surface that hosts and tests use.
+[<AbstractClass>]
 type MetroHubCell =
   inherit Cell<MetroHubInput>
 
-  /// Creates a hub cell rendering each section body via
-  /// <paramref name="renderSection"/>.
-  /// The cell calls <paramref name="renderSection"/> inside its own
-  /// <c>Build</c>. A callback that <paramref name="renderSection"/> creates
-  /// belongs to this cell, so the owner rule rebuilds this cell and not the
-  /// caller. Such a callback must rebuild the caller cell when it changes the
-  /// state of the caller cell.
-  new: renderSection: (string -> Blob) -> MetroHubCell
-
   /// Element handle attached to the horizontal scrolling viewport.
-  member ScrollHandle: ElementHandle
+  abstract ScrollHandle: ElementHandle
 
   /// Paint-bound translation animation driving header parallax without cell
   /// rebuilds during scrolling.
-  member HeaderTranslate: Anim<Point>
-
-  /// Subscribes to horizontal scroll metric updates on mount.
-  override Mounted: unit -> unit
-
-  /// Unsubscribes from horizontal scroll metric updates on unmount.
-  override Unmounting: unit -> unit
-
-  /// Builds the parallax title header and horizontal peeking section viewport.
-  override Build: input: MetroHubInput -> Blob
+  abstract HeaderTranslate: Anim<Point>
 
 /// Construction and mounting helpers for <see cref="MetroHubCell"/>.
 [<RequireQualifiedAccess>]
@@ -72,6 +55,15 @@ module MetroHub =
   /// and <paramref name="sections"/> with <c>0.35</c> parallax factor and
   /// <c>32.0</c> px section gap.
   val defaults: title: string * sections: MetroHubSection array -> MetroHubInput
+
+  /// Creates a hub cell that renders each section body through
+  /// <paramref name="renderSection"/>.
+  /// The cell calls <paramref name="renderSection"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="renderSection"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
+  val create: renderSection: (string -> Blob) -> MetroHubCell
 
   /// Creates a reusable cell factory for <see cref="MetroHubCell"/>. Cache the
   /// returned factory outside <c>Build</c>.

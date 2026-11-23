@@ -16,6 +16,21 @@ type MetroPivotInput = {
   AccessibilityName: string voption
 }
 
+[<AbstractClass>]
+type MetroPivotCell() =
+  inherit Cell<MetroPivotInput>()
+
+  abstract ContentTranslate: Anim<Point>
+
+  abstract ContentOpacity: Anim<float>
+
+  abstract View: Blob
+
+  // Gives a selection of the host to the host cell, as a Goo.Widgets control
+  // does. The owner rule then rebuilds the host cell.
+  member this.Raise(callback: Action<string>, value: string) =
+    this.InvokeInputCallback(callback, value)
+
 module private PivotInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
@@ -57,45 +72,109 @@ module private PivotInternals =
     elif nextIdx >= prevIdx then 1.0
     else -1.0
 
-[<Sealed>]
-type MetroPivotCell(onSelect: string -> unit, renderContent: string -> Blob) as this
-  =
-  inherit Cell<MetroPivotInput>()
+[<RequireQualifiedAccess>]
+module MetroPivot =
 
-  let translateAnim = this.AnimateValue(PivotInternals.zeroPoint)
-  let opacityAnim = this.AnimateValue(1.0)
-
-  let mutable currentInput = {
+  let defaults
+    (items: MetroPivotItem array, selectedId: string)
+    : MetroPivotInput = {
     Title = ValueNone
-    Items = Array.empty
-    SelectedId = ""
+    Items = items
+    SelectedId = selectedId
     Loop = true
     AccessibilityName = ValueNone
   }
 
-  let mutable lastSelectedId: string voption = ValueNone
-  let mutable lastSelectedIndex = -1
-  let mutable lastReducedMotion = false
-  let mutable scopedReducedMotion = false
+  /// State of a Pivot cell. One mutable field per concern.
+  type private PivotState = {
+    mutable Input: MetroPivotInput
+    mutable LastSelectedId: string voption
+    mutable LastSelectedIndex: int
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    mutable SwipeActive: bool
+    mutable SwipePointerId: int64
+    mutable SwipeStartX: float
+    mutable SwipeStartY: float
+    // Slots for the two animation values. `create` fills them after the cell
+    // exists.
+    mutable Translate: Anim<Point>
+    mutable Opacity: Anim<float>
+  }
 
-  let mutable swipeActive = false
-  let mutable swipePointerId = 0L
-  let mutable swipeStartX = 0.0
-  let mutable swipeStartY = 0.0
+  /// The delegates of a Pivot cell. `create` makes them once.
+  type private PivotDelegates = {
+    KeyLeft: Action
+    KeyRight: Action
+    KeyHome: Action
+    KeyEnd: Action
+    NavKeys: KeyBinding array
+    PointerDown: Action<PointerEvent>
+    PointerMove: Action<PointerEvent>
+    PointerUp: Action<PointerEvent>
+    PointerCancel: Action<PointerEvent>
+  }
 
-  let selectIndex(targetIdx: int) =
-    let input = currentInput
-    let items = if isNull input.Items then Array.empty else input.Items
+  /// The values that the functions of a Pivot cell work on.
+  type private PivotContext = {
+    State: PivotState
+    /// Gives one selection to the host cell.
+    Select: Action<string>
+    RenderContent: string -> Blob
+    Delegates: PivotDelegates
+  }
+
+  let private initialState() : PivotState = {
+    Input = {
+      Title = ValueNone
+      Items = Array.empty
+      SelectedId = ""
+      Loop = true
+      AccessibilityName = ValueNone
+    }
+    LastSelectedId = ValueNone
+    LastSelectedIndex = -1
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    SwipeActive = false
+    SwipePointerId = 0L
+    SwipeStartX = 0.0
+    SwipeStartY = 0.0
+    Translate = Unchecked.defaultof<Anim<Point>>
+    Opacity = Unchecked.defaultof<Anim<float>>
+  }
+
+  let private itemsOf(input: MetroPivotInput) : MetroPivotItem array =
+    if isNull input.Items then Array.empty else input.Items
+
+  /// Puts the content at rest: no translation and fully opaque.
+  let private snapToRest(state: PivotState) : unit =
+    state.Translate.Snap(PivotInternals.zeroPoint)
+    state.Opacity.Snap(1.0)
+
+  let private selectIndex
+    (state: PivotState, select: Action<string>, targetIdx: int)
+    : unit =
+    let input = state.Input
+    let items = itemsOf input
 
     if targetIdx >= 0 && targetIdx < items.Length then
       let curIdx = PivotInternals.findItemIndex(items, input.SelectedId)
 
       if targetIdx <> curIdx then
-        onSelect items[targetIdx].Id
+        select.Invoke(items[targetIdx].Id)
 
-  let navigateBy(delta: int) =
-    let input = currentInput
-    let items = if isNull input.Items then Array.empty else input.Items
+  let private selectLast(state: PivotState, select: Action<string>) : unit =
+    let items = state.Input.Items
+
+    if not(isNull items) && items.Length > 0 then
+      selectIndex(state, select, items.Length - 1)
+
+  let private navigateBy
+    (state: PivotState, select: Action<string>, delta: int)
+    : unit =
+    let input = state.Input
+    let items = itemsOf input
 
     if items.Length > 1 then
       let curIdx = PivotInternals.findItemIndex(items, input.SelectedId)
@@ -104,134 +183,131 @@ type MetroPivotCell(onSelect: string -> unit, renderContent: string -> Blob) as 
         PivotInternals.stepIndex(curIdx, delta, items.Length, input.Loop)
 
       if nextIdx >= 0 && nextIdx <> curIdx then
-        onSelect items[nextIdx].Id
+        select.Invoke(items[nextIdx].Id)
 
-  let onKeyLeft = Action(fun () -> navigateBy -1)
-  let onKeyRight = Action(fun () -> navigateBy 1)
-  let onKeyHome = Action(fun () -> selectIndex 0)
+  let private pointerDown(state: PivotState, e: PointerEvent) : unit =
+    if e.IsPrimary then
+      state.SwipeActive <- true
+      state.SwipePointerId <- e.PointerId
+      state.SwipeStartX <- e.Position.X
+      state.SwipeStartY <- e.Position.Y
 
-  let onKeyEnd =
-    Action(fun () ->
-      let items = currentInput.Items
+  let private pointerMove(state: PivotState, e: PointerEvent) : unit =
+    if state.SwipeActive && e.PointerId = state.SwipePointerId then
+      let dx = e.Position.X - state.SwipeStartX
+      let dy = e.Position.Y - state.SwipeStartY
 
-      if not(isNull items) && items.Length > 0 then
-        selectIndex(items.Length - 1))
+      // A vertical movement cancels the swipe.
+      if abs dy > abs dx && abs dy > PivotInternals.swipeThresholdPx then
+        state.SwipeActive <- false
 
-  let navKeyBindings = [|
-    KeyBinding(Key.Left, KeyModifiers.None, onKeyLeft)
-    KeyBinding(Key.Right, KeyModifiers.None, onKeyRight)
-    KeyBinding(Key.Home, KeyModifiers.None, onKeyHome)
-    KeyBinding(Key.End, KeyModifiers.None, onKeyEnd)
-  |]
+  let private pointerUp
+    (state: PivotState, select: Action<string>, e: PointerEvent)
+    : unit =
+    if state.SwipeActive && e.PointerId = state.SwipePointerId then
+      state.SwipeActive <- false
+      let dx = e.Position.X - state.SwipeStartX
+      let dy = e.Position.Y - state.SwipeStartY
 
-  let onPointerDown =
-    Action<PointerEvent>(fun e ->
-      if e.IsPrimary then
-        swipeActive <- true
-        swipePointerId <- e.PointerId
-        swipeStartX <- e.Position.X
-        swipeStartY <- e.Position.Y)
+      // A horizontal movement of the threshold navigates. The content moves
+      // with the pointer, thus a swipe to the left advances.
+      if abs dx >= PivotInternals.swipeThresholdPx && abs dx > abs dy then
+        if dx < 0.0 then
+          navigateBy(state, select, 1)
+        else
+          navigateBy(state, select, -1)
 
-  let onPointerMove =
-    Action<PointerEvent>(fun e ->
-      if swipeActive && e.PointerId = swipePointerId then
-        let dx = e.Position.X - swipeStartX
-        let dy = e.Position.Y - swipeStartY
+  let private pointerCancel(state: PivotState, e: PointerEvent) : unit =
+    if state.SwipeActive && e.PointerId = state.SwipePointerId then
+      state.SwipeActive <- false
 
-        if abs dy > abs dx && abs dy > PivotInternals.swipeThresholdPx then
-          swipeActive <- false)
+  let private delegatesOf
+    (state: PivotState, select: Action<string>)
+    : PivotDelegates =
+    let keyLeft = Action(fun () -> navigateBy(state, select, -1))
+    let keyRight = Action(fun () -> navigateBy(state, select, 1))
+    let keyHome = Action(fun () -> selectIndex(state, select, 0))
+    let keyEnd = Action(fun () -> selectLast(state, select))
 
-  let onPointerUp =
-    Action<PointerEvent>(fun e ->
-      if swipeActive && e.PointerId = swipePointerId then
-        swipeActive <- false
-        let dx = e.Position.X - swipeStartX
-        let dy = e.Position.Y - swipeStartY
+    let navKeys = [|
+      KeyBinding(Key.Left, KeyModifiers.None, keyLeft)
+      KeyBinding(Key.Right, KeyModifiers.None, keyRight)
+      KeyBinding(Key.Home, KeyModifiers.None, keyHome)
+      KeyBinding(Key.End, KeyModifiers.None, keyEnd)
+    |]
 
-        if abs dx >= PivotInternals.swipeThresholdPx && abs dx > abs dy then
-          if dx < 0.0 then navigateBy 1 else navigateBy -1)
+    {
+      KeyLeft = keyLeft
+      KeyRight = keyRight
+      KeyHome = keyHome
+      KeyEnd = keyEnd
+      NavKeys = navKeys
+      PointerDown = Action<PointerEvent>(fun e -> pointerDown(state, e))
+      PointerMove = Action<PointerEvent>(fun e -> pointerMove(state, e))
+      PointerUp = Action<PointerEvent>(fun e -> pointerUp(state, select, e))
+      PointerCancel = Action<PointerEvent>(fun e -> pointerCancel(state, e))
+    }
 
-  let onPointerCancel =
-    Action<PointerEvent>(fun e ->
-      if swipeActive && e.PointerId = swipePointerId then
-        swipeActive <- false)
-
-  member _.ContentTranslate = translateAnim
-  member _.ContentOpacity = opacityAnim
-
-  override this.InputChanged(input: MetroPivotInput) =
-    currentInput <- input
-    let items = if isNull input.Items then Array.empty else input.Items
+  /// Plays the entrance transition of the new selection, or snaps to rest
+  /// under reduced motion.
+  let private inputChanged
+    (ctx: PivotContext, input: MetroPivotInput, hostReduced: bool voption)
+    : unit =
+    let state = ctx.State
+    state.Input <- input
+    let items = itemsOf input
     let nextIdx = PivotInternals.findItemIndex(items, input.SelectedId)
 
     let reducedMotion =
-      scopedReducedMotion
-      || if not(isNull this.Host) then
-           Metro.readWindow(this.Host).ReducedMotion
-         else
-           lastReducedMotion
+      state.ScopedReducedMotion
+      || ValueOption.defaultValue state.LastReducedMotion hostReduced
 
     let selectionChanged =
-      lastSelectedId
+      state.LastSelectedId
       |> ValueOption.map(fun prevId -> prevId <> input.SelectedId)
       |> ValueOption.defaultValue false
 
     if selectionChanged && nextIdx >= 0 then
       if reducedMotion then
-        translateAnim.Snap(PivotInternals.zeroPoint)
-        opacityAnim.Snap(1.0)
+        snapToRest state
       else
         let dir =
           PivotInternals.transitionDirection(
-            lastSelectedIndex,
+            state.LastSelectedIndex,
             nextIdx,
             items.Length,
             input.Loop
           )
 
-        translateAnim.Play(
+        state.Translate.Play(
           Point(X = dir * PivotInternals.slideDistancePx, Y = 0.0),
           PivotInternals.zeroPoint,
           MetroMotion.normal
         )
 
-        opacityAnim.Play(0.0, 1.0, MetroMotion.normal)
-    elif lastSelectedId.IsNone then
-      translateAnim.Snap(PivotInternals.zeroPoint)
-      opacityAnim.Snap(1.0)
+        state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
+    elif state.LastSelectedId.IsNone then
+      snapToRest state
 
-    lastSelectedId <- ValueSome input.SelectedId
-    lastSelectedIndex <- nextIdx
+    state.LastSelectedId <- ValueSome input.SelectedId
+    state.LastSelectedIndex <- nextIdx
 
-  override _.Unmounting() =
-    swipeActive <- false
-    lastSelectedId <- ValueNone
-    lastSelectedIndex <- -1
-    scopedReducedMotion <- false
-    translateAnim.Snap(PivotInternals.zeroPoint)
-    opacityAnim.Snap(1.0)
+  /// Resets the swipe, the selection tracking, and the animations.
+  let private unmount(state: PivotState) : unit =
+    state.SwipeActive <- false
+    state.LastSelectedId <- ValueNone
+    state.LastSelectedIndex <- -1
+    state.ScopedReducedMotion <- false
+    snapToRest state
 
-  override this.Build(input: MetroPivotInput) : Blob =
-    currentInput <- input
-    let theme = Metro.read()
-
-    let windowReduced =
-      if not(isNull this.Host) then
-        Metro.readWindow(this.Host).ReducedMotion
-      else
-        false
-
-    scopedReducedMotion <- theme.ReducedMotion && not windowReduced
-    lastReducedMotion <- theme.ReducedMotion
-
-    if
-      theme.ReducedMotion && (translateAnim.Running || opacityAnim.Running)
-    then
-      translateAnim.Snap(PivotInternals.zeroPoint)
-      opacityAnim.Snap(1.0)
-
+  /// Builds the title, the header strip, and the content panel.
+  let private buildTree
+    (ctx: PivotContext, input: MetroPivotInput, theme: MetroTheme)
+    : Blob =
+    let state = ctx.State
+    let delegates = ctx.Delegates
     let p = theme.Palette
-    let items = if isNull input.Items then Array.empty else input.Items
+    let items = itemsOf input
     let selectedIdx = PivotInternals.findItemIndex(items, input.SelectedId)
     let headerSpec = MetroTypography.spec MetroTextRole.Header
 
@@ -282,15 +358,15 @@ type MetroPivotCell(onSelect: string -> unit, renderContent: string -> Blob) as 
       let selectAction =
         Action(fun () ->
           if not isSelected then
-            onSelect itemId)
+            ctx.Select.Invoke(itemId))
 
       let tabKeyBindings = [|
         KeyBinding(Key.Enter, KeyModifiers.None, selectAction)
         KeyBinding(Key.Space, KeyModifiers.None, selectAction)
-        KeyBinding(Key.Left, KeyModifiers.None, onKeyLeft)
-        KeyBinding(Key.Right, KeyModifiers.None, onKeyRight)
-        KeyBinding(Key.Home, KeyModifiers.None, onKeyHome)
-        KeyBinding(Key.End, KeyModifiers.None, onKeyEnd)
+        KeyBinding(Key.Left, KeyModifiers.None, delegates.KeyLeft)
+        KeyBinding(Key.Right, KeyModifiers.None, delegates.KeyRight)
+        KeyBinding(Key.Home, KeyModifiers.None, delegates.KeyHome)
+        KeyBinding(Key.End, KeyModifiers.None, delegates.KeyEnd)
       |]
 
       let tabBtn =
@@ -346,18 +422,18 @@ type MetroPivotCell(onSelect: string -> unit, renderContent: string -> Blob) as 
         FlexGrow = 1.0,
         Width = Length.Percent 100.0,
         Overflow = Overflow.Hidden,
-        TranslateAnim = translateAnim,
-        OpacityAnim = opacityAnim,
-        OnPointerDown = onPointerDown,
-        OnPointerMove = onPointerMove,
-        OnPointerUp = onPointerUp,
-        OnPointerCancel = onPointerCancel,
+        TranslateAnim = state.Translate,
+        OpacityAnim = state.Opacity,
+        OnPointerDown = delegates.PointerDown,
+        OnPointerMove = delegates.PointerMove,
+        OnPointerUp = delegates.PointerUp,
+        OnPointerCancel = delegates.PointerCancel,
         Accessibility =
           Accessibility(Role = AccessibilityRole.TabPanel, Name = activeHeader)
       )
 
     if selectedIdx >= 0 && selectedIdx < items.Length then
-      contentPanel.Add(renderContent items[selectedIdx].Id)
+      contentPanel.Add(ctx.RenderContent items[selectedIdx].Id)
 
     let root =
       Container(
@@ -365,7 +441,7 @@ type MetroPivotCell(onSelect: string -> unit, renderContent: string -> Blob) as 
         FlexGrow = 1.0,
         Width = Length.Percent 100.0,
         Gap = Length.Pixels 16.0,
-        KeyBindings = navKeyBindings
+        KeyBindings = delegates.NavKeys
       )
 
     input.Title
@@ -380,23 +456,82 @@ type MetroPivotCell(onSelect: string -> unit, renderContent: string -> Blob) as 
 
     root.Children(headerStrip, contentPanel)
 
-[<RequireQualifiedAccess>]
-module MetroPivot =
+  /// Reads the theme, stops a running transition under reduced motion, then
+  /// builds the tree.
+  let private build
+    (ctx: PivotContext, input: MetroPivotInput, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
 
-  let defaults
-    (items: MetroPivotItem array, selectedId: string)
-    : MetroPivotInput = {
-    Title = ValueNone
-    Items = items
-    SelectedId = selectedId
-    Loop = true
-    AccessibilityName = ValueNone
-  }
+    if
+      theme.ReducedMotion && (state.Translate.Running || state.Opacity.Running)
+    then
+      snapToRest state
+
+    buildTree(ctx, input, theme)
+
+  /// The reduced motion preference of the host window. <c>ValueNone</c> when
+  /// the cell has no window.
+  let private reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  let create
+    (onSelect: string -> unit, renderContent: string -> Blob)
+    : MetroPivotCell =
+    let state = initialState()
+
+    // The slot of the cell: the selection delegate is made before the cell
+    // exists.
+    let mutable self: MetroPivotCell voption = ValueNone
+    let onSelectAction = Action<string>(onSelect)
+
+    // One delegate for the life of the cell. It gives each selection to the
+    // host cell, so the owner rule rebuilds the host.
+    let select =
+      Action<string>(fun id ->
+        self |> ValueOption.iter(fun cell -> cell.Raise(onSelectAction, id)))
+
+    let context: PivotContext = {
+      State = state
+      Select = select
+      RenderContent = renderContent
+      Delegates = delegatesOf(state, select)
+    }
+
+    let cell = {
+      new MetroPivotCell() with
+        override _.ContentTranslate = state.Translate
+        override _.ContentOpacity = state.Opacity
+
+        override this.View = buildTree(context, state.Input, Metro.read())
+
+        override this.InputChanged(input) =
+          inputChanged(context, input, reducedMotionOf this.Host)
+
+        override _.Unmounting() = unmount state
+
+        override this.Build(input) : Blob =
+          build(context, input, reducedMotionOf this.Host)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <- cell.AnimateValue(PivotInternals.zeroPoint)
+    state.Opacity <- cell.AnimateValue(1.0)
+    self <- ValueSome cell
+    cell
 
   let createFactory
     (onSelect: string -> unit, renderContent: string -> Blob)
     : Func<MetroPivotCell> =
-    Func<MetroPivotCell>(fun () -> MetroPivotCell(onSelect, renderContent))
+    Func<MetroPivotCell>(fun () -> create(onSelect, renderContent))
 
   let mount
     (key: string, input: MetroPivotInput, factory: Func<MetroPivotCell>)
