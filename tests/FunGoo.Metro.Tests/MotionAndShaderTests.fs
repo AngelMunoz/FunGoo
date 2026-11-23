@@ -94,21 +94,30 @@ module private ContinuumProbeCell =
 let ``CubicBezierSimulation validates inputs and solves Bx(u)=t within 1e-7``
   ()
   =
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    CubicBezierSimulation(-0.1, 0.0, 1.0, 0.1, 0.9, 0.2, 1.0) |> ignore)
-  |> ignore
+  let valid: CubicBezierArgs = {
+    DurationSeconds = 0.25
+    FromValue = 0.0
+    ToValue = 1.0
+    X1 = 0.1
+    Y1 = 0.9
+    X2 = 0.2
+    Y2 = 1.0
+  }
 
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    CubicBezierSimulation(Double.NaN, 0.0, 1.0, 0.1, 0.9, 0.2, 1.0) |> ignore)
-  |> ignore
+  let invalid = [|
+    { valid with DurationSeconds = -0.1 }
+    {
+      valid with
+          DurationSeconds = Double.NaN
+    }
+    { valid with X1 = -0.01 }
+    { valid with X2 = 1.01 }
+  |]
 
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    CubicBezierSimulation(0.25, 0.0, 1.0, -0.01, 0.9, 0.2, 1.0) |> ignore)
-  |> ignore
-
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    CubicBezierSimulation(0.25, 0.0, 1.0, 0.1, 0.9, 1.01, 1.0) |> ignore)
-  |> ignore
+  for args in invalid do
+    Assert.Throws<ArgumentOutOfRangeException>(fun () ->
+      CubicBezierSimulation.create args |> ignore)
+    |> ignore
 
   let curves = [|
     0.0, 0.0, 1.0, 1.0
@@ -124,7 +133,16 @@ let ``CubicBezierSimulation validates inputs and solves Bx(u)=t within 1e-7``
     let fromVal = 10.0
     let toVal = 110.0
 
-    let sim = CubicBezierSimulation(duration, fromVal, toVal, x1, y1, x2, y2)
+    let sim =
+      CubicBezierSimulation.create {
+        DurationSeconds = duration
+        FromValue = fromVal
+        ToValue = toVal
+        X1 = x1
+        Y1 = y1
+        X2 = x2
+        Y2 = y2
+      }
 
     Assert.Equal(fromVal, sim.Position(-0.1))
     Assert.Equal(fromVal, sim.Position(0.0))
@@ -146,7 +164,17 @@ let ``CubicBezierSimulation validates inputs and solves Bx(u)=t within 1e-7``
       Assert.True(abs(actualPos - expectedPos) < 1e-7)
 
   // Verify analytical velocity matches central difference on decelerate curve.
-  let decel = CubicBezierSimulation(0.25, 0.0, 100.0, 0.1, 0.9, 0.2, 1.0)
+  let decel =
+    CubicBezierSimulation.create {
+      DurationSeconds = 0.25
+      FromValue = 0.0
+      ToValue = 100.0
+      X1 = 0.1
+      Y1 = 0.9
+      X2 = 0.2
+      Y2 = 1.0
+    }
+
   let h = 1e-6
 
   for elapsed in [| 0.02; 0.06; 0.125; 0.2 |] do
@@ -157,11 +185,31 @@ let ``CubicBezierSimulation validates inputs and solves Bx(u)=t within 1e-7``
     Assert.True(abs(analytic - numeric) < 1e-3)
 
   // Verify Velocity(0.0) on linear (0,0,1,1) handles 0/0 via finite diff.
-  let linear = CubicBezierSimulation(0.5, 10.0, 110.0, 0.0, 0.0, 1.0, 1.0)
+  let linear =
+    CubicBezierSimulation.create {
+      DurationSeconds = 0.5
+      FromValue = 10.0
+      ToValue = 110.0
+      X1 = 0.0
+      Y1 = 0.0
+      X2 = 1.0
+      Y2 = 1.0
+    }
+
   Assert.True(abs(linear.Velocity(0.0) - 200.0) < 1e-3)
 
   // Zero-duration settles immediately with zero velocity.
-  let zero = CubicBezierSimulation(0.0, 5.0, 20.0, 0.1, 0.9, 0.2, 1.0)
+  let zero =
+    CubicBezierSimulation.create {
+      DurationSeconds = 0.0
+      FromValue = 5.0
+      ToValue = 20.0
+      X1 = 0.1
+      Y1 = 0.9
+      X2 = 0.2
+      Y2 = 1.0
+    }
+
   Assert.Equal(5.0, zero.Position(-0.001))
   Assert.Equal(20.0, zero.Position(0.0))
   Assert.Equal(0.0, zero.Velocity(0.0))
@@ -171,20 +219,38 @@ let ``CubicBezierSimulation validates inputs and solves Bx(u)=t within 1e-7``
 let ``ExponentialEaseSimulation evaluates curve linear fallback and velocity``
   ()
   =
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    ExponentialEaseSimulation(-0.1, 0.0, 1.0, 6.0) |> ignore)
-  |> ignore
+  let valid: ExponentialEaseArgs = {
+    DurationSeconds = 0.15
+    FromValue = 0.0
+    ToValue = 1.0
+    Exponent = 6.0
+  }
 
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    ExponentialEaseSimulation(0.15, 0.0, 1.0, Double.PositiveInfinity)
-    |> ignore)
-  |> ignore
+  let invalid = [|
+    { valid with DurationSeconds = -0.1 }
+    {
+      valid with
+          Exponent = Double.PositiveInfinity
+    }
+  |]
+
+  for args in invalid do
+    Assert.Throws<ArgumentOutOfRangeException>(fun () ->
+      ExponentialEaseSimulation.create args |> ignore)
+    |> ignore
 
   let duration = 0.15
   let e = 6.0
   let fromVal = 130.0
   let toVal = 0.0
-  let sim = ExponentialEaseSimulation(duration, fromVal, toVal, e)
+
+  let sim =
+    ExponentialEaseSimulation.create {
+      DurationSeconds = duration
+      FromValue = fromVal
+      ToValue = toVal
+      Exponent = e
+    }
 
   Assert.Equal(fromVal, sim.Position(-0.05))
   Assert.Equal(fromVal, sim.Position(0.0))
@@ -216,25 +282,25 @@ let ``ExponentialEaseSimulation evaluates curve linear fallback and velocity``
     Assert.True(abs(sim.Velocity(elapsed) - numericVel) < 1e-2)
 
   // Near-zero exponent falls back cleanly to linear motion.
-  let linear = ExponentialEaseSimulation(0.4, 20.0, 60.0, 1e-8)
+  let linear =
+    ExponentialEaseSimulation.create {
+      DurationSeconds = 0.4
+      FromValue = 20.0
+      ToValue = 60.0
+      Exponent = 1e-8
+    }
+
   Assert.Equal(40.0, linear.Position(0.2), 10)
   Assert.Equal(100.0, linear.Velocity(0.2), 10)
 
 [<Fact>]
 let ``PeriodicSimulation wraps phase into 0..1 with constant velocity``() =
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    PeriodicSimulation(0.0) |> ignore)
-  |> ignore
+  for period in [| 0.0; -1.0; Double.Epsilon |] do
+    Assert.Throws<ArgumentOutOfRangeException>(fun () ->
+      PeriodicSimulation.create period |> ignore)
+    |> ignore
 
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    PeriodicSimulation(-1.0) |> ignore)
-  |> ignore
-
-  Assert.Throws<ArgumentOutOfRangeException>(fun () ->
-    PeriodicSimulation(Double.Epsilon) |> ignore)
-  |> ignore
-
-  let sim = PeriodicSimulation(2.0)
+  let sim = PeriodicSimulation.create 2.0
   Assert.True(sim.IsInfinite)
   Assert.False(sim.Done(0.0))
   Assert.False(sim.Done(10000.0))
@@ -251,6 +317,56 @@ let ``PeriodicSimulation wraps phase into 0..1 with constant velocity``() =
   for sample in [| -10.0; -1e-17; -0.001; 0.0; 1.999999; 2.0; 100.0 |] do
     let p = sim.Position(sample)
     Assert.True(p >= 0.0 && p < 1.0)
+
+[<Fact>]
+let ``Simulation Position and Velocity allocate nothing``() =
+  let bezier =
+    CubicBezierSimulation.create {
+      DurationSeconds = 0.5
+      FromValue = 10.0
+      ToValue = 110.0
+      X1 = 0.1
+      Y1 = 0.9
+      X2 = 0.2
+      Y2 = 1.0
+    }
+
+  let exponential =
+    ExponentialEaseSimulation.create {
+      DurationSeconds = 0.15
+      FromValue = 130.0
+      ToValue = 0.0
+      Exponent = 6.0
+    }
+
+  let periodic = PeriodicSimulation.create 2.0
+  let samples = 10000
+  let mutable acc = 0.0
+
+  // One pass first, so that the measurement sees no first-call work.
+  for i in 0 .. samples - 1 do
+    let elapsed = float i * 5e-5
+
+    acc <-
+      acc
+      + bezier.Position elapsed
+      + exponential.Position elapsed
+      + periodic.Position elapsed
+
+  let before = GC.GetAllocatedBytesForCurrentThread()
+
+  for i in 0 .. samples - 1 do
+    let elapsed = float i * 5e-5
+    acc <- acc + bezier.Position elapsed
+    acc <- acc + bezier.Velocity elapsed
+    acc <- acc + exponential.Position elapsed
+    acc <- acc + exponential.Velocity elapsed
+    acc <- acc + periodic.Position elapsed
+    acc <- acc + periodic.Velocity elapsed
+
+  let allocated = GC.GetAllocatedBytesForCurrentThread() - before
+  Assert.True(acc <> 0.0)
+  Assert.Equal(0L, allocated)
 
 [<Fact>]
 let ``MetroMotion presets stagger delays and ReducedMotion work correctly``() =

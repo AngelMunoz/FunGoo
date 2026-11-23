@@ -127,130 +127,105 @@ module private ProgressInternals =
       elif s > 0.92 then (1.0 - s) / 0.08
       else 1.0
 
-  // Paint-bound infinite simulations driven directly by PeriodicSimulation so
-  // Goo ticks TranslateAnim and OpacityAnim without rebuilding the owning Cell.
-  [<Sealed>]
-  type BarDotXSimulation
+  // Paint-bound infinite simulations driven by a periodic simulation, so Goo
+  // ticks TranslateAnim and OpacityAnim without rebuilding the owning Cell.
+  let barDotXSimulation
     (
-      periodic: PeriodicSimulation,
+      periodic: Simulation,
       offset: float,
       getGeometry: unit -> struct (float * float)
-    ) =
-    inherit Simulation()
+    ) : Simulation = {
+    new Simulation() with
+      override _.IsInfinite = true
 
-    override _.IsInfinite = true
+      override _.Position(elapsed: float) : float =
+        let struct (trackWidth, dotSize) = getGeometry()
+        let u = wrapPhase(periodic.Position elapsed, offset)
+        barDotX(u, trackWidth, dotSize)
 
-    override _.Position(elapsed: float) : float =
-      let struct (trackWidth, dotSize) = getGeometry()
-      let u = wrapPhase(periodic.Position(elapsed), offset)
-      barDotX(u, trackWidth, dotSize)
+      override _.Velocity(_elapsed: float) : float = 0.0
 
-    override _.Velocity(elapsed: float) : float =
-      ignore elapsed
-      0.0
+      override _.Done(_elapsed: float) : bool = false
+  }
 
-    override _.Done(elapsed: float) : bool =
-      ignore elapsed
-      false
+  let constantInfinite(value: float) : Simulation = {
+    new Simulation() with
+      override _.IsInfinite = true
+      override _.Position(_elapsed: float) : float = value
+      override _.Velocity(_elapsed: float) : float = 0.0
+      override _.Done(_elapsed: float) : bool = false
+  }
 
-  [<Sealed>]
-  type ConstantInfiniteSimulation(value: float) =
-    inherit Simulation()
+  let barDotOpacitySimulation
+    (periodic: Simulation, offset: float)
+    : Simulation = {
+    new Simulation() with
+      override _.IsInfinite = true
 
-    override _.IsInfinite = true
+      override _.Position(elapsed: float) : float =
+        let u = wrapPhase(periodic.Position elapsed, offset)
+        barDotOpacity u
 
-    override _.Position(elapsed: float) : float =
-      ignore elapsed
-      value
+      override _.Velocity(_elapsed: float) : float = 0.0
 
-    override _.Velocity(elapsed: float) : float =
-      ignore elapsed
-      0.0
+      override _.Done(_elapsed: float) : bool = false
+  }
 
-    override _.Done(elapsed: float) : bool =
-      ignore elapsed
-      false
+  // The arguments of the simulation of one axis of a ring dot.
+  type RingDotAxisArgs = {
+    Periodic: Simulation
+    Offset: float
+    IsX: bool
+    Geometry: unit -> struct (float * float * float)
+  }
 
-  [<Sealed>]
-  type BarDotOpacitySimulation(periodic: PeriodicSimulation, offset: float) =
-    inherit Simulation()
+  let ringDotAxisSimulation(args: RingDotAxisArgs) : Simulation = {
+    new Simulation() with
+      override _.IsInfinite = true
 
-    override _.IsInfinite = true
+      override _.Position(elapsed: float) : float =
+        let struct (boxSize, radius, dotSize) = args.Geometry()
+        let center = (boxSize - dotSize) * 0.5
+        let u = wrapPhase(args.Periodic.Position elapsed, args.Offset)
 
-    override _.Position(elapsed: float) : float =
-      let u = wrapPhase(periodic.Position(elapsed), offset)
-      barDotOpacity u
-
-    override _.Velocity(elapsed: float) : float =
-      ignore elapsed
-      0.0
-
-    override _.Done(elapsed: float) : bool =
-      ignore elapsed
-      false
-
-  [<Sealed>]
-  type RingDotAxisSimulation
-    (
-      periodic: PeriodicSimulation,
-      offset: float,
-      isX: bool,
-      getGeometry: unit -> struct (float * float * float)
-    ) =
-    inherit Simulation()
-
-    override _.IsInfinite = true
-
-    override _.Position(elapsed: float) : float =
-      let struct (boxSize, radius, dotSize) = getGeometry()
-      let center = (boxSize - dotSize) * 0.5
-      let u = wrapPhase(periodic.Position(elapsed), offset)
-
-      if u >= ringActiveWindow then
-        center
-      else
-        let angle = ringDotAngle u
-
-        if isX then
-          center + radius * Math.Cos(angle)
+        if u >= ringActiveWindow then
+          center
         else
-          center + radius * Math.Sin(angle)
+          let angle = ringDotAngle u
 
-    override _.Velocity(elapsed: float) : float =
-      ignore elapsed
-      0.0
+          if args.IsX then
+            center + radius * Math.Cos(angle)
+          else
+            center + radius * Math.Sin(angle)
 
-    override _.Done(elapsed: float) : bool =
-      ignore elapsed
-      false
+      override _.Velocity(_elapsed: float) : float = 0.0
 
-  [<Sealed>]
-  type RingDotOpacitySimulation(periodic: PeriodicSimulation, offset: float) =
-    inherit Simulation()
+      override _.Done(_elapsed: float) : bool = false
+  }
 
-    override _.IsInfinite = true
+  let ringDotOpacitySimulation
+    (periodic: Simulation, offset: float)
+    : Simulation = {
+    new Simulation() with
+      override _.IsInfinite = true
 
-    override _.Position(elapsed: float) : float =
-      let u = wrapPhase(periodic.Position(elapsed), offset)
-      ringDotOpacity u
+      override _.Position(elapsed: float) : float =
+        let u = wrapPhase(periodic.Position elapsed, offset)
+        ringDotOpacity u
 
-    override _.Velocity(elapsed: float) : float =
-      ignore elapsed
-      0.0
+      override _.Velocity(_elapsed: float) : float = 0.0
 
-    override _.Done(elapsed: float) : bool =
-      ignore elapsed
-      false
+      override _.Done(_elapsed: float) : bool = false
+  }
 
   let zeroYFactory =
-    Func<float, float, float, Simulation>(fun _ _ _ ->
-      ConstantInfiniteSimulation(0.0))
+    Func<float, float, float, Simulation>(fun _ _ _ -> constantInfinite 0.0)
 
 [<Sealed>]
 type internal MetroIndeterminateBarCell() as this =
   inherit Cell<MetroIndeterminateBarInput>()
 
-  let periodic = PeriodicSimulation(ProgressInternals.barPeriodSeconds)
+  let periodic = PeriodicSimulation.create ProgressInternals.barPeriodSeconds
   let trackHandle = ElementHandle()
 
   let mutable pixelWidth = 0.0
@@ -279,14 +254,14 @@ type internal MetroIndeterminateBarCell() as this =
       let offset = float i * ProgressInternals.barStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.BarDotXSimulation(periodic, offset, getGeometry)))
+        ProgressInternals.barDotXSimulation(periodic, offset, getGeometry)))
 
   let opacityFactories =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.barStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.BarDotOpacitySimulation(periodic, offset)))
+        ProgressInternals.barDotOpacitySimulation(periodic, offset)))
 
   let startDots() =
     if not running then
@@ -488,7 +463,7 @@ module MetroProgressBar =
 type internal MetroProgressRingCell() as this =
   inherit Cell<MetroProgressRingProps>()
 
-  let periodic = PeriodicSimulation(ProgressInternals.ringPeriodSeconds)
+  let periodic = PeriodicSimulation.create ProgressInternals.ringPeriodSeconds
 
   let mutable boxSize = 36.0
   let mutable radius = 14.0
@@ -510,31 +485,31 @@ type internal MetroProgressRingCell() as this =
       let offset = float i * ProgressInternals.ringStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.RingDotAxisSimulation(
-          periodic,
-          offset,
-          true,
-          getGeometry
-        )))
+        ProgressInternals.ringDotAxisSimulation {
+          Periodic = periodic
+          Offset = offset
+          IsX = true
+          Geometry = getGeometry
+        }))
 
   let yFactories =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.ringStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.RingDotAxisSimulation(
-          periodic,
-          offset,
-          false,
-          getGeometry
-        )))
+        ProgressInternals.ringDotAxisSimulation {
+          Periodic = periodic
+          Offset = offset
+          IsX = false
+          Geometry = getGeometry
+        }))
 
   let opacityFactories =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.ringStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.RingDotOpacitySimulation(periodic, offset)))
+        ProgressInternals.ringDotOpacitySimulation(periodic, offset)))
 
   let startOrbit() =
     if not running then

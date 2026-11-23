@@ -3,82 +3,75 @@ namespace FunGoo.Metro
 open System
 open Goo
 
+/// The arguments of a cubic Bezier simulation.
+[<NoComparison; NoEquality>]
+type CubicBezierArgs = {
+  /// Duration of the simulation in seconds.
+  DurationSeconds: float
+  /// The position at the start.
+  FromValue: float
+  /// The position at the end.
+  ToValue: float
+  /// The x of the first interior control point, from <c>0.0</c> to <c>1.0</c>.
+  X1: float
+  /// The y of the first interior control point.
+  Y1: float
+  /// The x of the second interior control point, from <c>0.0</c> to <c>1.0</c>.
+  X2: float
+  /// The y of the second interior control point.
+  Y2: float
+}
+
 /// Closed-form cubic Bezier easing simulation with endpoints <c>(0, 0)</c> and
 /// <c>(1, 1)</c> and interior control points <c>(x1, y1)</c> and
 /// <c>(x2, y2)</c>.
-[<Sealed>]
-type CubicBezierSimulation =
-  inherit Simulation
+[<RequireQualifiedAccess>]
+module CubicBezierSimulation =
 
-  /// Creates a cubic Bezier simulation from <paramref name="fromValue"/> to
-  /// <paramref name="toValue"/> over <paramref name="durationSeconds"/>.
-  new:
-    durationSeconds: float *
-    fromValue: float *
-    toValue: float *
-    x1: float *
-    y1: float *
-    x2: float *
-    y2: float ->
-      CubicBezierSimulation
+  /// Creates a cubic Bezier simulation from <c>FromValue</c> to <c>ToValue</c>
+  /// over <c>DurationSeconds</c>. <c>Position</c> evaluates the scalar position
+  /// in seconds, <c>Velocity</c> the analytical velocity in units per second,
+  /// and <c>Done</c> is <c>true</c> once the elapsed seconds reach the
+  /// duration. An argument that is not finite, a negative duration, or an x
+  /// outside <c>0.0 .. 1.0</c> throws <c>ArgumentOutOfRangeException</c>.
+  val create: args: CubicBezierArgs -> Simulation
 
-  /// Evaluates the scalar position at <paramref name="elapsed"/> seconds.
-  override Position: elapsed: float -> float
-
-  /// Evaluates the analytical velocity in units per second at
-  /// <paramref name="elapsed"/> seconds.
-  override Velocity: elapsed: float -> float
-
-  /// Returns <c>true</c> once <paramref name="elapsed"/> reaches or exceeds
-  /// the configured duration.
-  override Done: elapsed: float -> bool
+/// The arguments of an exponential ease-out simulation.
+[<NoComparison; NoEquality>]
+type ExponentialEaseArgs = {
+  /// Duration of the simulation in seconds.
+  DurationSeconds: float
+  /// The position at the start.
+  FromValue: float
+  /// The position at the end.
+  ToValue: float
+  /// The exponent of the ease.
+  Exponent: float
+}
 
 /// Closed-form exponential ease-out simulation following
 /// <c>(1 - exp(-E * t)) / (1 - exp(-E))</c>, falling back to linear motion when
-/// <c>abs exponent &lt; 1e-6</c>.
-[<Sealed>]
-type ExponentialEaseSimulation =
-  inherit Simulation
+/// <c>abs Exponent &lt; 1e-6</c>.
+[<RequireQualifiedAccess>]
+module ExponentialEaseSimulation =
 
-  /// Creates an exponential ease simulation from <paramref name="fromValue"/>
-  /// to <paramref name="toValue"/> over <paramref name="durationSeconds"/>.
-  new:
-    durationSeconds: float * fromValue: float * toValue: float * exponent: float ->
-      ExponentialEaseSimulation
+  /// Creates an exponential ease simulation from <c>FromValue</c> to
+  /// <c>ToValue</c> over <c>DurationSeconds</c>. <c>Position</c> evaluates the
+  /// scalar position, <c>Velocity</c> the analytical velocity in units per
+  /// second, and <c>Done</c> is <c>true</c> once the elapsed seconds reach the
+  /// duration. An argument that is not finite or a negative duration throws
+  /// <c>ArgumentOutOfRangeException</c>.
+  val create: args: ExponentialEaseArgs -> Simulation
 
-  /// Evaluates the scalar position at <paramref name="elapsed"/> seconds.
-  override Position: elapsed: float -> float
-
-  /// Evaluates the analytical velocity in units per second at
-  /// <paramref name="elapsed"/> seconds.
-  override Velocity: elapsed: float -> float
-
-  /// Returns <c>true</c> once <paramref name="elapsed"/> reaches or exceeds
-  /// the configured duration.
-  override Done: elapsed: float -> bool
-
-/// Infinite periodic phase simulation wrapping elapsed time modulo
-/// <paramref name="periodSeconds"/> into <c>[0.0, 1.0)</c>.
-[<Sealed>]
-type PeriodicSimulation =
-  inherit Simulation
+/// Infinite periodic phase simulation that wraps the elapsed time modulo its
+/// period into <c>[0.0, 1.0)</c>. <c>IsInfinite</c> is always <c>true</c> and
+/// <c>Done</c> is always <c>false</c>.
+[<RequireQualifiedAccess>]
+module PeriodicSimulation =
 
   /// Creates an infinite periodic simulation with the given strictly positive
-  /// period in seconds.
-  new: periodSeconds: float -> PeriodicSimulation
-
-  /// Always returns <c>true</c>.
-  override IsInfinite: bool
-
-  /// Evaluates the wrapped phase in <c>[0.0, 1.0)</c> at
-  /// <paramref name="elapsed"/> seconds.
-  override Position: elapsed: float -> float
-
-  /// Evaluates the constant phase velocity <c>1.0 / periodSeconds</c>.
-  override Velocity: elapsed: float -> float
-
-  /// Always returns <c>false</c>.
-  override Done: elapsed: float -> bool
+  /// period in seconds. Another period throws <c>ArgumentOutOfRangeException</c>.
+  val create: periodSeconds: float -> Simulation
 
 /// Metro easing simulation factories, pre-cached motion specs, stagger helpers,
 /// and reduced-motion adaptation.
