@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TestHost.fs" />
+    <Compile Include="ThemeTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../FunGoo/FunGoo.fsproj" />
+    <ProjectReference Include="../../FunGoo.Widgets/FunGoo.Widgets.fsproj" />
+    <ProjectReference Include="../../FunGoo.Metro/FunGoo.Metro.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.2" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Goo" Version="0.31.0" />
+    <PackageReference Include="Goo.Widgets" Version="0.22.2" />
+  </ItemGroup>
+
+</Project>
