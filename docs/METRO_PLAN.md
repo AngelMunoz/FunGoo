@@ -109,7 +109,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 8 | `metro/08-list-view` | #8 | `MetroListView`: `Goo.Widgets.ListView` with sharp 44 px rows, a 3 px accent indicator and an accent tint on selected rows, selection modes `Activate`, `Single`, and `Multiple`, one event channel, a factory that keeps one callback set, gallery tab and scene, reflection-free tests | Complete |
 | PR 9 | `metro/09-list-box-grid` | #9 | `MetroListBox`: a sharp 2 px bordered box around a Metro list. `MetroGridViewFactory`: a virtual wrapped grid of square tile buttons on `VirtualItems`, with a 2 px accent border and an accent tint on selected tiles, selection modes `Activate`, `Single`, and `Multiple`, gallery additions, reflection-free tests | Complete |
 | PR 10 | `metro/10-long-list-selector` | | Grouped list with group headers and a jump list. Needs its own virtual list with its own handle, because `ListView` gives no public access to its scroll viewport (hard fact 14) | Planned |
-| PR 11 | `metro/11-semantic-zoom` | | `MetroSemanticZoomCell`: a zoomed-in detail view and a zoomed-out overview view of the same content, a zoom toggle button in the top end corner, a scale and fade transition on each zoom, reduced motion, public view seam (`MetroSemanticZoom.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests | Complete |
+| PR 11 | `metro/11-semantic-zoom` | #10 | `MetroSemanticZoomCell`: a zoomed-in detail view and a zoomed-out overview view of the same content, a zoom toggle button in the top end corner, a scale and fade transition on each zoom, reduced motion, public view seam (`MetroSemanticZoom.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests | Complete |
 | PR 12 | `metro/12-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
 | PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
 | PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
@@ -142,7 +142,7 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 1. Check out the stack top:
    ```sh
    gh stack checkout 5
-   # or: git fetch origin && git checkout metro/09-list-box-grid
+   # or: git fetch origin && git checkout metro/11-semantic-zoom
    ```
 2. Build and run all `45` headless tests plus the gallery smoke check:
    ```sh
