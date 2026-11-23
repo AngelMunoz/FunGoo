@@ -25,20 +25,41 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
 5. **Headless testing:**
    - Goo's `EmbeddedWindowHost` runs full `Window` lifecycle, `Context` subscriptions, `ElementHandle` metrics, `LayoutAlgorithm`, `Portal`, and `PlatformInput` inside `xunit` tests without a GPU or display server.
 
-## Stackable PR Roadmap
+## Stackable PR Roadmap (GitHub Stack `#5`)
 
 Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats with `dotnet fantomas .`, and passes all headless tests.
 
-| Stack # | Branch | Scope | Status |
-| --- | --- | --- | --- |
-| PR 1 | `metro/01-foundation` | Durable plan, `FunGoo.Metro` + `FunGoo.Metro.Tests` projects, 21 Metrino accents, dark/light tokens, typography/spacing/motion constants, dual-context `MetroTheme` + `Goo.Widgets.Theme` bridge, headless tests | Complete |
-| PR 2 | `metro/02-motion-and-shader` | Native `Simulation` curves (`CubicBezierSimulation`, `ExponentialEaseSimulation`), stagger delays, Continuum flight helper, 2D turnstile/swivel fallback, Slang `metro_perspective.slang` prototype + `MetroPerspectiveEffect` runtime loader, headless tests | Complete |
-| PR 3 | `metro/03-typography-and-controls` | `MetroText` (10-role ramp), `MetroButton`, `MetroTextBox`, `MetroPasswordBox`, `MetroToggleSwitch` (sharp rectangular), `MetroCheckBox`, `MetroRadioButton`, `MetroSlider` (square thumb), `MetroProgressBar` (determinate + 5-dot), `MetroProgressRing` (5-dot orbit), headless + allocation tests | Complete |
-| PR 4 | `metro/04-navigation-layout-gallery` | `MetroPivot` (peeking headers, slide, keyboard circular loop, swipe), `MetroHub` / `MetroPanorama` (peeking sections + scroll parallax), `IconicTile` / `LiveTile` + `TileGridLayout`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `samples/MetroGallery` (`--check` + interactive UI), `CHANGELOG.md` | Complete |
+| Stack # | Branch | Pull Request | Scope | Status |
+| --- | --- | --- | --- | --- |
+| PR 1 | `metro/01-foundation` | #1 | Durable plan, `FunGoo.Metro` + `FunGoo.Metro.Tests` projects, 21 Metrino accents, dark/light tokens, typography/spacing/motion constants, dual-context `MetroTheme` + `Goo.Widgets.Theme` bridge, headless tests | Complete |
+| PR 2 | `metro/02-motion-and-shader` | #2 | Native `Simulation` curves (`CubicBezierSimulation`, `ExponentialEaseSimulation`), stagger delays, Continuum flight helper, 2D turnstile/swivel fallback, Slang `metro_perspective.slang` prototype + `MetroPerspectiveEffect` runtime loader, headless tests | Complete |
+| PR 3 | `metro/03-typography-and-controls` | #3 | `MetroText` (10-role ramp), `MetroButton`, `MetroTextBox`, `MetroPasswordBox`, `MetroToggleSwitch` (sharp rectangular), `MetroCheckBox`, `MetroRadioButton`, `MetroSlider` (square thumb), `MetroProgressBar` (determinate + 5-dot), `MetroProgressRing` (5-dot orbit), headless + allocation tests | Complete |
+| PR 4 | `metro/04-navigation-layout-gallery` | #4 | `MetroPivot` (peeking headers, slide, keyboard circular loop, swipe), `MetroHub` / `MetroPanorama` (peeking sections + scroll parallax), `IconicTile` / `LiveTile` + `TileGridLayout`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `samples/MetroGallery` (`--check` + interactive UI), `CHANGELOG.md` | Complete |
+
+### Resuming on Another Machine
+
+1. Check out the stack top:
+   ```sh
+   gh stack checkout 5
+   # or: git fetch origin && git checkout metro/04-navigation-layout-gallery
+   ```
+2. Build and run all `35` headless tests plus the gallery smoke check:
+   ```sh
+   dotnet build FunGoo.slnx
+   dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj
+   dotnet run --project samples/MetroGallery/MetroGallery.fsproj -- --check
+   ```
+3. Optional shader compilation (verified: `metro_perspective.slang` compiles cleanly as `goo-shader-effect-3` and passes all `35/35` tests):
+   - Requires Slang `2026.16` (`SLANG_SDK`) and Vulkan SDK `1.4.357.0` (`VULKAN_SDK`) — see `Goo/docs/platform-preflight.md`.
+   - Build and test with:
+     ```sh
+     dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj -p:CompileMetroShaders=true
+     ```
+   - To ship the precompiled binary to machines without the shader SDKs, copy the generated `.goo-effect` artifact from `FunGoo.Metro/obj/` to `FunGoo.Metro/Shaders/metro_perspective.goo-effect`.
 
 ### Future Follow-Ups (Post-Stack)
 
-- Compile and embed `metro_perspective.goo-effect` once `SLANG_SDK` (2026.16) and `VULKAN_SDK` (1.4.357.0) are available in CI or dev environment (`dotnet build FunGoo.Metro/FunGoo.Metro.fsproj -p:CompileMetroShaders=true`).
+- Decide whether to check in precompiled `FunGoo.Metro/Shaders/metro_perspective.goo-effect` and wire live 3D perspective transitions into `MetroPivot`, `MetroLiveTile` (FlipTile), and `MetroContentDialog` (Swivel).
 - Evaluate bundled humanist light-weight sans-serif font (for example, Selawik) via `FontSource`.
 - Add `SemanticZoom`, `LongListSelector`, `FlipView`, and date/time roller pickers.
 - Add RTL logical property verification across Metro navigation and layout controls.
