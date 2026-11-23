@@ -131,7 +131,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 23 | `metro/23-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
 | PR 24 | `metro/24-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
 | PR 25 | `metro/25-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
-| PR 26 | `metro/14-gallery-zoom-inputs-fix` | | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
+| PR 26 | `metro/14-gallery-zoom-inputs-fix` | #13 | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
 
 Rules for the planned rows: each row is one PR, one theme, one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the PR starts. Split a row into two PRs when it grows past the size of PR 3.
 
