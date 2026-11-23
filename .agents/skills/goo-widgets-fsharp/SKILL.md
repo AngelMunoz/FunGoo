@@ -82,8 +82,9 @@ Create the delegates once, in the closure of `create`, before the object express
 ```fsharp
 let create (env: #IProvidePlayback, player: PlayerState, onTrackChanged: unit -> unit)
   : Cell =
-  // Created once, before the object expression exists: every input snapshot
-  // carries the same delegate instances, so an unchanged input skips the rebuild.
+  // Created once, before the object expression exists. F# converts a function
+  // value to a delegate whose target is that value, so the delegates of two
+  // builds compare equal and an unchanged input skips the rebuild.
   let onPlayPause () = playPause (env, player)
   let onNext () = skipNext (env, player)
   let onPrevious () = skipPrevious (env, player)
@@ -109,9 +110,12 @@ let create (env: #IProvidePlayback, player: PlayerState, onTrackChanged: unit ->
         ) }
 ```
 
-`samples/RaznorGoo/Widgets/BottomBar.fs` in this repository is this form. Plain Blob
-callbacks are different: a fresh `Button(OnClick = fun () -> ...)` authored by your own Cell
-is fine. Callbacks never gate node reuse, and the owner rule rebuilds your Cell anyway.
+`samples/RaznorGoo/Widgets/BottomBar.fs` in this repository is this form. A Goo.Widgets
+input compares two delegates through their target and their method, thus a lambda that you
+write inside `Build` is different: it captures a new closure at each build, and the input
+changes. Plain Blob callbacks are different again: a fresh `Button(OnClick = fun () -> ...)`
+authored by your own Cell is fine. Callbacks never gate node reuse, and the owner rule
+rebuilds your Cell anyway.
 
 ## Configuring from F#
 

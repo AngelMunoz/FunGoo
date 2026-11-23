@@ -116,8 +116,9 @@ Each commit of the re-shape and each new control passes gate 9.
     - `VirtualItems` reads the theme. A `Build()` that creates it needs the build context of a mounted cell. A direct call outside a mount throws `Context requires an owned build or virtual callback`. Mount the cell in a headless `EmbeddedWindowHost` for that check.
 
 18. **Function to delegate:**
-    - F# converts a function value and a lambda to `Action` or `Func` at a delegate parameter, property, or constructor: `this.Raise(onSelect, id)`, `Cell.Mount<Cell>(key, factory)`, `MediaTransportInput(OnPlayPause = onPlayPause)`.
-    - The compiler requires a wrapper in two cases. A lambda with a parameter that has no type binds the non-generic `Action`: write `Action<float>(fun value -> ...)`. A conditional with `null` needs one delegate type for both branches.
+    - F# converts a function value to `Action` or `Func` at a delegate parameter, property, or constructor: `this.Raise(onSelect, id)`, `Cell.Mount<Cell>(key, factory)`, `MediaTransportInput(OnPlayPause = onPlayPause)`. A lambda converts at a property, at a constructor, and at a method argument: `Button(OnClick = fun () -> ...)`.
+    - The compiler requires a typed wrapper (`Action<float>(...)`, `Func<Song, Blob>(...)`) in three cases: a lambda passed to an F# function whose parameter has a delegate type (FS0002, for example the third argument of `MetroSlider.mount`), a lambda with a parameter that has no type (`Action(fun value -> ...)` binds the non-generic `Action`), and a conditional with `null`.
+    - Measured with `NumberInputInput` and `MediaTransportInput`: a function value that F# converts at each build keeps the input equal, because the target of the delegate is the function value. One delegate made once keeps the input equal. A lambda with a capture that is written inside `Build` makes the input different.
 
 ## Control Catalog Gap (2026-11-22)
 
