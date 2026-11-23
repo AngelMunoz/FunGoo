@@ -28,27 +28,48 @@ module MetroTileMetrics =
   val pixelSize:
     cellSize: float * gap: float * size: MetroTileSize -> struct (float * float)
 
+/// The arguments of a tile grid layout.
+[<NoComparison; NoEquality>]
+type TileGridArgs = {
+  /// Single-cell edge length in logical pixels. A value that is not finite or
+  /// not positive gives <c>72.0</c>.
+  CellSize: float
+  /// Gutter width between cells in logical pixels. A value that is not finite
+  /// or is negative gives <c>8.0</c>.
+  Gap: float
+  /// Column count of the grid. A value below <c>1</c> gives <c>4</c>.
+  Columns: int
+  /// The tile size of each child. A child past the end of the array is
+  /// <see cref="MetroTileSize.Medium"/>.
+  Sizes: MetroTileSize array
+}
+
+/// The resolved values of a tile grid layout.
+[<NoComparison; NoEquality>]
+type TileGridSpec = {
+  /// The single-cell edge length in logical pixels.
+  CellSize: float
+  /// The gutter width between cells in logical pixels.
+  Gap: float
+  /// The column count of the grid.
+  Columns: int
+  /// A copy of the tile size of each child.
+  Sizes: MetroTileSize array
+}
+
 /// Immutable Metro tile grid bin-packing <see cref="LayoutAlgorithm"/> placing
 /// mixed-size tiles without overlap and with exact gutters.
-[<Sealed>]
-type TileGridLayout =
-  interface LayoutAlgorithm
+[<RequireQualifiedAccess>]
+module TileGridLayout =
 
-  /// Creates an immutable tile grid layout with logical
-  /// <paramref name="cellSize"/>, inter-cell <paramref name="gap"/>, grid
-  /// <paramref name="columns"/>, and per-child tile <paramref name="sizes"/>.
-  new:
-    cellSize: float * gap: float * columns: int * sizes: MetroTileSize array ->
-      TileGridLayout
+  /// Resolves the arguments of a tile grid layout into the values that the
+  /// layout uses, with a copy of the tile sizes.
+  val resolve: args: TileGridArgs -> TileGridSpec
 
-  /// Resolved single-cell edge length in logical pixels.
-  member CellSize: float
-
-  /// Resolved gutter width between adjacent cells in logical pixels.
-  member Gap: float
-
-  /// Resolved column count of the tile grid.
-  member Columns: int
+  /// Creates an immutable tile grid layout for
+  /// <see cref="TileGridArgs.CellSize"/>, <see cref="TileGridArgs.Gap"/>,
+  /// <see cref="TileGridArgs.Columns"/>, and <see cref="TileGridArgs.Sizes"/>.
+  val create: args: TileGridArgs -> LayoutAlgorithm
 
 /// Data-only properties for a static iconic Metro tile with optional count
 /// badge.

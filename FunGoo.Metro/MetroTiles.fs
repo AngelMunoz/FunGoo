@@ -13,6 +13,26 @@ type MetroTileSize =
   | Wide
   | Large
 
+/// The arguments of a tile grid layout.
+type TileGridArgs = {
+  /// Single-cell edge length in logical pixels.
+  CellSize: float
+  /// Gutter width between cells in logical pixels.
+  Gap: float
+  /// Column count of the grid.
+  Columns: int
+  /// The tile size of each child.
+  Sizes: MetroTileSize array
+}
+
+/// The resolved values of a tile grid layout.
+type TileGridSpec = {
+  CellSize: float
+  Gap: float
+  Columns: int
+  Sizes: MetroTileSize array
+}
+
 [<RequireQualifiedAccess>]
 module MetroTileMetrics =
 
@@ -115,16 +135,15 @@ module private TileInternals =
         rowArr[c] <- true
 
   let packTiles
-    (
-      cellSize: float,
-      gap: float,
-      cols: int,
-      sizes: MetroTileSize array,
-      childCount: int
-    ) : struct (ElementRect array * float * float) =
+    (spec: TileGridSpec, childCount: int)
+    : struct (ElementRect array * float * float) =
     if childCount <= 0 then
       struct (Array.empty, 0.0, 0.0)
     else
+      let cellSize = spec.CellSize
+      let gap = spec.Gap
+      let cols = spec.Columns
+      let sizes = spec.Sizes
       let rects = Array.zeroCreate<ElementRect> childCount
       let grid = List<bool array>()
       let step = cellSize + gap
@@ -183,55 +202,51 @@ module private TileInternals =
 
       struct (rects, totalW, totalH)
 
-[<Sealed>]
-type TileGridLayout
-  (cellSize: float, gap: float, columns: int, sizes: MetroTileSize array) =
+[<RequireQualifiedAccess>]
+module TileGridLayout =
 
-  let resolvedCell = TileInternals.resolveCellSize cellSize
-  let resolvedGap = TileInternals.resolveGap gap
-  let resolvedColumns = TileInternals.resolveColumns columns
+  let resolve(args: TileGridArgs) : TileGridSpec = {
+    CellSize = TileInternals.resolveCellSize args.CellSize
+    Gap = TileInternals.resolveGap args.Gap
+    Columns = TileInternals.resolveColumns args.Columns
+    Sizes =
+      if isNull args.Sizes then
+        Array.empty
+      else
+        Array.copy args.Sizes
+  }
 
-  let resolvedSizes = if isNull sizes then Array.empty else Array.copy sizes
+  let private measure(spec: TileGridSpec, context: LayoutContext) : LayoutSize =
+    let struct (rects, totalW, totalH) =
+      TileInternals.packTiles(spec, context.ChildCount)
 
-  member _.CellSize = resolvedCell
-  member _.Gap = resolvedGap
-  member _.Columns = resolvedColumns
+    for i = 0 to rects.Length - 1 do
+      let r = rects[i]
+      context.MeasureChild(i, LayoutSize(r.Width, r.Height)) |> ignore
 
-  interface LayoutAlgorithm with
-    member _.Measure
-      (context: LayoutContext, available: LayoutSize)
-      : LayoutSize =
-      ignore available
+    LayoutSize(totalW, totalH)
 
-      let struct (rects, totalW, totalH) =
-        TileInternals.packTiles(
-          resolvedCell,
-          resolvedGap,
-          resolvedColumns,
-          resolvedSizes,
-          context.ChildCount
-        )
+  let private arrange(spec: TileGridSpec, context: LayoutContext) : unit =
+    let struct (rects, _, _) = TileInternals.packTiles(spec, context.ChildCount)
 
-      for i = 0 to rects.Length - 1 do
-        let r = rects[i]
-        context.MeasureChild(i, LayoutSize(r.Width, r.Height)) |> ignore
+    for i = 0 to rects.Length - 1 do
+      context.ArrangeChild(i, rects[i])
 
-      LayoutSize(totalW, totalH)
+  let create(args: TileGridArgs) : LayoutAlgorithm =
+    let spec = resolve args
 
-    member _.Arrange(context: LayoutContext, finalSize: LayoutSize) =
-      ignore finalSize
+    {
+      new LayoutAlgorithm with
+        member _.Measure
+          (context: LayoutContext, _available: LayoutSize)
+          : LayoutSize =
+          measure(spec, context)
 
-      let struct (rects, _, _) =
-        TileInternals.packTiles(
-          resolvedCell,
-          resolvedGap,
-          resolvedColumns,
-          resolvedSizes,
-          context.ChildCount
-        )
-
-      for i = 0 to rects.Length - 1 do
-        context.ArrangeChild(i, rects[i])
+        member _.Arrange
+          (context: LayoutContext, _finalSize: LayoutSize)
+          : unit =
+          arrange(spec, context)
+    }
 
 [<Struct; NoComparison>]
 type MetroIconicTileProps = {

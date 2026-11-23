@@ -528,7 +528,14 @@ let ``TileGridLayout packs mixed tiles without overlap and exact gutters``() =
   // 7th child exceeds sizes.Length and defaults to Medium.
   let expectedSizes = Array.append sizes [| MetroTileSize.Medium |]
   let handles = Array.init expectedSizes.Length (fun _ -> ElementHandle())
-  let layout = TileGridLayout(72.0, 8.0, 4, sizes)
+
+  let layout =
+    TileGridLayout.create {
+      CellSize = 72.0
+      Gap = 8.0
+      Columns = 4
+      Sizes = sizes
+    }
 
   use host = createHost(800, 900)
 
@@ -982,10 +989,25 @@ let ``MetroPivot Unmounting snaps animations and resets selection state``() =
 [<Fact>]
 let ``TileGridLayout handles empty children and clamped column counts``() =
   let emptyHandle = ElementHandle()
-  let emptyLayout = TileGridLayout(72.0, 8.0, 4, Array.empty)
 
-  let fallbackLayout = TileGridLayout(72.0, 8.0, 0, Array.empty)
-  Assert.Equal(4, fallbackLayout.Columns)
+  let emptyLayout =
+    TileGridLayout.create {
+      CellSize = 72.0
+      Gap = 8.0
+      Columns = 4
+      Sizes = Array.empty
+    }
+
+  // A column count below 1 gives 4.
+  let fallback =
+    TileGridLayout.resolve {
+      CellSize = 72.0
+      Gap = 8.0
+      Columns = 0
+      Sizes = Array.empty
+    }
+
+  Assert.Equal(4, fallback.Columns)
 
   let narrowSizes = [|
     MetroTileSize.Wide
@@ -995,8 +1017,16 @@ let ``TileGridLayout handles empty children and clamped column counts``() =
   |]
 
   let narrowHandles = Array.init narrowSizes.Length (fun _ -> ElementHandle())
-  let narrowLayout = TileGridLayout(72.0, 8.0, 2, narrowSizes)
-  Assert.Equal(2, narrowLayout.Columns)
+
+  let narrowArgs: TileGridArgs = {
+    CellSize = 72.0
+    Gap = 8.0
+    Columns = 2
+    Sizes = narrowSizes
+  }
+
+  Assert.Equal(2, (TileGridLayout.resolve narrowArgs).Columns)
+  let narrowLayout = TileGridLayout.create narrowArgs
 
   use host = createHost(800, 900)
 

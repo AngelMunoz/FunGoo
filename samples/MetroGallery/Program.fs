@@ -487,7 +487,13 @@ type private GalleryCell
     MetroTileSize.Wide
   |]
 
-  let tileGridLayout = TileGridLayout(72.0, 8.0, 4, tileGridSizes)
+  let tileGridLayout =
+    TileGridLayout.create {
+      CellSize = 72.0
+      Gap = 8.0
+      Columns = 4
+      Sizes = tileGridSizes
+    }
 
   let liveFaces = [|
     {
