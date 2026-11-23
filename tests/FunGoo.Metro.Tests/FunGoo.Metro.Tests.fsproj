@@ -10,6 +10,7 @@
     <Compile Include="TestHost.fs" />
     <Compile Include="ThemeTests.fs" />
     <Compile Include="MotionAndShaderTests.fs" />
+    <Compile Include="ControlsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
