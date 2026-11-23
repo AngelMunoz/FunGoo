@@ -56,6 +56,7 @@ type InputsTabCell() as this =
   let mutable quantity = 12.5
   let mutable rating = 3.0
   let mutable sizeSelected = "medium"
+  let mutable citySelected = ""
   let mutable cityQuery = ""
 
   // Created once: every Build gives the widgets the same callback instances,
@@ -71,15 +72,63 @@ type InputsTabCell() as this =
       rating <- value
       this.Rebuild())
 
-  let onCombo(event: MetroComboBoxEvent) =
+  // Each control has its own handler, because each one owns a different value.
+  let onSize(event: MetroComboBoxEvent) =
     match event with
     | MetroComboBoxEvent.Selected id -> sizeSelected <- id
-    | MetroComboBoxEvent.QueryChanged query -> cityQuery <- query
+    | _ -> ()
+
+    this.Rebuild()
+
+  let onCity(event: MetroComboBoxEvent) =
+    match event with
+    | MetroComboBoxEvent.Selected id ->
+      // A selected city fills the entry with its name.
+      citySelected <- id
+      cityQuery <- id
+    | MetroComboBoxEvent.QueryChanged query ->
+      // A new query starts a new search, so it clears the selection.
+      cityQuery <- query
+      citySelected <- ""
     | MetroComboBoxEvent.OpenChanged _ -> ()
 
     this.Rebuild()
 
-  let comboFactory = MetroComboBoxFactory(onCombo)
+  // One factory per control: each factory holds its own callback set.
+  let sizeFactory = MetroComboBoxFactory(onSize)
+  let cityFactory = MetroComboBoxFactory(onCity)
+
+  let sizeProps() : MetroComboBoxProps = {
+    MetroComboBox.defaults(Content.sizes, sizeSelected) with
+        Placeholder = ValueSome "size"
+        AccessibilityName = ValueSome "size"
+        Width = ValueSome(Length.Pixels 200.0)
+  }
+
+  let cityProps() : MetroComboBoxProps = {
+    MetroComboBox.autoSuggest(Content.suggestionsFor cityQuery, cityQuery) with
+        SelectedId = citySelected
+        Placeholder = ValueSome "city"
+        SearchPlaceholder = ValueSome "city"
+        EmptyText = ValueSome "No city matches"
+        AccessibilityName = ValueSome "city"
+        Width = ValueSome(Length.Pixels 200.0)
+  }
+
+  /// Identifier of the selected size, for the headless check of the gallery.
+  member _.SizeSelected = sizeSelected
+
+  /// Identifier of the selected city, for the headless check of the gallery.
+  member _.CitySelected = citySelected
+
+  /// Text of the city entry, for the headless check of the gallery.
+  member _.CityQuery = cityQuery
+
+  /// Widget input of the size combo box, for the headless check.
+  member _.SizeInput = sizeFactory.CreateInput(sizeProps())
+
+  /// Widget input of the city auto-suggest box, for the headless check.
+  member _.CityInput = cityFactory.CreateInput(cityProps())
 
   override _.Build() : Blob =
     Container(
@@ -134,28 +183,7 @@ type InputsTabCell() as this =
           Gap = Length.Pixels 48.0
         )
           .Children(
-            comboFactory.Mount(
-              "gallery-combo",
-              {
-                MetroComboBox.defaults(Content.sizes, sizeSelected) with
-                    Placeholder = ValueSome "size"
-                    AccessibilityName = ValueSome "size"
-                    Width = ValueSome(Length.Pixels 200.0)
-              }
-            ),
-            comboFactory.Mount(
-              "gallery-suggest",
-              {
-                MetroComboBox.autoSuggest(
-                  Content.suggestionsFor cityQuery,
-                  cityQuery
-                ) with
-                    Placeholder = ValueSome "city"
-                    SearchPlaceholder = ValueSome "city"
-                    EmptyText = ValueSome "No city matches"
-                    AccessibilityName = ValueSome "city"
-                    Width = ValueSome(Length.Pixels 200.0)
-              }
-            )
+            sizeFactory.Mount("gallery-combo", sizeProps()),
+            cityFactory.Mount("gallery-suggest", cityProps())
           )
       )

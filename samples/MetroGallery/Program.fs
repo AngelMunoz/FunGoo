@@ -549,9 +549,21 @@ type private GalleryCell
   let controlsTabFactory = Func<Cell>(fun () -> ControlsTabCell(store) :> Cell)
   let flipViewTabFactory = fun () -> FlipViewTab.FlipViewTabCell() :> Cell
   let listsTabFactory = fun () -> ListsTab.ListsTabCell() :> Cell
-  let zoomTabFactory = fun () -> ZoomTab.ZoomTabCell() :> Cell
+  // The mounted tab cells, for the headless check of the gallery.
+  let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
+  let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
 
-  let inputsTabFactory = fun () -> InputsTab.InputsTabCell() :> Cell
+  let zoomTabFactory =
+    fun () ->
+      let cell = ZoomTab.ZoomTabCell()
+      zoomTabRef <- ValueSome cell
+      cell :> Cell
+
+  let inputsTabFactory =
+    fun () ->
+      let cell = InputsTab.InputsTabCell()
+      inputsTabRef <- ValueSome cell
+      cell :> Cell
 
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
@@ -955,6 +967,12 @@ type private GalleryCell
   member _.SettingsOpen = settingsOpen
   member _.DialogOpen = dialogOpen
 
+  /// The mounted semantic zoom tab, for the headless check.
+  member _.ZoomTab = zoomTabRef
+
+  /// The mounted inputs tab, for the headless check.
+  member _.InputsTab = inputsTabRef
+
   member this.SelectTab(id: string) =
     activeTab <- id
     this.Rebuild()
@@ -1085,6 +1103,29 @@ let private findNodeByKey(window: Window, key: string) : obj voption =
         found
 
   visit rootNode
+
+/// Depth-first search of the Container and Button children for a keyed
+/// element. Uses the public children collections only.
+let rec private findBlobByKey(root: Blob, key: string) : Blob voption =
+  if not(isNull root) && root.Key = key then
+    ValueSome root
+  else
+    // The type annotation selects the Children property and not the Children
+    // extension method of FunGoo.Children.
+    let children: IList<Blob> =
+      match root with
+      | :? Container as container -> container.Children
+      | :? Button as button -> button.Children
+      | _ -> (Array.empty<Blob> :> IList<Blob>)
+
+    let mutable found = ValueNone
+    let mutable index = 0
+
+    while index < children.Count && found.IsNone do
+      found <- findBlobByKey(children[index], key)
+      index <- index + 1
+
+    found
 
 /// Gallery tabs that also register as named `goo render` scenes, in name order.
 let private sceneTabs = [|
@@ -1261,6 +1302,88 @@ let private runChecks() : int =
 
   gallery.SetDialogOpen false
   pump 2
+
+  // 7. Semantic zoom: the toggle zooms out, and a group tile zooms back in.
+  gallery.SelectTab "zoom"
+  pump 2
+
+  let zoomTab =
+    match gallery.ZoomTab with
+    | ValueSome tab -> tab
+    | ValueNone -> failwith "Expected the semantic zoom tab to be mounted."
+
+  let zoomCell =
+    match zoomTab.ZoomCell with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected the semantic zoom cell to be mounted."
+
+  zoomCell.Handle(MetroSemanticZoomEvent.ZoomOut)
+  pump 2
+
+  if not zoomTab.ZoomedOut || not zoomCell.IsZoomedOut then
+    failwith "Expected the zoom toggle to zoom out."
+
+  let groupTile =
+    match findBlobByKey(zoomTab.LastOverview, "group-tile-maps") with
+    | ValueSome blob -> blob :?> Button
+    | ValueNone -> failwith "Expected the group tile of 'maps'."
+
+  // The zoom cell builds the group tiles, so it owns their callbacks. The
+  // tab has to zoom in by itself.
+  groupTile.OnClick.Invoke()
+  pump 2
+
+  if zoomTab.ZoomedOut || zoomCell.IsZoomedOut then
+    failwith "Expected a group tile to zoom in."
+
+  if zoomTab.LastAction <> "Zoomed in on maps" then
+    failwith $"Expected 'Zoomed in on maps', got '{zoomTab.LastAction}'."
+
+  let detailTile =
+    match findBlobByKey(zoomTab.LastDetail, "tile-maps-city") with
+    | ValueSome blob -> blob :?> Button
+    | ValueNone -> failwith "Expected the detail tile 'city' of 'maps'."
+
+  detailTile.OnClick.Invoke()
+  pump 2
+
+  if zoomTab.LastAction <> "Selected city in maps" then
+    failwith $"Expected 'Selected city in maps', got '{zoomTab.LastAction}'."
+
+  // 8. Inputs: the size combo box and the city auto-suggest box keep separate
+  // values.
+  gallery.SelectTab "inputs"
+  pump 2
+
+  let inputsTab =
+    match gallery.InputsTab with
+    | ValueSome tab -> tab
+    | ValueNone -> failwith "Expected the inputs tab to be mounted."
+
+  inputsTab.CityInput.OnQueryChange.Invoke("por")
+  pump 2
+  inputsTab.CityInput.OnSelect.Invoke("Porto")
+  pump 2
+
+  if inputsTab.SizeSelected <> "medium" then
+    failwith
+      $"Expected the size to stay 'medium', got '{inputsTab.SizeSelected}'."
+
+  if inputsTab.CitySelected <> "Porto" then
+    failwith $"Expected the city 'Porto', got '{inputsTab.CitySelected}'."
+
+  inputsTab.SizeInput.OnSelect.Invoke("large")
+  pump 2
+
+  if inputsTab.SizeSelected <> "large" || inputsTab.CitySelected <> "Porto" then
+    failwith "Expected the size and the city to change independently."
+
+  // A new query starts a new search and clears the city selection.
+  inputsTab.CityInput.OnQueryChange.Invoke("l")
+  pump 2
+
+  if inputsTab.CitySelected <> "" || inputsTab.CityQuery <> "l" then
+    failwith "Expected a new query to clear the city selection."
 
   printfn "MetroGallery checks passed."
   0

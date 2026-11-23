@@ -24,11 +24,29 @@ type ZoomTabCell() as this =
   let mutable zoomedOut = false
   let mutable lastAction = "Zoomed in"
 
+  // The latest trees and the zoom cell, for the headless check of the gallery.
+  let mutable lastDetail: Blob = null
+  let mutable lastOverview: Blob = null
+  let mutable zoomRef: MetroSemanticZoomCell voption = ValueNone
+
   let onEvent(event: MetroSemanticZoomEvent) =
     zoomedOut <- (event = MetroSemanticZoomEvent.ZoomOut)
 
     lastAction <- (if zoomedOut then "Zoomed out" else "Zoomed in")
 
+    this.Rebuild()
+
+  // The zoom cell builds the detail and the overview trees inside its own
+  // Build, so it owns the callbacks of their tiles. The owner rule then
+  // rebuilds the zoom cell and not this tab. For that reason a tile callback
+  // that changes the state of this tab also rebuilds this tab.
+  let selectTile(group: string, name: string) =
+    lastAction <- $"Selected {name} in {group}"
+    this.Rebuild()
+
+  let selectGroup(group: string) =
+    zoomedOut <- false
+    lastAction <- $"Zoomed in on {group}"
     this.Rebuild()
 
   let tile
@@ -93,13 +111,17 @@ type ZoomTabCell() as this =
       )
 
     for group in Content.groups do
+      // Every child of a column is keyed: the header text and the tiles.
+      let header = MetroText.subheader group
+      header.Key <- $"group-header-{group}"
+
       let column =
         Container(
           Key = $"group-{group}",
           FlexDirection = FlexDirection.Column,
           Gap = Length.Pixels 8.0
         )
-          .Children(MetroText.subheader group)
+          .Children(header)
 
       for name in Content.tilesOf group do
         column.Add(
@@ -107,13 +129,13 @@ type ZoomTabCell() as this =
             $"tile-{group}-{name}",
             name,
             14.0,
-            // The tab authored this callback, so the owner rule rebuilds it.
-            fun () -> lastAction <- $"Selected {name} in {group}"
+            fun () -> selectTile(group, name)
           )
         )
 
       groupsRow.Add(column)
 
+    lastDetail <- groupsRow
     groupsRow
 
   let renderOverview() : Blob =
@@ -126,27 +148,35 @@ type ZoomTabCell() as this =
 
     for group in Content.groups do
       overview.Add(
-        tile(
-          $"group-tile-{group}",
-          group,
-          28.0,
-          // The tab authored this callback, so the owner rule rebuilds it.
-          fun () ->
-            zoomedOut <- false
-            lastAction <- $"Zoomed in on {group}"
-        )
+        tile($"group-tile-{group}", group, 28.0, fun () -> selectGroup group)
       )
 
+    lastOverview <- overview
     overview
 
-  // The zoom cell owns the callback, so the tab rebuilds itself in onEvent.
+  let render(isZoomedOut: bool) : Blob =
+    if isZoomedOut then renderOverview() else renderDetail()
+
   // Created once: every Build reuses the same factory.
-  let zoomFactory =
-    MetroSemanticZoom.createFactory(
-      onEvent,
-      fun isZoomedOut ->
-        if isZoomedOut then renderOverview() else renderDetail()
-    )
+  let zoomFactory() : MetroSemanticZoomCell =
+    let cell = MetroSemanticZoomCell(onEvent, render)
+    zoomRef <- ValueSome cell
+    cell
+
+  /// <c>true</c> when the tab state asks for the zoomed-out overview.
+  member _.ZoomedOut = zoomedOut
+
+  /// Text of the last action, for the headless check of the gallery.
+  member _.LastAction = lastAction
+
+  /// The latest detail tree that the zoom cell built.
+  member _.LastDetail = lastDetail
+
+  /// The latest overview tree that the zoom cell built.
+  member _.LastOverview = lastOverview
+
+  /// The mounted zoom cell.
+  member _.ZoomCell = zoomRef
 
   override _.Build() : Blob =
     Container(

@@ -71,6 +71,11 @@ type MetroFlipViewCell =
   /// Creates a flip view cell. Each navigation request invokes
   /// <paramref name="onSelect"/> with the identifier of the requested item.
   /// <paramref name="renderItem"/> builds the content of one item.
+  /// The cell calls <paramref name="renderItem"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="renderItem"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
   new:
     onSelect: (string -> unit) * renderItem: (string -> Blob) ->
       MetroFlipViewCell

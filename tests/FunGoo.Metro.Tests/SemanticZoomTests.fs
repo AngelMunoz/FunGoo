@@ -169,3 +169,74 @@ let ``MetroSemanticZoomCell zooms on request and honors reduced motion``() =
   Assert.False(cell.OpacityAnim.Running)
   Assert.Equal(1.0, cell.ScaleAnim.Value, 3)
   Assert.Equal(1.0, cell.OpacityAnim.Value, 3)
+
+[<Fact>]
+let ``A tile of a zoom view belongs to the zoom cell so the host rebuilds itself``
+  ()
+  =
+  // The host cell owns the zoom state. Its render callback builds one tile
+  // whose click asks for the detail view.
+  let mutable hostZoomedOut = false
+  let mutable hostRebuildsItself = false
+  let mutable hostRef: CaptureCell voption = ValueNone
+  let mutable zoomRef: MetroSemanticZoomCell voption = ValueNone
+  let mutable lastTile: Blob = null
+
+  let onEvent(event: MetroSemanticZoomEvent) =
+    hostZoomedOut <- (event = MetroSemanticZoomEvent.ZoomOut)
+    hostRef |> ValueOption.iter(fun host -> host.Rebuild())
+
+  // The zoom cell calls this callback inside its own Build.
+  let render(_isZoomedOut: bool) : Blob =
+    let tile =
+      Button(
+        Key = "pick",
+        OnClick =
+          (fun () ->
+            hostZoomedOut <- false
+
+            if hostRebuildsItself then
+              hostRef |> ValueOption.iter(fun host -> host.Rebuild()))
+      )
+
+    lastTile <- tile
+    tile
+
+  let factory() : MetroSemanticZoomCell =
+    let cell = MetroSemanticZoomCell(onEvent, render)
+    zoomRef <- ValueSome cell
+    cell
+
+  let host =
+    CaptureCell(fun () ->
+      MetroSemanticZoom.mount(
+        "zoom",
+        MetroSemanticZoom.defaults hostZoomedOut,
+        factory
+      ))
+
+  hostRef <- ValueSome host
+
+  use windowHost = createHost(800, 600)
+  let window = Window(Root = host)
+  Metro.attach(window, darkConfig)
+  window.Attach(windowHost) |> ignore
+  pumpFrames(windowHost, 2)
+
+  let cell = zoomRef.Value
+  cell.Handle(MetroSemanticZoomEvent.ZoomOut)
+  pumpFrames(windowHost, 1)
+  Assert.True(cell.IsZoomedOut)
+
+  // The zoom cell creates the tile, so it owns the callback. Without a
+  // rebuild of the host, the zoom cell keeps its input.
+  (lastTile :?> Button).OnClick.Invoke()
+  pumpFrames(windowHost, 1)
+  Assert.False(hostZoomedOut)
+  Assert.True(cell.IsZoomedOut)
+
+  // The host follows the contract and rebuilds itself. The zoom cell follows.
+  hostRebuildsItself <- true
+  (lastTile :?> Button).OnClick.Invoke()
+  pumpFrames(windowHost, 1)
+  Assert.False(cell.IsZoomedOut)

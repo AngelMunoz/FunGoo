@@ -79,9 +79,11 @@ module MetroListView =
   val toInput: props: MetroListViewProps -> ListViewInput
 
 /// Factory for Metro list views. The host owns the selection: update the props
-/// after each event and rebuild the owner cell. Create one factory per owner
-/// cell, outside <c>Build</c>, so that every input carries the same callback
-/// instances and an unchanged input does not rebuild the list.
+/// after each event and rebuild the owner cell. Create one factory for each
+/// list view, outside <c>Build</c>. The events do not name the list view, so
+/// two list views that share one factory send their events to one handler. One
+/// factory gives every input the same callback instances, so an unchanged
+/// input does not rebuild the list.
 [<Sealed>]
 type MetroListViewFactory =
 

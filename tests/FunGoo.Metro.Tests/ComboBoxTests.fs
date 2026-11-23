@@ -3,6 +3,7 @@ module FunGoo.Metro.Tests.ComboBoxTests
 open System
 open Xunit
 open Goo
+open FunGoo.Children
 open FunGoo.Metro
 open FunGoo.Metro.Tests.TestHost
 open FunGoo.Metro.Tests.TestSupport
@@ -140,4 +141,130 @@ let ``MetroComboBoxFactory routes callbacks and keeps one callback set``() =
   Assert.NotNull(
     mountInWindow(fun () ->
       factory.Mount("suggest", MetroComboBox.autoSuggest(options, "m")))
+  )
+
+[<Fact>]
+let ``Two combo boxes with one factory each keep separate values``() =
+  let sizes = [|
+    {
+      Id = "small"
+      Label = "Small"
+      Disabled = false
+    }
+    {
+      Id = "medium"
+      Label = "Medium"
+      Disabled = false
+    }
+  |]
+
+  let cities = [|
+    {
+      Id = "Lisbon"
+      Label = "Lisbon"
+      Disabled = false
+    }
+    {
+      Id = "Porto"
+      Label = "Porto"
+      Disabled = false
+    }
+  |]
+
+  // The host owns one value for each control and one handler for each value.
+  let mutable size = "medium"
+  let mutable city = ""
+  let mutable cityQuery = ""
+  let mutable hostRef: CaptureCell voption = ValueNone
+
+  let onSize(event: MetroComboBoxEvent) =
+    match event with
+    | MetroComboBoxEvent.Selected id -> size <- id
+    | _ -> ()
+
+    hostRef |> ValueOption.iter(fun host -> host.Rebuild())
+
+  let onCity(event: MetroComboBoxEvent) =
+    match event with
+    | MetroComboBoxEvent.Selected id ->
+      city <- id
+      cityQuery <- id
+    | MetroComboBoxEvent.QueryChanged query ->
+      city <- ""
+      cityQuery <- query
+    | MetroComboBoxEvent.OpenChanged _ -> ()
+
+    hostRef |> ValueOption.iter(fun host -> host.Rebuild())
+
+  let sizeFactory = MetroComboBoxFactory(onSize)
+  let cityFactory = MetroComboBoxFactory(onCity)
+
+  let sizeProps() = MetroComboBox.defaults(sizes, size)
+
+  let cityProps() = {
+    MetroComboBox.autoSuggest(cities, cityQuery) with
+        SelectedId = city
+  }
+
+  let host =
+    CaptureCell(fun () ->
+      Container()
+        .Children(
+          sizeFactory.Mount("size", sizeProps()),
+          cityFactory.Mount("city", cityProps())
+        ))
+
+  hostRef <- ValueSome host
+
+  use windowHost = createHost(800, 600)
+  let window = Window(Root = host)
+  Metro.attach(window, darkConfig)
+  window.Attach(windowHost) |> ignore
+  pumpFrames(windowHost, 2)
+
+  // A selected city changes the city value only.
+  cityFactory.CreateInput(cityProps()).OnSelect.Invoke("Porto")
+  pumpFrames(windowHost, 1)
+  Assert.Equal("Porto", city)
+  Assert.Equal("medium", size)
+  Assert.Equal("Porto", cityFactory.CreateInput(cityProps()).SelectedId)
+  Assert.Equal("medium", sizeFactory.CreateInput(sizeProps()).SelectedId)
+
+  // A selected size changes the size value only.
+  sizeFactory.CreateInput(sizeProps()).OnSelect.Invoke("small")
+  pumpFrames(windowHost, 1)
+  Assert.Equal("small", size)
+  Assert.Equal("Porto", city)
+
+  // A new query starts a new search and clears the city value.
+  cityFactory.CreateInput(cityProps()).OnQueryChange.Invoke("Li")
+  pumpFrames(windowHost, 1)
+  Assert.Equal("", city)
+  Assert.Equal("Li", cityQuery)
+
+  // An empty selection passes to the widget as no selection.
+  Assert.Null(cityFactory.CreateInput(cityProps()).SelectedId)
+  Assert.Equal("small", size)
+
+[<Fact>]
+let ``One factory for two combo boxes does not name the control in its events``
+  ()
+  =
+  let events = ResizeArray<MetroComboBoxEvent>()
+  let shared = MetroComboBoxFactory(events.Add)
+
+  let sizeProps = MetroComboBox.defaults([| options[0] |], "")
+  let cityProps = MetroComboBox.autoSuggest([| options[1] |], "")
+
+  shared.CreateInput(sizeProps).OnSelect.Invoke("small")
+  shared.CreateInput(cityProps).OnSelect.Invoke("medium")
+
+  // Each event names the option only. A host that must tell its controls
+  // apart needs one factory for each control.
+  assertListEqual(
+    [
+      MetroComboBoxEvent.Selected "small"
+      MetroComboBoxEvent.Selected "medium"
+    ],
+    List.ofSeq events
   )
