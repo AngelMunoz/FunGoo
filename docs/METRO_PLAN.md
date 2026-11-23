@@ -170,11 +170,63 @@ Stack `#5` was delivered as stacked pull requests. GitHub merged the 12 pull req
 | PR 26 | `metro/14-gallery-zoom-inputs-fix` | #13 | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
 | PR 27 | `main` | — | `goo-fsharp` and `goo-widgets-fsharp` corrected: the object expression is the form of a cell, a table states who rebuilds after a callback, callbacks are plain functions, and four API calls are corrected (`Window.Post`, the argument order of `Cell.Mount`, the typed mount, `FunGoo.Virtual.create`). The skills refer to no other skill. Commit `ee13321`. | Complete |
 
-Rules for the planned rows: each row is one unit of work on one theme, delivered as commits on `main`: one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the row starts. Split a row when it grows past the size of PR 3.
+Rules for the planned rows: each row is one unit of work on one theme, delivered as commits on `main`: one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the row starts. Split a row when it grows past the size of PR 3. Start no planned row before step R10 of the Code Shape Re-shape is complete.
 
 **PR 7 is deferred and needs a decision.** The existing tests read style values (`Style.Entries`) and tick animations (`Window.UpdateTree`) through reflection. Hard facts 6 and 12 show that the public API cannot do either in a GPU-free test. Two options exist: (a) move the tree assertions to public view builders and keep the reflective calls for style values and animation ticks only; (b) verify visuals through `goo render` frames compared with `goo diff`. New controls use public view seams from the start, as `MetroFlipView` does.
 
 Metrino controls with no planned port: `RichEditBox` (no rich editing base in Goo.Widgets 0.22.2), `MediaElement` (no media base), and `Canvas`, `StackPanel`, `Grid` (Goo `Container`, `Row`, `Column`, and `Goo.Widgets.Grid` already supply these layouts under the Metro theme). Confirm each decision in its own row before work starts.
+
+## Code Shape Re-shape (2026-11-23)
+
+Scope: `FunGoo.Metro/`, `tests/FunGoo.Metro.Tests/`, and `samples/MetroGallery/`. The target is the set of Code Shape Rules. The behavior of each control stays, with one intended change: each typed cell of the library gives the callbacks of its host to the host cell (rule 6), so a host does not rebuild itself from such a callback. Out of scope: `FunGoo`, `FunGoo.Widgets`, `FunGoo.Mvu` (a released package), `samples/RaznorGoo`, and `samples/MvuSpike`. `FunGoo.Metro` is not released and `CHANGELOG.md` names no class of it, thus a changed public name needs no changelog entry.
+
+### What is a named class today
+
+| Where | Named class | Public surface | Readers |
+| --- | --- | --- | --- |
+| `MetroPivot.fs` | `MetroPivotCell(onSelect, renderContent)` | `ContentTranslate`, `ContentOpacity` | tests |
+| `MetroHub.fs` | `MetroHubCell(renderSection)` | `ScrollHandle`, `HeaderTranslate` | tests |
+| `MetroFlipView.fs` | `MetroFlipViewCell(onSelect, renderItem)` | `TrackTranslate`, `OutgoingId`, `IsSliding`, `State`, `View`, `Handle` | tests |
+| `MetroSemanticZoom.fs` | `MetroSemanticZoomCell(onEvent, render)` | `ScaleAnim`, `OpacityAnim`, `IsZoomedOut`, `State`, `View`, `Handle` | tests and the gallery check |
+| `MetroTiles.fs` | `MetroLiveTileCell(onClick)` | `ActiveFaceIndex`, `IsTimerActive`, `FaceTranslate`, `FaceOpacity` | tests. No reader for `FaceTranslate` and `FaceOpacity` |
+| `MetroTiles.fs` | `TileGridLayout(cellSize, gap, columns, sizes)` | `CellSize`, `Gap`, `Columns` | tests: 4 constructions, 2 reads of `Columns` |
+| `MetroProgress.fs` | `MetroIndeterminateBarCell`, `MetroProgressRingCell` (in no `.fsi` file) | none | `MetroProgressBar`, `MetroProgressRing`, and 2 reflective lookups by type name in the tests |
+| `MetroListView.fs`, `MetroCollections.fs`, `MetroComboBox.fs` | `MetroListViewFactory`, `MetroGridViewFactory`, `MetroComboBoxFactory` | `CreateInput`, `Mount`, `Build`, `BuildItem` | gallery: 6 constructions, tests: 8 constructions |
+| `MetroMotion.fs`, `MetroProgress.fs` | `CubicBezierSimulation`, `ExponentialEaseSimulation`, `PeriodicSimulation`, and 5 private simulations | `Position`, `Velocity`, `Done`, `IsInfinite` | tests: 16 constructions |
+| `MetroTheme.fs` | `MetroAttachment` (private) | none | `Metro.attach`, `Metro.setMode`, `Metro.setAccent` |
+| `samples/MetroGallery` | 8 cells with `as this`, and `HeadlessCheckHost`. 23 calls of `this.Rebuild()`. `Program.fs` has 1425 lines. | 22 members for the gallery check | the gallery check |
+| `tests/FunGoo.Metro.Tests` | `CaptureCell` (1 public copy and 2 private copies), `DualThemeProbe`, `ScopeHostCell`, `ContinuumProbeCell`, `HeadlessWindowHost` | `Captured`, `Track`, `Scale`, `Alpha`, `DuringBuild`, `Wakes` | 9 test files |
+
+### The target shape of each kind
+
+- **A typed cell with a public surface** (`MetroPivotCell`, `MetroHubCell`, `MetroFlipViewCell`, `MetroSemanticZoomCell`, `MetroLiveTileCell`): the type stays and becomes abstract. It has `[<AbstractClass>]`, `inherit Cell<XInput>`, the public members as `abstract` members, one forwarding member per callback shape (`member this.Raise(callback: Action<string>, value: string) = this.InvokeInputCallback(callback, value)`), and no `let` binding. The module gets `create (…) : MetroXCell`, which returns an object expression. `createFactory` and `mount` keep their signatures, so a host changes only the constructor call. The cell calls the callback of the host through `this.Raise`.
+- **The two internal progress cells:** internal abstract cell types with `create`, mounted with the factory form of `Cell.Mount`. The type names stay for the 2 reflective lookups of the tests (known issue 1).
+- **A factory** (`MetroListViewFactory`, `MetroGridViewFactory`, `MetroComboBoxFactory`): one interface (`IMetroListViewFactory`, `IMetroGridViewFactory`, `IMetroComboBoxFactory`) and one `create` function (`MetroListView.createFactory (onEvent) : IMetroListViewFactory`). The cache of the mapped rows is in the closure.
+- **`TileGridLayout`:** `TileGridLayout.create (cellSize, gap, columns, sizes) : LayoutAlgorithm` returns an object expression. One plain function gives the resolved values, and the tests read them there.
+- **A simulation:** a plain function that returns an object expression over `Simulation`: `MetroMotion.cubicBezier (...)`, `MetroMotion.exponentialEase (...)`, `MetroMotion.periodic (periodSeconds)`, and private functions of the same form in `ProgressInternals`. The math stays in private plain functions.
+- **`MetroAttachment`:** a record with mutable fields and plain functions. The theme module creates the delegate at the call.
+- **A test probe:** an abstract probe type holds the members that the tests read (`CaptureCell`: `Captured`, `Track`, `Scale`, `Alpha`, `DuringBuild`), and `TestSupport` holds the `create` function. The 2 private copies of `CaptureCell` go. `HeadlessWindowHost` becomes a function that returns an object expression.
+- **A gallery tab:** one file per tab, with the 4 parts of rule 8. `ControlsTab.fs` leaves `Program.fs`. An abstract cell type exists only for a cell that the check reads: `GalleryCell`, `ZoomTabCell`, `InputsTabCell`. `FlipViewTabCell` and `ListsTabCell` have no member and become plain object expressions. `HeadlessCheckHost` becomes a function.
+- **Rebuilds in the gallery:** the 9 `Rebuild()` calls in the handlers of the widget inputs go now (hard fact 15). The calls in the handlers of the Pivot, of the FlipView, and of the zoom toggle go when the library gives the callback to the host cell. 11 calls stay: 4 in callbacks of a render function for the Hub, 2 in callbacks of a render function for the zoom cell, and 5 in the members that the check calls. The gallery cell and the zoom tab keep a self slot for the render functions (hard fact 16).
+
+### Steps
+
+Each step is one commit on `main`, and it passes the nine gates. A step that changes a public name changes its callers in the same commit.
+
+| Step | Commit | Scope | New test | Done when |
+| --- | --- | --- | --- | --- |
+| R1 | `refactor(metro tests): make the test probes object expressions` | `TestSupport.fs`, `TestHost.fs`, and the 4 files with a private probe | none | Gate 9 passes for `tests/`, and the 52 tests pass. |
+| R2 | `refactor(metro): make the theme attachment a record with functions` | `MetroTheme.fs` | none | No class in `MetroTheme.fs`. No `.fsi` file changes. |
+| R3 | `refactor(metro): make the simulations object expressions` | `MetroMotion.fs`, `MetroProgress.fs`, `MetroMotion.fsi`, `MotionAndShaderTests.fs` | `Position` and `Velocity` allocate nothing in a Release build | The 3 public simulations are functions. No type in a `.fsi` file inherits `Simulation`. |
+| R4 | `refactor(metro): make the tile grid a create function` | `MetroTiles.fs`, `MetroTiles.fsi`, `NavigationAndOverlaysTests.fs` | none | `TileGridLayout.create` returns a `LayoutAlgorithm`. |
+| R5 | `feat(metro): the Pivot and the Hub give the callbacks of the host to the host cell` | `MetroPivot.fs`, `MetroHub.fs`, their `.fsi` files, `NavigationAndOverlaysTests.fs`, `Program.fs` | `A host of the Pivot rebuilds through the owner rule`. Mutation: a direct call of the callback makes the test fail | The 2 cell types are abstract. The gallery needs no `this` for the Pivot. |
+| R6 | `feat(metro): the FlipView and the SemanticZoom give the callbacks of the host to the host cell` | `MetroFlipView.fs`, `MetroSemanticZoom.fs`, their `.fsi` files, `FlipViewTests.fs`, `SemanticZoomTests.fs`, `FlipViewTab.fs`, `ZoomTab.fs` | The same test for each control | The 2 cell types are abstract. |
+| R7 | `refactor(metro): make the live tile and the 2 progress cells object expressions` | `MetroTiles.fs`, `MetroProgress.fs`, `MetroTiles.fsi`, `ControlsTests.fs`, `NavigationAndOverlaysTests.fs`, `Program.fs` | `A host of the live tile rebuilds through the owner rule` | The 3 cell types are abstract. `FaceTranslate` and `FaceOpacity` are gone. The ring mounts with the factory form. |
+| R8 | `refactor(metro): make the list, grid, and combo factories interfaces with a create function` | `MetroListView.fs`, `MetroCollections.fs`, `MetroComboBox.fs`, their `.fsi` files, `ListsTab.fs`, `InputsTab.fs`, 3 test files | none | No `Factory` class. `MetroListBox.build` takes the interface. |
+| R9 | `refactor(metro gallery): make each tab a module with a create function` | `samples/MetroGallery/*` and `MetroGallery.fsproj` | One step in the gallery check: a tab with a widget input rebuilds with no call of `Rebuild()` | One file per tab. `Program.fs` holds the composition root and `main`. `as this` is gone. The 11 calls of `Rebuild()` that stay have a comment that names the owner. |
+| R10 | `docs(metro): close the code shape re-shape` | `docs/METRO_PLAN.md` | none | Gate 9 passes with no exception, or this plan lists each exception with its reason. This section is complete. |
+
+An object expression is a compiler-generated class, as a named class is. Gate 7 holds for each step. `Position` and `Velocity` of a simulation run for each animation frame, so R3 measures them.
 
 ## Known Issues (Work in Progress)
 
@@ -182,7 +234,8 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 2. **Tile text color.** Tile text is black on the Blue accent, because `MetroAccent.fromColor` selects the contrast-safe foreground. Metrino paints white text on its iconic, live, and cycle tiles. Decide with the Metro skill and apply to all tiles.
 3. **Toggle thumb color.** The `controls` scene frame shows a dark thumb on the accent track in light mode. Review against the Metro skill.
 4. **Pivot header overflow.** `MetroPivotCell` clips its header strip (`OverflowX = Hidden`). The headers do not pan when they do not fit. The gallery reached this limit on 2026-11-23 with nine tabs at 1200 px, and two headers were shortened. Plan one small PR that lets the header strip pan without a visible scrollbar, and keeps keyboard navigation.
-5. **Live tile timer callback calls `Rebuild()`.** `MetroLiveTileCell.AdvanceFace` ends with `this.Rebuild()`. Hard fact 15 shows that Goo rebuilds the cell after the action, so the call looks redundant. No public API lets a test observe the rebuilt tile, so the call stays until the tile has a public view seam (PR 7).
+5. **Code shape.** `FunGoo.Metro`, `samples/MetroGallery`, and the tests use named classes with `as this`. The section "Code Shape Re-shape" replaces them in the steps R1 to R10. The gallery has 9 redundant calls of `Rebuild()` in the handlers of the widget inputs.
+6. **Live tile timer callback calls `Rebuild()`.** `MetroLiveTileCell.AdvanceFace` ends with `this.Rebuild()`. Hard fact 15 shows that Goo rebuilds the cell after the action, so the call looks redundant. No public API lets a test observe the rebuilt tile, so the call stays until the tile has a public view seam (PR 7).
 
 ### Resuming on Another Machine
 
