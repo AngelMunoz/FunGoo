@@ -1,0 +1,78 @@
+namespace FunGoo.Metro
+
+open System
+open Goo
+
+/// Descriptor for a horizontally arranged section inside a
+/// <see cref="MetroHubCell"/>.
+[<Struct; NoComparison>]
+type MetroHubSection = {
+  /// Stable unique identifier for the section.
+  Id: string
+  /// Display header rendered at the top of the section column.
+  Header: string
+  /// Explicit section width in logical pixels so adjacent sections peek in
+  /// from the right edge.
+  Width: float
+}
+
+/// Data-only input snapshot for <see cref="MetroHubCell"/>.
+[<Struct; NoComparison>]
+type MetroHubInput = {
+  /// Large parallax title displayed above the horizontal section viewport.
+  Title: string
+  /// Ordered horizontal hub sections.
+  Sections: MetroHubSection array
+  /// Multiplier applied to horizontal scroll offset for header parallax motion
+  /// (defaults to <c>0.35</c>).
+  ParallaxFactor: float
+  /// Horizontal gap between adjacent sections in logical pixels (defaults to
+  /// <c>32.0</c>).
+  SectionGap: float
+  /// Optional accessible name for the hub region.
+  AccessibilityName: string voption
+}
+
+/// Stateful Metro Hub (Panorama) layout cell with a paint-bound parallax
+/// header and horizontally scrolling peeking sections.
+[<Sealed>]
+type MetroHubCell =
+  inherit Cell<MetroHubInput>
+
+  /// Creates a hub cell rendering each section body via
+  /// <paramref name="renderSection"/>.
+  new: renderSection: (string -> Blob) -> MetroHubCell
+
+  /// Element handle attached to the horizontal scrolling viewport.
+  member ScrollHandle: ElementHandle
+
+  /// Paint-bound translation animation driving header parallax without cell
+  /// rebuilds during scrolling.
+  member HeaderTranslate: Anim<Point>
+
+  /// Subscribes to horizontal scroll metric updates on mount.
+  override Mounted: unit -> unit
+
+  /// Unsubscribes from horizontal scroll metric updates on unmount.
+  override Unmounting: unit -> unit
+
+  /// Builds the parallax title header and horizontal peeking section viewport.
+  override Build: input: MetroHubInput -> Blob
+
+/// Construction and mounting helpers for <see cref="MetroHubCell"/>.
+[<RequireQualifiedAccess>]
+module MetroHub =
+
+  /// Creates default <see cref="MetroHubInput"/> for <paramref name="title"/>
+  /// and <paramref name="sections"/> with <c>0.35</c> parallax factor and
+  /// <c>32.0</c> px section gap.
+  val defaults: title: string * sections: MetroHubSection array -> MetroHubInput
+
+  /// Creates a reusable cell factory for <see cref="MetroHubCell"/>. Cache the
+  /// returned factory outside <c>Build</c>.
+  val createFactory: renderSection: (string -> Blob) -> Func<MetroHubCell>
+
+  /// Mounts a <see cref="MetroHubCell"/> under stable <paramref name="key"/>
+  /// using the cached <paramref name="factory"/>.
+  val mount:
+    key: string * input: MetroHubInput * factory: Func<MetroHubCell> -> Blob
