@@ -47,6 +47,8 @@
     <Compile Include="MetroListView.fs" />
     <Compile Include="MetroCollections.fsi" />
     <Compile Include="MetroCollections.fs" />
+    <Compile Include="MetroSemanticZoom.fsi" />
+    <Compile Include="MetroSemanticZoom.fs" />
   </ItemGroup>
 
   <ItemGroup>

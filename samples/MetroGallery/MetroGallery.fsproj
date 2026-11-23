@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="FlipViewTab.fs" />
     <Compile Include="ListsTab.fs" />
+    <Compile Include="ZoomTab.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

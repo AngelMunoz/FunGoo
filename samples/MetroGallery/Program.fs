@@ -454,6 +454,10 @@ type private GalleryCell
       Header = "flip view"
     }
     { Id = "lists"; Header = "lists" }
+    {
+      Id = "zoom"
+      Header = "semantic zoom"
+    }
     { Id = "motion"; Header = "motion" }
   |]
 
@@ -547,6 +551,7 @@ type private GalleryCell
   let controlsTabFactory = Func<Cell>(fun () -> ControlsTabCell(store) :> Cell)
   let flipViewTabFactory = fun () -> FlipViewTab.FlipViewTabCell() :> Cell
   let listsTabFactory = fun () -> ListsTab.ListsTabCell() :> Cell
+  let zoomTabFactory = fun () -> ZoomTab.ZoomTabCell() :> Cell
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
 
@@ -841,6 +846,7 @@ type private GalleryCell
     | "controls" -> Cell.Mount<Cell>("controls-tab", controlsTabFactory)
     | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", flipViewTabFactory)
     | "lists" -> Cell.Mount<Cell>("lists-tab", listsTabFactory)
+    | "zoom" -> Cell.Mount<Cell>("zoom-tab", zoomTabFactory)
     | "motion" -> renderMotionTab()
     | _ -> renderTypographyTab()
 
@@ -1086,6 +1092,7 @@ let private sceneTabs = [|
   "motion"
   "overview"
   "typography"
+  "zoom"
 |]
 
 /// Maps the window theme preference onto a Metro appearance mode.
@@ -1188,11 +1195,13 @@ let private runChecks() : int =
       "controls"
       "flip-view"
       "lists"
+      "zoom"
       "motion"
       "overview"
       "controls"
       "flip-view"
       "lists"
+      "zoom"
       "typography"
       "motion"
       "overview"
