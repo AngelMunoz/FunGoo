@@ -510,15 +510,21 @@ let ``MetroPerspective packs params clamps ranges and falls back cleanly``() =
   Assert.Equal(0.0f, v1Wild.Z, 5)
   Assert.Equal(0.5f, v1Wild.W, 5)
 
-  // Graceful ValueNone when embedded .goo-effect resource is absent.
-  Assert.False(MetroPerspective.isEmbeddedShaderAvailable)
-  Assert.True(MetroPerspective.tryCreateDefault().IsNone)
+  // Embedded .goo-effect resource loads when compiled, or returns ValueNone.
+  if MetroPerspective.isEmbeddedShaderAvailable then
+    let embedded = MetroPerspective.tryCreateDefault()
+    Assert.True(embedded.IsSome)
+
+    embedded
+    |> ValueOption.iter(fun effect ->
+      MetroPerspective.applyParams(effect, tiStart))
+  else
+    Assert.True(MetroPerspective.tryCreateDefault().IsNone)
+
   Assert.True((MetroPerspective.tryCreate ValueNone).IsNone)
 
   Assert.True(
-    (MetroPerspective.tryLoadProgramFromAssembly
-      typeof<MetroPerspectiveParams>.Assembly)
-      .IsNone
+    (MetroPerspective.tryLoadProgramFromAssembly typeof<int>.Assembly).IsNone
   )
 
   Assert.True((MetroPerspective.tryLoadProgramFromAssembly null).IsNone)
