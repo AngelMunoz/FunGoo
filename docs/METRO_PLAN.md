@@ -78,15 +78,15 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
 
 ## Control Catalog Gap (2026-11-22)
 
-Metrino registers 74 controls. `FunGoo.Metro` ships 24 public control types:
-`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, `MetroListViewFactory`, `MetroListBox`, `MetroGridViewFactory`, `MetroSemanticZoomCell`, `MetroNumberBox`, and `MetroRating`.
+Metrino registers 74 controls. `FunGoo.Metro` ships 25 public control types:
+`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, `MetroListViewFactory`, `MetroListBox`, `MetroGridViewFactory`, `MetroSemanticZoomCell`, `MetroNumberBox`, `MetroRating`, and `MetroComboBoxFactory` (combo box and auto-suggest box).
 
 | Family | Metrino controls | In `FunGoo.Metro` | Missing |
 | --- | --- | --- | --- | --- |
 | Buttons | Button, DropdownButton, HyperlinkButton, RepeatButton | Button, Hyperlink (variant) | DropdownButton, RepeatButton |
 | Date and time | Calendar, CalendarDatePicker, DatePicker, DatePickerRoller, TimePicker, TimePickerRoller | none | all 6 |
 | Dialogs | ContentDialog, Flyout, MessageDialog, SettingsFlyout, TeachingTip | ContentDialog, SettingsFlyout | Flyout, MessageDialog, TeachingTip |
-| Inputs | AutoSuggestBox, CheckBox, ComboBox, NumberBox, PasswordBox, RadioButton, Rating, RichEditBox, Slider, TextBox, ToggleSwitch | CheckBox, RadioButton, Slider, TextBox (with password mode), ToggleSwitch, NumberBox (`MetroNumberBox`), Rating (`MetroRating`) | AutoSuggestBox, ComboBox, RichEditBox |
+| Inputs | AutoSuggestBox, CheckBox, ComboBox, NumberBox, PasswordBox, RadioButton, Rating, RichEditBox, Slider, TextBox, ToggleSwitch | CheckBox, RadioButton, Slider, TextBox (with password mode), ToggleSwitch, NumberBox (`MetroNumberBox`), Rating (`MetroRating`), ComboBox and AutoSuggestBox (`MetroComboBoxFactory`) | RichEditBox |
 | Layout | Canvas, Grid, ScrollViewer, StackPanel, TileGrid, VariableSizedWrapGrid, Viewbox, WrapPanel | TileGridLayout | Canvas, Grid, ScrollViewer, StackPanel, VariableSizedWrapGrid, Viewbox, WrapPanel |
 | Navigation | AppBar, AppBarButton, AppBarSeparator, AppBarToggleButton, Hub, HubSection, Panorama, PanoramaItem, Pivot, PivotItem, SplitView, TabView, TabViewItem | AppBar (commands only), Hub (with sections), Pivot | AppBarButton, AppBarSeparator, AppBarToggleButton, Panorama, SplitView, TabView |
 | Primitives | Border, ContextMenu, Expander, Icon, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, TextBlock, Toast, Tooltip | TextBlock (as `MetroText`), Icon (as `MaterialIcons` in tiles) | Border, ContextMenu, Expander, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, Toast, Tooltip |
@@ -113,7 +113,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 12 | `metro/12-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
 | PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
 | PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
-| PR 15 | `metro/15-combo-suggest` | | `MetroComboBox`, `MetroAutoSuggestBox` | Planned |
+| PR 15 | `metro/13-combo-suggest` | | `MetroComboBoxFactory` on `Goo.Widgets.Inputs.ComboBox`: a combo box (`MetroComboBox.defaults`) and an auto-suggest box (`MetroComboBox.autoSuggest`) with one event channel (`Selected`, `QueryChanged`, `OpenChanged`), a pure `toData` mapping, cached callbacks and mapped options, the gallery `inputs` tab (which replaces the `number` tab) and its `inputs` scene, reflection-free tests | Complete |
 | PR 16 | `metro/12-number-rating` | #11 | `MetroNumberBox` on `Goo.Widgets.Inputs.NumberInput` (spin buttons, bounds, step, label) and `MetroRating` on `Goo.Widgets.Inputs.RatingControl` (accent stars), each with a pure `toInput` mapping, a gallery tab and scene, reflection-free tests | Complete |
 | PR 17 | `metro/17-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
 | PR 18 | `metro/18-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
@@ -143,9 +143,9 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 1. Check out the stack top:
    ```sh
    gh stack checkout 5
-   # or: git fetch origin && git checkout metro/12-number-rating
+   # or: git fetch origin && git checkout metro/13-combo-suggest
    ```
-2. Build and run all `47` headless tests plus the gallery smoke check:
+2. Build and run all `49` headless tests plus the gallery smoke check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj

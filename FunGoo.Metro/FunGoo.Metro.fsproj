@@ -51,6 +51,8 @@
     <Compile Include="MetroSemanticZoom.fs" />
     <Compile Include="MetroNumberRating.fsi" />
     <Compile Include="MetroNumberRating.fs" />
+    <Compile Include="MetroComboBox.fsi" />
+    <Compile Include="MetroComboBox.fs" />
   </ItemGroup>
 
   <ItemGroup>
