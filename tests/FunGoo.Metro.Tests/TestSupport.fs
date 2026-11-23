@@ -8,6 +8,8 @@ type CaptureCell(buildFn: unit -> Blob) as this =
   inherit Cell()
 
   let track = this.AnimateValue(Point(X = 0.0, Y = 0.0))
+  let scale = this.AnimateValue(1.0)
+  let alpha = this.AnimateValue(1.0)
   let mutable captured: Blob = null
   let mutable duringBuild: (unit -> unit) voption = ValueNone
 
@@ -17,6 +19,12 @@ type CaptureCell(buildFn: unit -> Blob) as this =
   /// an <c>Anim</c>. Goo requires a paint animation to belong to the window of
   /// the element, so the owner cell must be mounted in the same window.
   member _.Track = track
+
+  /// Paint-bound scalar animation at rest value 1.0, for a scale slot.
+  member _.Scale = scale
+
+  /// Paint-bound scalar animation at rest value 1.0, for an opacity slot.
+  member _.Alpha = alpha
 
   /// Runs <c>action</c> inside the next Build of this cell, where Metro theme
   /// reads and cell view builders are valid, then renders one frame.

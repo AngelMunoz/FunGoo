@@ -16,6 +16,7 @@
     <Compile Include="FlipViewTests.fs" />
     <Compile Include="ListViewTests.fs" />
     <Compile Include="CollectionsTests.fs" />
+    <Compile Include="SemanticZoomTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
