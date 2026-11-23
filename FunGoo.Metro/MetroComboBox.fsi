@@ -73,8 +73,10 @@ module MetroComboBox =
 
 /// Factory for Metro combo boxes and auto-suggest boxes. The host owns the
 /// selection and the query: update the props after each event and rebuild the
-/// owner cell. Create one factory per owner cell, outside <c>Build</c>, so that
-/// every input carries the same callback instances.
+/// owner cell. Create one factory for each control, outside <c>Build</c>. The
+/// events do not name the control, so two controls that share one factory send
+/// their events to one handler. One factory gives every input the same
+/// callback instances.
 [<Sealed>]
 type MetroComboBoxFactory =
 

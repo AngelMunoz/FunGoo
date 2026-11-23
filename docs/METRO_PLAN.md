@@ -76,6 +76,13 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
     - The scroll viewport of `ListView` is an internal element of the widget. Its handle is not public, and the root handle that `ConfigureRoot` receives is set after the callback. Code outside the widget cannot scroll a `ListView` to an item.
     - To scroll a collection from code, own the `Virtual` element and assign your own `ElementHandle` to it.
 
+15. **Callback ownership:**
+    - A `Blob` records its `CallbackOwner` when it is created. The owner rule rebuilds that cell after a callback.
+    - A host callback that a cell calls inside its own `Build` (`renderContent`, `renderSection`, `renderItem`, `render`) creates its Blobs in that cell. The callbacks of those Blobs belong to the cell, and not to the host.
+    - When such a callback changes the state of the host cell, it must also rebuild the host cell.
+    - `MetroListViewFactory` and `MetroComboBoxFactory` send the events of all their controls to one handler, and the events do not name the control. Use one factory for each control.
+    - A timer action of a cell runs through `RunOwnedAction`, and Goo rebuilds the cell after the action (`RebuildAfterCallback`).
+
 ## Control Catalog Gap (2026-11-22)
 
 Metrino registers 74 controls. `FunGoo.Metro` ships 25 public control types:
@@ -124,6 +131,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 23 | `metro/23-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
 | PR 24 | `metro/24-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
 | PR 25 | `metro/25-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
+| PR 26 | `metro/14-gallery-zoom-inputs-fix` | | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
 
 Rules for the planned rows: each row is one PR, one theme, one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the PR starts. Split a row into two PRs when it grows past the size of PR 3.
 
@@ -137,15 +145,16 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 2. **Tile text color.** Tile text is black on the Blue accent, because `MetroAccent.fromColor` selects the contrast-safe foreground. Metrino paints white text on its iconic, live, and cycle tiles. Decide with the Metro skill and apply to all tiles.
 3. **Toggle thumb color.** The `controls` scene frame shows a dark thumb on the accent track in light mode. Review against the Metro skill.
 4. **Pivot header overflow.** `MetroPivotCell` clips its header strip (`OverflowX = Hidden`). The headers do not pan when they do not fit. The gallery reached this limit on 2026-11-23 with nine tabs at 1200 px, and two headers were shortened. Plan one small PR that lets the header strip pan without a visible scrollbar, and keeps keyboard navigation.
+5. **Live tile timer callback calls `Rebuild()`.** `MetroLiveTileCell.AdvanceFace` ends with `this.Rebuild()`. Hard fact 15 shows that Goo rebuilds the cell after the action, so the call looks redundant. No public API lets a test observe the rebuilt tile, so the call stays until the tile has a public view seam (PR 7).
 
 ### Resuming on Another Machine
 
 1. Check out the stack top:
    ```sh
    gh stack checkout 5
-   # or: git fetch origin && git checkout metro/13-combo-suggest
+   # or: git fetch origin && git checkout metro/14-gallery-zoom-inputs-fix
    ```
-2. Build and run all `49` headless tests plus the gallery smoke check:
+2. Build and run all `52` headless tests plus the gallery smoke check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj

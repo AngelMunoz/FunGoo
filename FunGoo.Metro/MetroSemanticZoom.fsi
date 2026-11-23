@@ -46,6 +46,11 @@ type MetroSemanticZoomCell =
   /// for zoom requests. <paramref name="render"/> builds the active view:
   /// <c>true</c> selects the zoomed-out overview, <c>false</c> the zoomed-in
   /// detail.
+  /// The cell calls <paramref name="render"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="render"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
   new:
     onEvent: (MetroSemanticZoomEvent -> unit) * render: (bool -> Blob) ->
       MetroSemanticZoomCell

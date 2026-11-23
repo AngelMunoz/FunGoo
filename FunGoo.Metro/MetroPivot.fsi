@@ -38,6 +38,11 @@ type MetroPivotCell =
   /// and building the active panel via <paramref name="renderContent"/>.
   /// Inactive tab content unmounts on switch, so any <c>Cell.Mount</c> factory
   /// inside <paramref name="renderContent"/> must return a fresh <c>Cell</c>.
+  /// The cell calls <paramref name="renderContent"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="renderContent"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
   new:
     onSelect: (string -> unit) * renderContent: (string -> Blob) ->
       MetroPivotCell

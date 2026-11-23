@@ -41,6 +41,11 @@ type MetroHubCell =
 
   /// Creates a hub cell rendering each section body via
   /// <paramref name="renderSection"/>.
+  /// The cell calls <paramref name="renderSection"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="renderSection"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
   new: renderSection: (string -> Blob) -> MetroHubCell
 
   /// Element handle attached to the horizontal scrolling viewport.
