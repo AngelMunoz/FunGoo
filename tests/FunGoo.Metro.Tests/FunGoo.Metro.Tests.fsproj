@@ -8,10 +8,12 @@
 
   <ItemGroup>
     <Compile Include="TestHost.fs" />
+    <Compile Include="TestSupport.fs" />
     <Compile Include="ThemeTests.fs" />
     <Compile Include="MotionAndShaderTests.fs" />
     <Compile Include="ControlsTests.fs" />
     <Compile Include="NavigationAndOverlaysTests.fs" />
+    <Compile Include="FlipViewTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
