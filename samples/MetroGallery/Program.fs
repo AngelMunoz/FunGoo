@@ -36,6 +36,12 @@ type private GalleryStore = {
   mutable TileTapCount: int
   mutable LastAction: string
   mutable SliderValue: float
+  mutable TextValue: string
+  mutable SecretValue: string
+  mutable ToggleEnabled: bool
+  mutable CheckAccepted: bool
+  mutable RadioChoice: string
+  mutable TogglePressed: bool
 }
 
 [<Sealed>]
@@ -197,27 +203,10 @@ type private StaggerDemoCell() as this =
 type private ControlsTabCell(store: GalleryStore) as this =
   inherit Cell()
 
-  let mutable textValue = "Modern UI"
-  let mutable secretValue = "metro123"
-  let mutable toggleEnabled = true
-  let mutable checkAccepted = true
-  let mutable radioChoice = "compact"
-  let mutable togglePressed = false
-
   let sliderOnChange =
     Action<float>(fun v ->
       store.SliderValue <- v
       this.Rebuild())
-
-  member this.Reset() =
-    textValue <- "Modern UI"
-    secretValue <- "metro123"
-    toggleEnabled <- true
-    checkAccepted <- true
-    radioChoice <- "compact"
-    togglePressed <- false
-    store.SliderValue <- 65.0
-    this.Rebuild()
 
   override _.Build() : Blob =
     Container(
@@ -267,11 +256,11 @@ type private ControlsTabCell(store: GalleryStore) as this =
                 MetroButton.build(
                   {
                     MetroButton.defaults(
-                      if togglePressed then "Pinned" else "Pin"
+                      if store.TogglePressed then "Pinned" else "Pin"
                     ) with
-                        Pressed = ValueSome togglePressed
+                        Pressed = ValueSome store.TogglePressed
                   },
-                  fun () -> togglePressed <- not togglePressed
+                  fun () -> store.TogglePressed <- not store.TogglePressed
                 ),
                 MetroButton.build(
                   {
@@ -290,23 +279,23 @@ type private ControlsTabCell(store: GalleryStore) as this =
           .Children(
             MetroTextBox.build(
               {
-                MetroTextBox.defaults textValue with
+                MetroTextBox.defaults store.TextValue with
                     Label = ValueSome "Display Name"
                     Placeholder = ValueSome "Type here"
                     Width = ValueSome(Length.Pixels 280.0)
               },
-              (fun v -> textValue <- v),
+              (fun v -> store.TextValue <- v),
               ValueSome(fun v -> store.LastAction <- $"Submitted '{v}'")
             ),
             MetroTextBox.build(
               {
-                MetroTextBox.defaults secretValue with
+                MetroTextBox.defaults store.SecretValue with
                     Label = ValueSome "Passcode"
                     Password = true
                     RevealButton = true
                     Width = ValueSome(Length.Pixels 280.0)
               },
-              (fun v -> secretValue <- v),
+              (fun v -> store.SecretValue <- v),
               ValueNone
             )
           ),
@@ -319,18 +308,18 @@ type private ControlsTabCell(store: GalleryStore) as this =
           .Children(
             MetroToggleSwitch.build(
               {
-                MetroToggleSwitch.defaults toggleEnabled with
+                MetroToggleSwitch.defaults store.ToggleEnabled with
                     Header = ValueSome "Progress Ring"
               },
-              fun v -> toggleEnabled <- v
+              fun v -> store.ToggleEnabled <- v
             ),
             MetroCheckBox.build(
               {
                 Label = "Enable sharp borders"
-                Checked = checkAccepted
+                Checked = store.CheckAccepted
                 Disabled = false
               },
-              fun v -> checkAccepted <- v
+              fun v -> store.CheckAccepted <- v
             ),
             Container(
               FlexDirection = FlexDirection.Column,
@@ -341,26 +330,26 @@ type private ControlsTabCell(store: GalleryStore) as this =
                 MetroRadioButton.build(
                   {
                     Label = "Compact"
-                    Selected = radioChoice = "compact"
+                    Selected = store.RadioChoice = "compact"
                     Disabled = false
                   },
-                  fun () -> radioChoice <- "compact"
+                  fun () -> store.RadioChoice <- "compact"
                 ),
                 MetroRadioButton.build(
                   {
                     Label = "Comfortable"
-                    Selected = radioChoice = "comfortable"
+                    Selected = store.RadioChoice = "comfortable"
                     Disabled = false
                   },
-                  fun () -> radioChoice <- "comfortable"
+                  fun () -> store.RadioChoice <- "comfortable"
                 ),
                 MetroRadioButton.build(
                   {
                     Label = "Touch"
-                    Selected = radioChoice = "touch"
+                    Selected = store.RadioChoice = "touch"
                     Disabled = false
                   },
-                  fun () -> radioChoice <- "touch"
+                  fun () -> store.RadioChoice <- "touch"
                 )
               )
           ),
@@ -410,11 +399,11 @@ type private ControlsTabCell(store: GalleryStore) as this =
                   .Children(
                     MetroProgressRing.mount(
                       "gallery-ring",
-                      MetroProgressRing.defaults toggleEnabled
+                      MetroProgressRing.defaults store.ToggleEnabled
                     )
                   ),
                 MetroText.secondary(
-                  if toggleEnabled then "Ring active" else "Ring paused"
+                  if store.ToggleEnabled then "Ring active" else "Ring paused"
                 )
               )
           )
@@ -428,6 +417,12 @@ type private GalleryCell(getWindow: unit -> Window voption) as this =
     TileTapCount = 0
     LastAction = "Ready"
     SliderValue = 65.0
+    TextValue = "Modern UI"
+    SecretValue = "metro123"
+    ToggleEnabled = true
+    CheckAccepted = true
+    RadioChoice = "compact"
+    TogglePressed = false
   }
 
   let mutable activeTab = "overview"
@@ -535,13 +530,13 @@ type private GalleryCell(getWindow: unit -> Window voption) as this =
     }
   |]
 
-  let controlsTabCell = ControlsTabCell(store)
-  let controlsTabFactory = Func<Cell>(fun () -> controlsTabCell :> Cell)
+  let controlsTabFactory = Func<Cell>(fun () -> ControlsTabCell(store) :> Cell)
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
 
   let rebuildHub() =
-    hubCellRef |> ValueOption.iter(fun hub -> hub.Rebuild())
+    if activeTab = "overview" then
+      hubCellRef |> ValueOption.iter(fun hub -> hub.Rebuild())
 
   let applyMode(nextMode: MetroMode) =
     mode <- nextMode
@@ -576,7 +571,13 @@ type private GalleryCell(getWindow: unit -> Window voption) as this =
       activeTab <- "overview"
       store.TileTapCount <- 0
       store.LastAction <- "State reset"
-      controlsTabCell.Reset()
+      store.SliderValue <- 65.0
+      store.TextValue <- "Modern UI"
+      store.SecretValue <- "metro123"
+      store.ToggleEnabled <- true
+      store.CheckAccepted <- true
+      store.RadioChoice <- "compact"
+      store.TogglePressed <- false
       appBarExpanded <- false
       rebuildHub()
     | _ -> ()
@@ -1109,8 +1110,18 @@ let private runChecks() : int =
     failwith
       $"Expected tab click to switch activeTab to 'typography', got '{gallery.ActiveTab}'."
 
-  // 2. Exercise remaining Pivot tabs.
-  for tab in [| "controls"; "motion"; "overview" |] do
+  // 2. Exercise remaining Pivot tabs across two full roundtrips to ensure
+  // unmounted tab cells remount cleanly with fresh instances.
+  for tab in
+    [|
+      "controls"
+      "motion"
+      "overview"
+      "controls"
+      "typography"
+      "motion"
+      "overview"
+    |] do
     gallery.SelectTab tab
     pump 2
 

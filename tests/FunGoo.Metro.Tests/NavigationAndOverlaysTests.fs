@@ -1229,3 +1229,102 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
   hubCell.ScrollHandle.JumpTo(Nullable 150.0, Nullable()) |> ignore
   pumpFrames(host, 2)
   Assert.Equal(0.0, hubCell.HeaderTranslate.Value.X, 3)
+
+[<Fact>]
+let ``MetroPivot remounts child cells cleanly across repeated tab visits``() =
+  use host = new HeadlessWindowHost()
+  host.Resize(900, 600, 900, 600)
+
+  let findNodeByKey(window: Window, key: string) : obj voption =
+    let rootNode = windowNodeField.GetValue(window)
+
+    let rec visit(node: obj) : obj voption =
+      if isNull node then
+        ValueNone
+      else
+        let nt = node.GetType()
+        let nodeKey = nt.GetProperty("Key", flags).GetValue(node) :?> string
+
+        if nodeKey = key then
+          ValueSome node
+        else
+          let children =
+            nt.GetField("<Children>k__BackingField", flags).GetValue(node)
+            :?> IList
+
+          let mutable found = ValueNone
+
+          if not(isNull children) then
+            for i = 0 to children.Count - 1 do
+              if found.IsNone then
+                found <- visit children[i]
+
+          found
+
+    visit rootNode
+
+  let mutable mountCount = 0
+  let mutable selectedId = "first"
+
+  let items = [|
+    { Id = "first"; Header = "first" }
+    { Id = "second"; Header = "second" }
+  |]
+
+  let childFactory =
+    Func<Cell>(fun () ->
+      mountCount <- mountCount + 1
+      let instanceNumber = mountCount
+
+      {
+        new Cell() with
+          override _.Build() : Blob =
+            MetroText.body $"Mounted instance {instanceNumber}"
+      })
+
+  let mutable rootRef: Cell voption = ValueNone
+
+  let pivotFactory =
+    MetroPivot.createFactory(
+      (fun id ->
+        selectedId <- id
+        rootRef |> ValueOption.iter(fun r -> r.Rebuild())),
+      fun id ->
+        match id with
+        | "first" -> Cell.Mount<Cell>("first-child", childFactory)
+        | _ -> MetroText.body "Second tab"
+    )
+
+  let rootCell = {
+    new Cell() with
+      override _.Build() : Blob =
+        MetroPivot.mount(
+          "revisit-pivot",
+          MetroPivot.defaults(items, selectedId),
+          pivotFactory
+        )
+  }
+
+  rootRef <- ValueSome rootCell
+  let window = Window(Root = rootCell)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+  Assert.Equal(1, mountCount)
+
+  // Visit second tab, then return to first tab twice via tab OnClick.
+  for target in [| "second"; "first"; "second"; "first" |] do
+    let tabNode =
+      match findNodeByKey(window, $"pivot-tab-{target}") with
+      | ValueSome n -> n
+      | ValueNone -> failwith $"Expected pivot-tab-{target}."
+
+    let click =
+      tabNode.GetType().GetProperty("OnClick", flags).GetValue(tabNode)
+      :?> Action
+
+    click.Invoke()
+    pumpFrames(host, 2)
+    Assert.Equal(target, selectedId)
+
+  Assert.Equal(3, mountCount)

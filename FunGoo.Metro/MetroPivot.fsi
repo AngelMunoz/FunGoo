@@ -36,6 +36,8 @@ type MetroPivotCell =
 
   /// Creates a pivot cell invoking <paramref name="onSelect"/> on navigation
   /// and building the active panel via <paramref name="renderContent"/>.
+  /// Inactive tab content unmounts on switch, so any <c>Cell.Mount</c> factory
+  /// inside <paramref name="renderContent"/> must return a fresh <c>Cell</c>.
   new:
     onSelect: (string -> unit) * renderContent: (string -> Blob) ->
       MetroPivotCell
