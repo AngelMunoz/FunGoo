@@ -2,6 +2,7 @@ module MetroGallery.Program
 
 open System
 open System.Collections
+open System.Collections.Generic
 open System.Reflection
 open Goo
 open FunGoo.Children
@@ -410,7 +411,9 @@ type private ControlsTabCell(store: GalleryStore) as this =
       )
 
 [<Sealed>]
-type private GalleryCell(getWindow: unit -> Window voption) as this =
+type private GalleryCell
+  (getWindow: unit -> Window voption, initialState: (string * MetroMode) voption) as this
+  =
   inherit Cell()
 
   let store: GalleryStore = {
@@ -425,8 +428,14 @@ type private GalleryCell(getWindow: unit -> Window voption) as this =
     TogglePressed = false
   }
 
-  let mutable activeTab = "overview"
-  let mutable mode = MetroMode.Dark
+  let mutable activeTab =
+    initialState |> ValueOption.map fst |> ValueOption.defaultValue "overview"
+
+  let mutable mode =
+    initialState
+    |> ValueOption.map snd
+    |> ValueOption.defaultValue MetroMode.Dark
+
   let mutable accentKind = MetroAccentKind.Blue
   let mutable appBarExpanded = false
   let mutable settingsOpen = false
@@ -1060,13 +1069,49 @@ let private findNodeByKey(window: Window, key: string) : obj voption =
 
   visit rootNode
 
+/// Gallery tabs that also register as named `goo render` scenes, in name order.
+let private sceneTabs = [| "controls"; "motion"; "overview"; "typography" |]
+
+/// Maps the window theme preference onto a Metro appearance mode.
+let private sceneMode(window: Window) : MetroMode =
+  if window.Preferences.Theme = SystemTheme.Dark then
+    MetroMode.Dark
+  else
+    MetroMode.Light
+
+/// Named gallery states for `goo render --scene <name>`. A scene starts on its
+/// tab and follows the `--theme` preference in the Metro palette and the
+/// gallery mode state.
+let private galleryScenes(getWindow: unit -> Window voption) =
+  let scenes = Dictionary<string, Func<Cell>>()
+
+  for tab in sceneTabs do
+    scenes.[tab] <-
+      fun () ->
+        let mutable mode = MetroMode.Dark
+
+        getWindow()
+        |> ValueOption.iter(fun w ->
+          mode <- sceneMode w
+          Metro.setMode(w, mode))
+
+        GalleryCell(getWindow, ValueSome(tab, mode)) :> Cell
+
+  scenes
+
 let private runChecks() : int =
   let mutable windowSlot: Window voption = ValueNone
-  let gallery = GalleryCell(fun () -> windowSlot)
+  let gallery = GalleryCell((fun () -> windowSlot), ValueNone)
   use host = new HeadlessCheckHost()
   host.Resize(1280, 800, 1280, 800)
 
-  let window = Window(Title = "Metro Gallery Check", Root = gallery)
+  let window =
+    Window(
+      Title = "Metro Gallery Check",
+      Root = gallery,
+      Scenes = galleryScenes(fun () -> windowSlot)
+    )
+
   windowSlot <- ValueSome window
 
   Metro.attach(
@@ -1085,6 +1130,16 @@ let private runChecks() : int =
       host.RenderFrame(0.016)
 
   pump 3
+
+  // 0. Every gallery tab is registered as a named `goo render` scene.
+  let registeredScenes =
+    if isNull window.Scenes then
+      Array.empty
+    else
+      window.Scenes.Keys |> Seq.sort |> Array.ofSeq
+
+  if registeredScenes <> sceneTabs then
+    failwith $"Expected scenes {sceneTabs}, got '{registeredScenes}'."
 
   // 1. Click a real Pivot tab header via retained Node OnClick to verify
   // cross-cell rebuild from MetroPivotCell -> GalleryCell.
@@ -1188,13 +1243,14 @@ let main(args: string array) : int =
     )
 
     let mutable windowSlot: Window voption = ValueNone
-    let gallery = GalleryCell(fun () -> windowSlot)
+    let gallery = GalleryCell((fun () -> windowSlot), ValueNone)
 
     let window =
       Window(
         Title = "Metro Gallery",
         Size = LayoutSize(1200, 800),
-        Root = gallery
+        Root = gallery,
+        Scenes = galleryScenes(fun () -> windowSlot)
       )
 
     windowSlot <- ValueSome window

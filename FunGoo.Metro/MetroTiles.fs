@@ -489,11 +489,15 @@ type MetroLiveTileCell(onClick: unit -> unit) as this =
     let faceCount = if isNull input.Faces then 0 else input.Faces.Length
     let interval = TileInternals.resolveIntervalMs input.IntervalMs
 
+    // A mounted window that is not open, such as a `goo render` frame,
+    // rejects window timers, so an open host window is required to cycle.
+    let hostOpen =
+      attachedHost
+      |> ValueOption.map(fun w -> w.IsOpen)
+      |> ValueOption.defaultValue false
+
     let shouldRun =
-      isMounted
-      && attachedHost.IsSome
-      && faceCount > 1
-      && not(isReducedMotion())
+      isMounted && hostOpen && faceCount > 1 && not(isReducedMotion())
 
     if not shouldRun then
       stopTimer()
