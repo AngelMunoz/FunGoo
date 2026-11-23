@@ -10,11 +10,26 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
 
 ## Delivery Rules
 
-- One small, verifiable PR per control family. No gigantic PR.
-- Every PR passes the review checklists of `goo-fsharp` and `goo-widgets-fsharp`.
+- One small unit of work per control family, delivered as well defined, verifiable, and deliverable commits. No gigantic change. Do not stack pull requests.
+- Every commit passes the review checklists of `goo-fsharp` and `goo-widgets-fsharp`.
 - No reflection in library code. Write new tests with the public Goo API only.
-- Write F# functions directly. Add an `Action` or `Func` wrapper only when the compiler requires it.
-- Attach a `goo render` image to each PR that adds or changes a control.
+- Write F# functions directly. Add an `Action` or `Func` wrapper only when the compiler requires it (hard fact 18).
+- Attach a `goo render` image to each change that adds or changes a control.
+
+## Code Shape Rules
+
+The first 26 rows of the roadmap produced `FunGoo.Metro`, `samples/MetroGallery`, and the tests as named classes with `as this`. Four causes pushed that way: the review checklist of `goo-fsharp` did not examine the form of a cell, the example of its delegate-caching rule was a class, its checklist named the author of a callback where it must name the owner, and no skill showed an object expression that reaches its own cell. The skills are corrected (commit `ee13321`). These rules keep the code in the corrected shape. `goo-fsharp` has the examples.
+
+1. **A cell is a module.** The module holds plain functions and one `create` function that returns an object expression. The closure of `create` holds the state. A test calls each plain function with no cell.
+2. **No named class holds logic or state.** `as this` is the sign. An object expression behaves like the type that it expresses: `Cell`, `Cell<TInput>`, `Simulation`, and `EmbeddedWindowHost` all take one (hard fact 16).
+3. **An abstract cell type only for a public surface.** It is necessary when outside code drives the state of the cell through members (a shell that the composition root navigates, a control that a check reads), or when a typed cell gives a callback to its host through `InvokeInputCallback` (hard fact 16). A typed cell with neither is an object expression over `Cell<TInput>`.
+4. **A service is an interface and a `create` function.** A factory that holds callbacks or a cache is a service: one interface, one module, one `create` that returns an object expression.
+5. **Callbacks are plain F# functions.** F# converts a function to a delegate where a Goo API takes one (hard fact 18).
+6. **A host of a widget does not rebuild itself.** Goo runs the input callback of a Goo.Widgets control in the callback scope of the host cell (hard fact 15). A `Rebuild()` in such a handler is redundant. A typed cell of this library gives the callbacks of its host to the host cell in the same way, through `InvokeInputCallback`.
+7. **A check reads state through a public surface:** the members of an abstract cell type, a state record that the check holds, or a public view builder. A public member that only a check reads is the test seam of the control: declare it in the signature file and say so in its comment. A public member that nothing reads is removed.
+8. **A file has four parts, in this order:** the data types, the abstract cell type when rule 3 needs it, the plain functions, and `create` last.
+
+Each commit of the re-shape and each new control passes gate 9.
 
 ## Hard Facts (Verified Against Goo 0.31.0 and Goo.Widgets 0.22.2)
 
@@ -82,6 +97,27 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
     - When such a callback changes the state of the host cell, it must also rebuild the host cell.
     - `MetroListViewFactory` and `MetroComboBoxFactory` send the events of all their controls to one handler, and the events do not name the control. Use one factory for each control.
     - A timer action of a cell runs through `RunOwnedAction`, and Goo rebuilds the cell after the action (`RebuildAfterCallback`).
+    - A Goo.Widgets control calls `InvokeInputCallback` for the callbacks of its input (45 widget source files, among them `Slider`, `NumberInput`, `RatingControl`, `ComboBox`, and `ListView`). Goo runs the callback in the callback scope of the host cell, and the owner rule rebuilds the host. A host handler of a widget callback writes its state and returns. It does not call `Rebuild()`. Measured on 2026-11-23 in a headless window: one click on a spin button of `NumberInput` rebuilt the host from 1 to 2 builds, with no `Rebuild()` call.
+    - A typed cell of `FunGoo.Metro` calls the callbacks of its host (`onSelect`, `onEvent`, `onClick`) directly, inside a Blob of the cell. The cell owns that callback, and the host must rebuild itself. The re-shape moves these calls to `InvokeInputCallback`.
+
+16. **Object expressions (measured on 2026-11-23 in a headless window):**
+    - An object expression behaves like the type that it expresses. `{ new Cell() with ... }`, `{ new Cell<TInput>() with ... }`, `{ new Simulation() with ... }`, and `{ new EmbeddedWindowHost() with ... }` compile and run. `Build(input)`, `InputChanged`, `Mounted`, and `Unmounting` are overridden in the object expression.
+    - A plain typed cell needs no named type. `Cell.Mount<TInput, Cell<TInput>>(key, input, factory)` mounts an object expression over `Cell<TInput>`. The cell builds, and a changed input rebuilds it. The factory form is necessary: the form without a factory needs a class that F# can construct.
+    - An abstract cell type holds the public surface: `[<AbstractClass>] type XCell() = inherit Cell<XInput>()`, with `abstract` members and no `let` binding. `create` returns `{ new XCell() with ... }`, and `Cell.Mount<XInput, XCell>` takes the abstract type as its type argument.
+    - An object expression cannot declare a member of its own (FS0767). A forwarding member needs the abstract type.
+    - `InvokeInputCallback` is a protected member of `Cell<TInput>`. F# does not permit a call to a protected member from a lambda of an object expression (FS0491). The abstract cell type declares the forwarding member, `member this.Raise(callback: Action<string>, value: string) = this.InvokeInputCallback(callback, value)`, and the lambda calls `this.Raise`. Measured: the host of such a cell rebuilt from 1 to 2 builds with no `Rebuild()` call.
+    - A cell reaches itself outside `Build` in three ways. The cell is a parameter of a plain function. A self slot (`let mutable self: Cell voption = ValueNone`, set after the object expression) gives `Rebuild()` to a callback that was made before the cell. `AnimateValue` is called after the object expression exists. `let rec` on an object expression compiles with warning FS0040.
+    - Observed: the retained node of the root Blob of a mounted cell did not keep the `Key` of that Blob. A check that looks for a node by key needs a keyed child below the root.
+
+17. **API of Goo 0.31.0:**
+    - `Window.Post(action) bool` puts work on the UI thread. `Cell.Post` is its protected form. Goo has no `Window.TryPost`.
+    - `Cell.Mount` takes the key before the factory: `Cell.Mount<Cell>(key, factory)`.
+    - The virtual collection helper of FunGoo is `FunGoo.Virtual.create items itemWidth itemHeight itemKey itemBuilder`, with F# functions. `VirtualLists` is not in the package.
+    - `VirtualItems` reads the theme. A `Build()` that creates it needs the build context of a mounted cell. A direct call outside a mount throws `Context requires an owned build or virtual callback`. Mount the cell in a headless `EmbeddedWindowHost` for that check.
+
+18. **Function to delegate:**
+    - F# converts a function value and a lambda to `Action` or `Func` at a delegate parameter, property, or constructor: `this.Raise(onSelect, id)`, `Cell.Mount<Cell>(key, factory)`, `MediaTransportInput(OnPlayPause = onPlayPause)`.
+    - The compiler requires a wrapper in two cases. A lambda with a parameter that has no type binds the non-generic `Action`: write `Action<float>(fun value -> ...)`. A conditional with `null` needs one delegate type for both branches.
 
 ## Control Catalog Gap (2026-11-22)
 
@@ -102,7 +138,7 @@ Metrino registers 74 controls. `FunGoo.Metro` ships 25 public control types:
 
 ## Stackable PR Roadmap (GitHub Stack `#5`)
 
-Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats with `dotnet fantomas .`, and passes all headless tests.
+Stack `#5` was delivered as stacked pull requests. GitHub merged the 12 pull requests to `main` on 2026-11-23 with the rebase method, and the 12 branches are deleted. The table is the record of that stack. New work goes to `main` as commits (see Delivery Rules).
 
 | Stack # | Branch | Pull Request | Scope | Status |
 | --- | --- | --- | --- | --- |
@@ -132,8 +168,9 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 24 | `metro/24-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
 | PR 25 | `metro/25-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
 | PR 26 | `metro/14-gallery-zoom-inputs-fix` | #13 | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
+| PR 27 | `main` | — | `goo-fsharp` and `goo-widgets-fsharp` corrected: the object expression is the form of a cell, a table states who rebuilds after a callback, callbacks are plain functions, and four API calls are corrected (`Window.Post`, the argument order of `Cell.Mount`, the typed mount, `FunGoo.Virtual.create`). The skills refer to no other skill. Commit `ee13321`. | Complete |
 
-Rules for the planned rows: each row is one PR, one theme, one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the PR starts. Split a row into two PRs when it grows past the size of PR 3.
+Rules for the planned rows: each row is one unit of work on one theme, delivered as commits on `main`: one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the row starts. Split a row when it grows past the size of PR 3.
 
 **PR 7 is deferred and needs a decision.** The existing tests read style values (`Style.Entries`) and tick animations (`Window.UpdateTree`) through reflection. Hard facts 6 and 12 show that the public API cannot do either in a GPU-free test. Two options exist: (a) move the tree assertions to public view builders and keep the reflective calls for style values and animation ticks only; (b) verify visuals through `goo render` frames compared with `goo diff`. New controls use public view seams from the start, as `MetroFlipView` does.
 
@@ -149,10 +186,9 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 
 ### Resuming on Another Machine
 
-1. Check out the stack top:
+1. Update `main`. Stack `#5` is merged, and its branches are deleted:
    ```sh
-   gh stack checkout 5
-   # or: git fetch origin && git checkout metro/14-gallery-zoom-inputs-fix
+   git fetch origin && git checkout main && git pull --ff-only
    ```
 2. Build and run all `52` headless tests plus the gallery smoke check:
    ```sh
@@ -161,12 +197,12 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
    dotnet run --project samples/MetroGallery/MetroGallery.fsproj -- --check
    ```
 3. Formatting on a Windows checkout. With `core.autocrlf=true`, the working tree holds CRLF and `.editorconfig` requires LF. On a fresh checkout, `dotnet fantomas --check .` then reports every file, with line endings only as the difference. Run `dotnet fantomas .` once, then confirm with `git diff --ignore-cr-at-eol --stat` that only the files of the PR changed. Restore the other files with `git checkout -- <file>`.
-3. Render gallery frames for review and for PR images (`goo` is the Goo DevTools CLI):
+4. Render gallery frames for review (`goo` is the Goo DevTools CLI):
    ```sh
    goo render samples/MetroGallery/MetroGallery.fsproj --list
    goo render samples/MetroGallery/MetroGallery.fsproj --scene controls --theme light --size 1200x800 --out controls-light.png
    ```
-4. Optional shader compilation. The machine used on 2026-11-22 has no `SLANG_SDK` and no `VULKAN_SDK`, so it cannot compile the perspective shader:
+5. Optional shader compilation. The machine used on 2026-11-22 has no `SLANG_SDK` and no `VULKAN_SDK`, so it cannot compile the perspective shader:
    - Requires Slang `2026.16` (`SLANG_SDK`) and Vulkan SDK `1.4.357.0` (`VULKAN_SDK`) — see `Goo/docs/platform-preflight.md`.
    - Build and test with:
      ```sh
@@ -179,13 +215,14 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 - Decide whether to check in precompiled `FunGoo.Metro/Shaders/metro_perspective.goo-effect` and wire live 3D perspective transitions into `MetroPivot`, `MetroLiveTile` (FlipTile), and `MetroContentDialog` (Swivel). This needs a machine with the Slang and Vulkan SDKs.
 - Evaluate bundled humanist light-weight sans-serif font (for example, Selawik) via `FontSource`.
 
-## Verification Gates (Required Per PR)
+## Verification Gates (Required Per Commit)
 
 1. `dotnet fantomas --check .` passes (run `dotnet fantomas .` before committing).
 2. Every `.fs` file in `FunGoo.Metro/` has a paired `.fsi` file with XML doc comments in `.fsi` only.
 3. `dotnet build FunGoo.slnx` succeeds with 0 errors in Debug and in Release.
 4. `dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj` passes all tests in Debug and in Release.
 5. `dotnet run --project samples/MetroGallery/MetroGallery.fsproj -- --check` passes.
-6. For a control PR: `goo render` writes a frame of the new showcase scene, and the PR attaches the image.
+6. For a change of a control: `goo render` writes a frame of the new showcase scene, and the pull request or the issue attaches the image.
 7. Allocation checks verify zero unexpected per-build churn in Release builds.
 8. Code review gate passes `AGENTS.md`, `goo-fsharp`, `goo-widgets-fsharp`, and `metro-design-system` checklists. No reflection in library code. New tests use the public API only.
+9. Code shape gate (see Code Shape Rules): `grep -rn "as this" FunGoo.Metro samples/MetroGallery tests/FunGoo.Metro.Tests` returns no hit. Each `inherit Cell` in these three directories is an abstract cell type: `[<AbstractClass>]`, abstract members and forwarding members only, and no `let` binding. Each constructor (`new:`) in a `.fsi` file of `FunGoo.Metro` belongs to an abstract cell type. The gate permits a named class only for a type that F# must name for a G# API; the commit message states that reason.
