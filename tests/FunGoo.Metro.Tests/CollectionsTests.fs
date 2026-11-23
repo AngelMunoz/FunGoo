@@ -62,7 +62,7 @@ let ``MetroListBox builds one box that holds the Metro list``() =
   }
 
   let root =
-    CaptureCell(fun () -> MetroListBox.build("box-list", props, factory))
+    CaptureCell.create(fun () -> MetroListBox.build("box-list", props, factory))
 
   use host = createHost(800, 600)
   let window = Window(Root = root)
@@ -92,7 +92,7 @@ let ``MetroGridViewFactory builds tiles and routes selection by the latest build
   let mutable gridProps = MetroGridView.defaults tiles
 
   let root =
-    CaptureCell(fun () -> Container().Children(factory.Build gridProps))
+    CaptureCell.create(fun () -> Container().Children(factory.Build gridProps))
 
   use host = createHost(800, 600)
   let window = Window(Root = root)

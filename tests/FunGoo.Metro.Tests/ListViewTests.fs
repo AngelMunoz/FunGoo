@@ -175,7 +175,7 @@ let ``MetroListView mounts and runs the row style hook inside a build``() =
   }
 
   let input = factory.CreateInput props
-  let root = CaptureCell(fun () -> factory.Mount("list", props))
+  let root = CaptureCell.create(fun () -> factory.Mount("list", props))
 
   use host = createHost(800, 600)
   let window = Window(Root = root)

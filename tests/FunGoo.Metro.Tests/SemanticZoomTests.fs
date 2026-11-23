@@ -32,7 +32,7 @@ let ``MetroSemanticZoom view shows one view and a zoom toggle``() =
   }
 
   let mutable build: unit -> Blob = fun () -> Container()
-  let root = CaptureCell(fun () -> build())
+  let root = CaptureCell.create(fun () -> build())
   scale <- root.Scale
   alpha <- root.Alpha
 
@@ -107,7 +107,7 @@ let ``MetroSemanticZoomCell zooms on request and honors reduced motion``() =
     cell
 
   let root =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       MetroSemanticZoom.mount(
         "zoom",
         MetroSemanticZoom.defaults zoomedOut,
@@ -208,7 +208,7 @@ let ``A tile of a zoom view belongs to the zoom cell so the host rebuilds itself
     cell
 
   let host =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       MetroSemanticZoom.mount(
         "zoom",
         MetroSemanticZoom.defaults hostZoomedOut,

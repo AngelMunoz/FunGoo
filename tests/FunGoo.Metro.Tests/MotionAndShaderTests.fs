@@ -44,16 +44,24 @@ let private writeMinimalEffectBytes() : byte array =
   bw.Flush()
   ms.ToArray()
 
-type private ContinuumProbeCell() as this =
+/// A cell with two animations that rebuild it: a translation and an opacity.
+/// The tests play the Continuum flight on the two values.
+/// <c>ContinuumProbeCell.create</c> makes the cell.
+[<AbstractClass>]
+type private ContinuumProbeCell() =
   inherit Cell()
 
-  let translate = this.Animate(Point(X = 0.0, Y = 0.0))
-  let opacity = this.Animate(1.0)
+  /// The translation animation of the cell.
+  abstract Translate: Anim<Point>
 
-  member _.Translate = translate
-  member _.Opacity = opacity
+  /// The opacity animation of the cell.
+  abstract Opacity: Anim<float>
 
-  override _.Build() : Blob =
+[<RequireQualifiedAccess>]
+module private ContinuumProbeCell =
+
+  /// Builds a container at the translation and the opacity of the two values.
+  let buildTree(translate: Anim<Point>, opacity: Anim<float>) : Blob =
     let offset = translate.Value
 
     Container(
@@ -64,6 +72,23 @@ type private ContinuumProbeCell() as this =
           TranslateY = Length.Pixels offset.Y
         )
     )
+
+  let create() : ContinuumProbeCell =
+    // Slots for the two animation values. The cell exists after the object
+    // expression, and Goo ties each animation to the cell.
+    let mutable translate = Unchecked.defaultof<Anim<Point>>
+    let mutable opacity = Unchecked.defaultof<Anim<float>>
+
+    let cell = {
+      new ContinuumProbeCell() with
+        override _.Translate = translate
+        override _.Opacity = opacity
+        override _.Build() : Blob = buildTree(translate, opacity)
+    }
+
+    translate <- cell.Animate(Point(X = 0.0, Y = 0.0))
+    opacity <- cell.Animate(1.0)
+    cell
 
 [<Fact>]
 let ``CubicBezierSimulation validates inputs and solves Bx(u)=t within 1e-7``
@@ -317,7 +342,7 @@ let ``Continuum measures deltas and ticks Anim in EmbeddedWindowHost``() =
   Assert.Equal(-70.0, measured.OffsetY)
 
   use host = createHost(640, 480)
-  let probe = ContinuumProbeCell()
+  let probe = ContinuumProbeCell.create()
   let window = Window(Root = probe)
   Metro.attachDefault(window)
   window.Attach(host) |> ignore

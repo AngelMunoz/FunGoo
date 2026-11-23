@@ -26,58 +26,118 @@ let private contrastRatio(first: Color, second: Color) : float =
   let l2 = luminance second + 0.05
   if l1 >= l2 then l1 / l2 else l2 / l1
 
+/// State of the dual theme probe. One mutable field per concern.
+type private DualThemeState = {
+  mutable Builds: int
+  mutable MetroSnapshot: MetroTheme
+  mutable WidgetSnapshot: Theme
+  mutable MeasureReads: bool
+  mutable ReadBytes: int64
+}
+
+/// A cell that reads the Metro theme and the widget theme in its Build. The
+/// tests read the two snapshots through its members.
+/// <c>DualThemeProbe.create</c> makes the cell.
+[<AbstractClass>]
 type private DualThemeProbe() =
   inherit Cell()
 
-  let mutable builds = 0
-  let mutable metroSnapshot = Unchecked.defaultof<MetroTheme>
-  let mutable widgetSnapshot = Unchecked.defaultof<Theme>
-  let mutable measureReads = false
-  let mutable readBytes = -1L
+  /// The number of builds.
+  abstract Builds: int
 
-  member _.Builds = builds
-  member _.MetroSnapshot = metroSnapshot
-  member _.WidgetSnapshot = widgetSnapshot
+  /// The Metro theme of the last build.
+  abstract MetroSnapshot: MetroTheme
 
-  member _.MeasureReads
-    with get () = measureReads
-    and set value = measureReads <- value
+  /// The widget theme of the last build.
+  abstract WidgetSnapshot: Theme
 
-  member _.ReadBytes = readBytes
+  /// <c>true</c> makes the next build measure the bytes of 10000 Metro reads.
+  abstract MeasureReads: bool with get, set
 
-  override _.Build() : Blob =
-    builds <- builds + 1
-    metroSnapshot <- Metro.read()
-    widgetSnapshot <- Theme.Read()
+  /// The bytes that the last measurement allocated.
+  abstract ReadBytes: int64
 
-    if measureReads then
-      let mutable acc = 0.0
+[<RequireQualifiedAccess>]
+module private DualThemeProbe =
 
-      for _ = 1 to 10 do
-        acc <- acc + Metro.read().TileUnit
+  /// A new state for one probe. Each probe has its own record.
+  let initial() : DualThemeState = {
+    Builds = 0
+    MetroSnapshot = Unchecked.defaultof<MetroTheme>
+    WidgetSnapshot = Unchecked.defaultof<Theme>
+    MeasureReads = false
+    ReadBytes = -1L
+  }
 
-      let before = GC.GetAllocatedBytesForCurrentThread()
+  /// Measures the bytes that 10000 Metro reads allocate.
+  let measureReadBytes() : int64 =
+    let mutable acc = 0.0
 
-      for _ = 1 to 10000 do
-        acc <- acc + Metro.read().TileUnit
+    for _ = 1 to 10 do
+      acc <- acc + Metro.read().TileUnit
 
-      readBytes <- GC.GetAllocatedBytesForCurrentThread() - before
-      Assert.True(acc > 0.0)
+    let before = GC.GetAllocatedBytesForCurrentThread()
 
-    Text(Content = "Metro probe", Color = metroSnapshot.Palette.Foreground)
+    for _ = 1 to 10000 do
+      acc <- acc + Metro.read().TileUnit
 
-type private ScopeHostCell(overrideTheme: MetroTheme) =
+    let bytes = GC.GetAllocatedBytesForCurrentThread() - before
+    Assert.True(acc > 0.0)
+    bytes
+
+  /// Reads the two themes, measures when the state asks for it, and builds.
+  let buildTree(state: DualThemeState) : Blob =
+    state.Builds <- state.Builds + 1
+    state.MetroSnapshot <- Metro.read()
+    state.WidgetSnapshot <- Theme.Read()
+
+    if state.MeasureReads then
+      state.ReadBytes <- measureReadBytes()
+
+    Text(
+      Content = "Metro probe",
+      Color = state.MetroSnapshot.Palette.Foreground
+    )
+
+  let create() : DualThemeProbe =
+    let state = initial()
+
+    {
+      new DualThemeProbe() with
+        override _.Builds = state.Builds
+        override _.MetroSnapshot = state.MetroSnapshot
+        override _.WidgetSnapshot = state.WidgetSnapshot
+
+        override _.MeasureReads
+          with get () = state.MeasureReads
+          and set value = state.MeasureReads <- value
+
+        override _.ReadBytes = state.ReadBytes
+        override _.Build() : Blob = buildTree state
+    }
+
+/// A host with one probe outside a Metro scope and one probe inside it.
+/// <c>ScopeHostCell.create</c> makes the cell.
+[<AbstractClass>]
+type private ScopeHostCell() =
   inherit Cell()
 
-  let outside = DualThemeProbe()
-  let inside = DualThemeProbe()
-  let outsideFactory = Func<Cell>(fun () -> outside)
-  let insideFactory = Func<Cell>(fun () -> inside)
+  /// The probe outside the Metro scope.
+  abstract Outside: DualThemeProbe
 
-  member _.Outside = outside
-  member _.Inside = inside
+  /// The probe inside the Metro scope.
+  abstract Inside: DualThemeProbe
 
-  override _.Build() : Blob =
+[<RequireQualifiedAccess>]
+module private ScopeHostCell =
+
+  /// Builds the two mounts. The mount inside the scope runs in the scope.
+  let buildTree
+    (
+      overrideTheme: MetroTheme,
+      insideFactory: Func<Cell>,
+      outsideFactory: Func<Cell>
+    ) : Blob =
     let scoped =
       Metro.scope(
         overrideTheme,
@@ -87,6 +147,21 @@ type private ScopeHostCell(overrideTheme: MetroTheme) =
     scoped.Key <- "metro-scope"
 
     Container().Children(Cell.Mount<Cell>("outside", outsideFactory), scoped)
+
+  let create(overrideTheme: MetroTheme) : ScopeHostCell =
+    let outside = DualThemeProbe.create()
+    let inside = DualThemeProbe.create()
+    let outsideFactory = Func<Cell>(fun () -> outside)
+    let insideFactory = Func<Cell>(fun () -> inside)
+
+    {
+      new ScopeHostCell() with
+        override _.Outside = outside
+        override _.Inside = inside
+
+        override _.Build() : Blob =
+          buildTree(overrideTheme, insideFactory, outsideFactory)
+    }
 
 [<Fact>]
 let ``All 21 named Metro accents match exact hex values and contrast``() =
@@ -177,7 +252,7 @@ let ``MetroAccent resolve handles System fallback and Custom colors``() =
 [<Fact>]
 let ``Metro attach bridges sharp zero-radius flat theme to Goo Widgets``() =
   use darkHost = createHost(480, 320)
-  let darkProbe = DualThemeProbe()
+  let darkProbe = DualThemeProbe.create()
   let darkWindow = Window(Root = darkProbe)
 
   Metro.attach(
@@ -222,7 +297,7 @@ let ``Metro attach bridges sharp zero-radius flat theme to Goo Widgets``() =
   Assert.Equal(ControlStyle.Standard, wDark.Controls)
 
   use lightHost = createHost(480, 320)
-  let lightProbe = DualThemeProbe()
+  let lightProbe = DualThemeProbe.create()
   let lightWindow = Window(Root = lightProbe)
 
   Metro.attach(
@@ -251,7 +326,7 @@ let ``Metro setMode switches Light and Dark and syncs OS preferences``() =
   use host = createHost(480, 320)
   host.UpdatePreferences(PlatformPreferences(Theme = SystemTheme.Light))
 
-  let probe = DualThemeProbe()
+  let probe = DualThemeProbe.create()
   let window = Window(Root = probe)
 
   Metro.attach(
@@ -320,7 +395,7 @@ let ``Metro setMode switches Light and Dark and syncs OS preferences``() =
 [<Fact>]
 let ``Metro setAccent updates MetroTheme and Goo Widgets AccentColor``() =
   use host = createHost(480, 320)
-  let probe = DualThemeProbe()
+  let probe = DualThemeProbe.create()
   let window = Window(Root = probe)
 
   Metro.attach(
@@ -353,7 +428,7 @@ let ``Metro scope overrides subtree for both Metro and Goo Widgets without affec
   ()
   =
   use host = createHost(480, 320)
-  let baseWindow = Window(Root = DualThemeProbe())
+  let baseWindow = Window(Root = DualThemeProbe.create())
 
   Metro.attach(
     baseWindow,
@@ -371,7 +446,7 @@ let ``Metro scope overrides subtree for both Metro and Goo Widgets without affec
         Accent = MetroAccent.resolve(MetroAccentKind.Crimson, ValueNone)
   }
 
-  let root = ScopeHostCell(overrideTheme)
+  let root = ScopeHostCell.create overrideTheme
   let window = Window(Root = root)
 
   Metro.attach(
@@ -411,7 +486,7 @@ let ``Metro scope overrides subtree for both Metro and Goo Widgets without affec
 [<Fact>]
 let ``Warm Metro read allocates zero bytes in steady state``() =
   use host = createHost(480, 320)
-  let probe = DualThemeProbe()
+  let probe = DualThemeProbe.create()
   let window = Window(Root = probe)
 
   Metro.attachDefault(window)
@@ -521,7 +596,7 @@ let ``Metro scope preserves window accessibility policies in both contexts``() =
     TextScaleFactor = 1.0
   }
 
-  let root = ScopeHostCell(overrideTheme)
+  let root = ScopeHostCell.create overrideTheme
   let window = Window(Root = root)
 
   Metro.attach(
@@ -583,7 +658,7 @@ let ``Metro scope explicit TextScaleFactor and HighContrast apply without compou
     TextScaleFactor = 2.0
   }
 
-  let root = ScopeHostCell(overrideTheme)
+  let root = ScopeHostCell.create overrideTheme
   let window = Window(Root = root)
 
   Metro.attach(
@@ -637,7 +712,7 @@ let ``Toggling ReducedMotion true to false restores TransitionMs on Theme Read``
     )
   )
 
-  let probe = DualThemeProbe()
+  let probe = DualThemeProbe.create()
   let window = Window(Root = probe)
 
   Metro.attach(

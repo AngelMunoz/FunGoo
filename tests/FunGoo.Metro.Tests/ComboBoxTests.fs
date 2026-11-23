@@ -28,7 +28,7 @@ let private options = [|
 
 /// Mounts `build` in a headless window and returns the built tree.
 let private mountInWindow(build: unit -> Blob) : Blob =
-  let root = CaptureCell(build)
+  let root = CaptureCell.create(build)
 
   use host = createHost(800, 600)
   let window = Window(Root = root)
@@ -207,7 +207,7 @@ let ``Two combo boxes with one factory each keep separate values``() =
   }
 
   let host =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       Container()
         .Children(
           sizeFactory.Mount("size", sizeProps()),

@@ -9,6 +9,7 @@ open Goo.Widgets.Inputs
 open FunGoo.Children
 open FunGoo.Metro
 open FunGoo.Metro.Tests.TestHost
+open FunGoo.Metro.Tests.TestSupport
 
 let private flags =
   BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
@@ -213,21 +214,6 @@ let private findMountedCellByTypeName
 
   visit rootNode
 
-type private CaptureCell(buildFn: unit -> Blob) =
-  inherit Cell()
-
-  let mutable captured: Blob = null
-  let mutable builds = 0
-
-  member _.Captured = captured
-  member _.Builds = builds
-
-  override _.Build() : Blob =
-    builds <- builds + 1
-    let b = buildFn()
-    captured <- b
-    b
-
 let private runInMetroWindow
   (
     config: MetroConfig,
@@ -236,7 +222,7 @@ let private runInMetroWindow
   ) : Blob =
   use host = createHost(800, 600)
   prefs |> ValueOption.iter(fun p -> host.UpdatePreferences(p))
-  let cell = CaptureCell(buildFn)
+  let cell = CaptureCell.create(buildFn)
   let window = Window(Root = cell)
   Metro.attach(window, config)
   window.Attach(host) |> ignore
@@ -627,7 +613,7 @@ let ``Metro inputs configure sharp Metro styling semantics and callbacks``() =
   use host = createHost(800, 600)
 
   let capture =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       Container()
         .Children(
           MetroTextBox.build(
@@ -981,7 +967,7 @@ let ``MetroProgressBar clamps determinate and animates without rebuilds``() =
   let mutable showBar = true
 
   let hostCell =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       if showBar then
         Container()
           .Children(
@@ -1097,7 +1083,7 @@ let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
   let mutable showRing = true
 
   let hostCell =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       if showRing then
         Container()
           .Children(

@@ -9,7 +9,7 @@ open FunGoo.Metro.Tests.TestSupport
 
 /// Mounts `build` in a headless window and returns the built tree.
 let private mountInWindow(build: unit -> Blob) : Blob =
-  let root = CaptureCell(build)
+  let root = CaptureCell.create(build)
 
   use host = createHost(800, 600)
   let window = Window(Root = root)

@@ -73,7 +73,7 @@ let ``MetroFlipView view builds one panel edge buttons and indicator dots``() =
 
   let mutable build: unit -> Blob = fun () -> Container()
 
-  let root = CaptureCell(fun () -> build())
+  let root = CaptureCell.create(fun () -> build())
 
   track <- root.Track
   build <- fun () -> MetroFlipView.buildView(state(), render, events.Add)
@@ -258,7 +258,7 @@ let ``MetroFlipViewCell slides on navigation and honors reduced motion``() =
     cell
 
   let root =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       MetroFlipView.mount(
         "flip",
         MetroFlipView.defaults(items, selectedId),

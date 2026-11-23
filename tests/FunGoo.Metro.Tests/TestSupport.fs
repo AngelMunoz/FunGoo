@@ -2,46 +2,110 @@ module FunGoo.Metro.Tests.TestSupport
 
 open Goo
 
-/// Root cell for headless tests. <c>Build</c> runs <c>buildFn</c> inside the
+/// State of a capture cell. One mutable field per concern.
+type CaptureState = {
+  /// The tree of the last build. Null before the first build.
+  mutable Captured: Blob
+  /// The number of builds.
+  mutable Builds: int
+  /// The action that the next build runs first, when there is one.
+  mutable DuringBuild: (unit -> unit) voption
+}
+
+/// The request of <c>CaptureCell.DuringBuild</c>.
+type DuringBuildRequest = {
+  Host: EmbeddedWindowHost
+  Action: unit -> unit
+}
+
+/// Root cell for headless tests. <c>Build</c> runs a function inside the
 /// real window build pass and keeps the returned tree in <c>Captured</c>.
-type CaptureCell(buildFn: unit -> Blob) as this =
+/// The type holds the members that the tests read.
+/// <c>CaptureCell.create</c> makes the cell.
+[<AbstractClass>]
+type CaptureCell() =
   inherit Cell()
 
-  let track = this.AnimateValue(Point(X = 0.0, Y = 0.0))
-  let scale = this.AnimateValue(1.0)
-  let alpha = this.AnimateValue(1.0)
-  let mutable captured: Blob = null
-  let mutable duringBuild: (unit -> unit) voption = ValueNone
+  /// The tree of the last build. Null before the first build.
+  abstract Captured: Blob
 
-  member _.Captured = captured
+  /// The number of builds.
+  abstract Builds: int
 
   /// Paint-bound translation owned by this cell, for view builders that take
   /// an <c>Anim</c>. Goo requires a paint animation to belong to the window of
   /// the element, so the owner cell must be mounted in the same window.
-  member _.Track = track
+  abstract Track: Anim<Point>
 
   /// Paint-bound scalar animation at rest value 1.0, for a scale slot.
-  member _.Scale = scale
+  abstract Scale: Anim<float>
 
   /// Paint-bound scalar animation at rest value 1.0, for an opacity slot.
-  member _.Alpha = alpha
+  abstract Alpha: Anim<float>
 
   /// Runs <c>action</c> inside the next Build of this cell, where Metro theme
   /// reads and cell view builders are valid, then renders one frame.
-  member this.DuringBuild(host: EmbeddedWindowHost, action: unit -> unit) =
-    duringBuild <- ValueSome action
-    this.Rebuild()
-    host.RenderFrame(0.016)
+  abstract DuringBuild:
+    host: EmbeddedWindowHost * action: (unit -> unit) -> unit
 
-  override _.Build() : Blob =
-    duringBuild
+[<RequireQualifiedAccess>]
+module CaptureCell =
+
+  /// A new state for one cell. Each cell has its own record.
+  let initial() : CaptureState = {
+    Captured = Unchecked.defaultof<Blob>
+    Builds = 0
+    DuringBuild = ValueNone
+  }
+
+  /// Builds the tree. The action of a pending <c>DuringBuild</c> runs first.
+  let buildTree(state: CaptureState, buildFn: unit -> Blob) : Blob =
+    state.Builds <- state.Builds + 1
+
+    state.DuringBuild
     |> ValueOption.iter(fun action ->
-      duringBuild <- ValueNone
+      state.DuringBuild <- ValueNone
       action())
 
     let tree = buildFn()
-    captured <- tree
+    state.Captured <- tree
     tree
+
+  /// Requests one build that runs the action of the request first.
+  let requestDuringBuild
+    (cell: CaptureCell, state: CaptureState, request: DuringBuildRequest)
+    : unit =
+    state.DuringBuild <- ValueSome request.Action
+    cell.Rebuild()
+    request.Host.RenderFrame(0.016)
+
+  let create(buildFn: unit -> Blob) : CaptureCell =
+    let state = initial()
+
+    // Slots for the three animation values. The cell exists after the object
+    // expression, and Goo ties each animation to the cell.
+    let mutable track = Unchecked.defaultof<Anim<Point>>
+    let mutable scale = Unchecked.defaultof<Anim<float>>
+    let mutable alpha = Unchecked.defaultof<Anim<float>>
+
+    let cell = {
+      new CaptureCell() with
+        override _.Captured = state.Captured
+        override _.Builds = state.Builds
+        override _.Track = track
+        override _.Scale = scale
+        override _.Alpha = alpha
+
+        override this.DuringBuild(host, action) =
+          requestDuringBuild(this, state, { Host = host; Action = action })
+
+        override _.Build() : Blob = buildTree(state, buildFn)
+    }
+
+    track <- cell.AnimateValue(Point(X = 0.0, Y = 0.0))
+    scale <- cell.AnimateValue(1.0)
+    alpha <- cell.AnimateValue(1.0)
+    cell
 
 /// Number of children of a Container or a Button. Other Blob types return 0.
 let childCount(blob: Blob) : int =

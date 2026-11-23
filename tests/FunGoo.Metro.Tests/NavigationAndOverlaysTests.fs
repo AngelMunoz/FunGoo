@@ -8,6 +8,7 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 open FunGoo.Metro.Tests.TestHost
+open FunGoo.Metro.Tests.TestSupport
 
 let private flags =
   BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
@@ -183,26 +184,6 @@ let private invokeBuildRaw<'TInput>(cell: Cell<'TInput>) : Blob =
 
   buildMethod.Invoke(cell, [| input |]) :?> Blob
 
-type private CaptureCell(buildFn: unit -> Blob) =
-  inherit Cell()
-
-  let mutable captured: Blob = null
-  let mutable onBuildProbe: (unit -> unit) voption = ValueNone
-
-  member _.Captured = captured
-
-  member this.Probe(host: EmbeddedWindowHost, action: unit -> unit) : unit =
-    onBuildProbe <- ValueSome action
-    this.Rebuild()
-    pumpFrames(host, 1)
-    onBuildProbe <- ValueNone
-
-  override _.Build() : Blob =
-    onBuildProbe |> ValueOption.iter(fun f -> f())
-    let b = buildFn()
-    captured <- b
-    b
-
 let private darkConfig = {
   MetroConfig.defaultConfig with
       Mode = MetroMode.Dark
@@ -238,7 +219,7 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   use host = createHost(800, 600)
 
   let rootCell =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       MetroPivot.mount(
         "main-pivot",
         {
@@ -264,7 +245,7 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
 
   // Inspect built tree structure: title, header strip (all keyed), content.
   let mutable builtBlob: Blob = null
-  rootCell.Probe(host, fun () -> builtBlob <- invokeBuildRaw pivotCell)
+  rootCell.DuringBuild(host, fun () -> builtBlob <- invokeBuildRaw pivotCell)
   let built = builtBlob :?> Container
   Assert.Equal(3, childCount built)
   let titleText = childAt(built, 0) :?> Text
@@ -409,7 +390,7 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   Assert.Equal(1.0, pivotCell.ContentOpacity.Value, 3)
 
   let mutable hcBlob: Blob = null
-  rootCell.Probe(host, fun () -> hcBlob <- invokeBuildRaw pivotCell)
+  rootCell.DuringBuild(host, fun () -> hcBlob <- invokeBuildRaw pivotCell)
   let hcBuilt = hcBlob :?> Container
   let hcHeader = childAt(hcBuilt, 1) :?> Container
   let hcInactiveTab = childAt(hcHeader, 0) :?> Button
@@ -635,7 +616,7 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
   use host = createHost(800, 600)
 
   let capture =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       let root = Container()
 
       root.Add(
@@ -699,7 +680,7 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
   Assert.Equal(0, liveCell.ActiveFaceIndex)
   Assert.True(liveCell.IsTimerActive)
   let mutable liveBlob: Blob = null
-  capture.Probe(host, fun () -> liveBlob <- invokeBuildRaw liveCell)
+  capture.DuringBuild(host, fun () -> liveBlob <- invokeBuildRaw liveCell)
   let liveBtn = liveBlob :?> Button
   Assert.Equal(0.0f, requireEntry(liveBtn, "BorderRadius").A)
   Assert.Equal(0, boxShadowCount liveBtn)
@@ -781,7 +762,7 @@ let ``MetroAppBar MetroSettingsFlyout and MetroContentDialog wire commands porta
   use host = createHost(800, 600)
 
   let capture =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       Container(Width = Length.Percent 100.0, Height = Length.Percent 100.0)
         .Children(
           MetroAppBar.build(
@@ -1092,7 +1073,7 @@ let ``MetroAppBar disabled commands avoid double-dimming and honor HighContrast`
   use host = createHost(800, 600)
 
   let capture =
-    CaptureCell(fun () ->
+    CaptureCell.create(fun () ->
       MetroAppBar.build(
         {
           MetroAppBar.defaults primary with
@@ -1232,7 +1213,7 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
 
 [<Fact>]
 let ``MetroPivot remounts child cells cleanly across repeated tab visits``() =
-  use host = new HeadlessWindowHost()
+  use host = HeadlessWindowHost.create()
   host.Resize(900, 600, 900, 600)
 
   let findNodeByKey(window: Window, key: string) : obj voption =
