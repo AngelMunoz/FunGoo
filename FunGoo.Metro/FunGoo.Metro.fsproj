@@ -33,6 +33,14 @@
     <Compile Include="MetroInputs.fs" />
     <Compile Include="MetroProgress.fsi" />
     <Compile Include="MetroProgress.fs" />
+    <Compile Include="MetroPivot.fsi" />
+    <Compile Include="MetroPivot.fs" />
+    <Compile Include="MetroHub.fsi" />
+    <Compile Include="MetroHub.fs" />
+    <Compile Include="MetroTiles.fsi" />
+    <Compile Include="MetroTiles.fs" />
+    <Compile Include="MetroOverlays.fsi" />
+    <Compile Include="MetroOverlays.fs" />
   </ItemGroup>
 
   <ItemGroup>

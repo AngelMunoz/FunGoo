@@ -4,6 +4,7 @@
   <Project Path="FunGoo.Mvu/FunGoo.Mvu.fsproj" />
   <Project Path="FunGoo.Widgets/FunGoo.Widgets.fsproj" />
   <Folder Name="/samples/">
+    <Project Path="samples/MetroGallery/MetroGallery.fsproj" />
     <Project Path="samples/MvuSpike/MvuSpike.fsproj" />
     <Project Path="samples\RaznorGoo\RaznorGoo.fsproj" />
   </Folder>
