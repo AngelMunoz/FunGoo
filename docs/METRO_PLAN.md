@@ -114,7 +114,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
 | PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
 | PR 15 | `metro/15-combo-suggest` | | `MetroComboBox`, `MetroAutoSuggestBox` | Planned |
-| PR 16 | `metro/12-number-rating` | | `MetroNumberBox` on `Goo.Widgets.Inputs.NumberInput` (spin buttons, bounds, step, label) and `MetroRating` on `Goo.Widgets.Inputs.RatingControl` (accent stars), each with a pure `toInput` mapping, a gallery tab and scene, reflection-free tests | Complete |
+| PR 16 | `metro/12-number-rating` | #11 | `MetroNumberBox` on `Goo.Widgets.Inputs.NumberInput` (spin buttons, bounds, step, label) and `MetroRating` on `Goo.Widgets.Inputs.RatingControl` (accent stars), each with a pure `toInput` mapping, a gallery tab and scene, reflection-free tests | Complete |
 | PR 17 | `metro/17-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
 | PR 18 | `metro/18-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
 | PR 19 | `metro/19-notifications` | | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Planned |
