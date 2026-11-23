@@ -52,14 +52,83 @@ module private Content =
     }
   |]
 
-/// Gallery tab with one single-selection list and one multi-selection list.
-/// The tab owns both selections.
+  let choices = [|
+    {
+      Id = "small"
+      Label = "Small"
+      Caption = ValueNone
+      Count = ValueNone
+      Disabled = false
+    }
+    {
+      Id = "medium"
+      Label = "Medium"
+      Caption = ValueNone
+      Count = ValueNone
+      Disabled = false
+    }
+    {
+      Id = "large"
+      Label = "Large"
+      Caption = ValueNone
+      Count = ValueNone
+      Disabled = false
+    }
+  |]
+
+  let tiles = [|
+    {
+      Id = "photos"
+      Label = "Photos"
+      IconName = ValueSome "photo"
+    }
+    {
+      Id = "maps"
+      Label = "Maps"
+      IconName = ValueSome "map"
+    }
+    {
+      Id = "music"
+      Label = "Music"
+      IconName = ValueSome "music_note"
+    }
+    {
+      Id = "mail"
+      Label = "Mail"
+      IconName = ValueSome "mail"
+    }
+    {
+      Id = "news"
+      Label = "News"
+      IconName = ValueSome "feed"
+    }
+    {
+      Id = "games"
+      Label = "Games"
+      IconName = ValueSome "sports_esports"
+    }
+    {
+      Id = "weather"
+      Label = "Weather"
+      IconName = ValueSome "partly_cloudy_day"
+    }
+    {
+      Id = "store"
+      Label = "Store"
+      IconName = ValueSome "shopping_bag"
+    }
+  |]
+
+/// Gallery tab with two Metro lists, one list box, and one grid view. The tab
+/// owns every selection.
 [<Sealed>]
 type ListsTabCell() as this =
   inherit Cell()
 
   let mutable singleSelected: string array = [| "mail" |]
   let mutable multipleSelected: string array = [| "photos"; "maps" |]
+  let mutable boxSelected: string array = [| "medium" |]
+  let mutable gridSelected: string array = [| "photos"; "maps"; "music" |]
   let mutable lastAction = "Ready"
 
   let onSingle(event: MetroListEvent) =
@@ -81,6 +150,23 @@ type ListsTabCell() as this =
   // rebuild it.
   let singleFactory = MetroListViewFactory(onSingle)
   let multipleFactory = MetroListViewFactory(onMultiple)
+
+  let onBox(event: MetroListEvent) =
+    match event with
+    | MetroListEvent.SelectionChanged ids -> boxSelected <- ids
+    | MetroListEvent.ItemClick id -> lastAction <- $"Activated {id}"
+
+    this.Rebuild()
+
+  let onGrid(event: MetroListEvent) =
+    match event with
+    | MetroListEvent.SelectionChanged ids -> gridSelected <- ids
+    | MetroListEvent.ItemClick id -> lastAction <- $"Activated {id}"
+
+    this.Rebuild()
+
+  let boxFactory = MetroListViewFactory(onBox)
+  let gridFactory = MetroGridViewFactory(onGrid)
 
   let listColumn(title: string, mount: unit -> Blob) : Blob =
     Container(
@@ -106,6 +192,55 @@ type ListsTabCell() as this =
           Height = ValueSome(Length.Pixels 300.0)
     }
 
+    let boxProps = {
+      MetroListView.defaults Content.choices with
+          SelectedIds = boxSelected
+          Height = ValueSome(Length.Pixels 160.0)
+    }
+
+    let gridProps = {
+      MetroGridView.defaults Content.tiles with
+          SelectedIds = gridSelected
+          TileSize = 96.0
+          Height = ValueSome(Length.Pixels 216.0)
+          AccessibilityName = ValueSome "Apps"
+    }
+
+    let listsRow =
+      Container(
+        FlexDirection = FlexDirection.Row,
+        Width = Length.Percent 100.0,
+        FlexShrink = 0.0,
+        Gap = Length.Pixels 24.0
+      )
+        .Children(
+          listColumn(
+            "single selection",
+            fun () -> singleFactory.Mount("gallery-list-single", singleProps)
+          ),
+          listColumn(
+            "multiple selection",
+            fun () ->
+              multipleFactory.Mount("gallery-list-multiple", multipleProps)
+          )
+        )
+
+    let collectionsRow =
+      Container(
+        FlexDirection = FlexDirection.Row,
+        Width = Length.Percent 100.0,
+        FlexShrink = 0.0,
+        Gap = Length.Pixels 24.0
+      )
+        .Children(
+          listColumn(
+            "list box",
+            fun () ->
+              MetroListBox.build("gallery-list-box", boxProps, boxFactory)
+          ),
+          listColumn("grid view", fun () -> gridFactory.Build gridProps)
+        )
+
     Container(
       FlexDirection = FlexDirection.Column,
       FlexGrow = 1.0,
@@ -117,23 +252,9 @@ type ListsTabCell() as this =
       .Children(
         MetroText.secondary
           "The host owns the selection. Each selected row shows a 3 px accent \
-           indicator on its start edge and an accent tint.",
-        Container(
-          FlexDirection = FlexDirection.Row,
-          Width = Length.Percent 100.0,
-          FlexShrink = 0.0,
-          Gap = Length.Pixels 24.0
-        )
-          .Children(
-            listColumn(
-              "single selection",
-              fun () -> singleFactory.Mount("gallery-list-single", singleProps)
-            ),
-            listColumn(
-              "multiple selection",
-              fun () ->
-                multipleFactory.Mount("gallery-list-multiple", multipleProps)
-            )
-          ),
+           indicator on its start edge and an accent tint. The list box adds a \
+           2 px border. The grid view mounts only the tiles near the viewport.",
+        listsRow,
+        collectionsRow,
         MetroText.caption lastAction
       )
