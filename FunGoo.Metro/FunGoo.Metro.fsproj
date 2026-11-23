@@ -41,6 +41,8 @@
     <Compile Include="MetroTiles.fs" />
     <Compile Include="MetroOverlays.fsi" />
     <Compile Include="MetroOverlays.fs" />
+    <Compile Include="MetroFlipView.fsi" />
+    <Compile Include="MetroFlipView.fs" />
   </ItemGroup>
 
   <ItemGroup>

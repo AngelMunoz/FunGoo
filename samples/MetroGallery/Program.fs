@@ -449,6 +449,10 @@ type private GalleryCell
       Header = "typography"
     }
     { Id = "controls"; Header = "controls" }
+    {
+      Id = "flip-view"
+      Header = "flip view"
+    }
     { Id = "motion"; Header = "motion" }
   |]
 
@@ -540,6 +544,7 @@ type private GalleryCell
   |]
 
   let controlsTabFactory = Func<Cell>(fun () -> ControlsTabCell(store) :> Cell)
+  let flipViewTabFactory = fun () -> FlipViewTab.FlipViewTabCell() :> Cell
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
 
@@ -832,6 +837,7 @@ type private GalleryCell
       )
     | "typography" -> renderTypographyTab()
     | "controls" -> Cell.Mount<Cell>("controls-tab", controlsTabFactory)
+    | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", flipViewTabFactory)
     | "motion" -> renderMotionTab()
     | _ -> renderTypographyTab()
 
@@ -1070,7 +1076,13 @@ let private findNodeByKey(window: Window, key: string) : obj voption =
   visit rootNode
 
 /// Gallery tabs that also register as named `goo render` scenes, in name order.
-let private sceneTabs = [| "controls"; "motion"; "overview"; "typography" |]
+let private sceneTabs = [|
+  "controls"
+  "flip-view"
+  "motion"
+  "overview"
+  "typography"
+|]
 
 /// Maps the window theme preference onto a Metro appearance mode.
 let private sceneMode(window: Window) : MetroMode =
@@ -1170,9 +1182,11 @@ let private runChecks() : int =
   for tab in
     [|
       "controls"
+      "flip-view"
       "motion"
       "overview"
       "controls"
+      "flip-view"
       "typography"
       "motion"
       "overview"

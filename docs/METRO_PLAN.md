@@ -59,6 +59,11 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
     - Style properties for overlays: `Position` (`Relative`, `Absolute`, `Static`), `Inset`, `Start`, `End`, `Top`, `Bottom`, and `ZIndex`.
     - `Blob` exposes `OnPointerEnter`, `OnPointerLeave`, `OnPointerDrag`, `PointerDragThreshold`, `PointerDragAxis`, `OnWheel`, `OnFocus`, `OnBlur`, and `Gestures`.
     - `Cell.Animate` has an overload that takes an `onChange` callback, for values that are not `Anim` style properties.
+12. **A headless test cannot advance an animation:**
+    - `EmbeddedWindowHost.RenderFrame(dt)` calls `Window.PumpEmbedded`, which sets `frameAllowed` to `false` when the window has no presentation target (`windowTarget` is `nil`). A test host with no Vulkan surface has no target, so animations keep `Running = true` and never change `Value`.
+    - `Window.Pump(dt)` is public, but it uses the same gate for an embedded host. The Goo own motion tests use internal fixtures (`MotionPump`).
+    - In a GPU-free test, assert the start of a motion (`Running`, `Target`, the tree) and timer-driven ends. Do not assert animation progress. Window timers (`Cell.After`, `Cell.Every`) do fire on `RenderFrame`, and they follow the wall clock, so a test waits in real time.
+    - Verify motion values with a rendered frame (`goo render` does not advance app animations, so it shows the rest state).
 
 ## Control Catalog Gap (2026-11-22)
 
@@ -88,7 +93,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 3 | `metro/03-typography-and-controls` | #3 | `MetroText` (10-role ramp), `MetroButton`, `MetroTextBox`, `MetroPasswordBox`, `MetroToggleSwitch` (sharp rectangular), `MetroCheckBox`, `MetroRadioButton`, `MetroSlider` (square thumb), `MetroProgressBar` (determinate + 5-dot), `MetroProgressRing` (5-dot orbit), headless + allocation tests | Complete |
 | PR 4 | `metro/04-navigation-layout-gallery` | #4 | `MetroPivot` (peeking headers, slide, keyboard circular loop, swipe), `MetroHub` / `MetroPanorama` (peeking sections + scroll parallax), `IconicTile` / `LiveTile` + `TileGridLayout`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `samples/MetroGallery` (`--check` + interactive UI), `CHANGELOG.md` | Complete |
 | PR 5 | `metro/05-render-scenes` | #6 | Live tile starts its cycle timer only on an open window, so `goo render` works. Gallery registers one `Window.Scenes` scene per tab and follows `--theme`. Plan: design authority, delivery rules, new hard facts, catalog gap, planned PR set, known issues | Complete |
-| PR 6 | `metro/06-flip-view` | | `MetroFlipView`: one item at a time, edge previous and next buttons, indicator dots, swipe, `Left`/`Right`/`PageUp`/`PageDown`/`Home`/`End` keys, slide transition, public view builder, showcase scene, tests | Planned |
+| PR 6 | `metro/06-flip-view` | | `MetroFlipView`: one item at a time, edge previous and next buttons, indicator dots, swipe, `Left`/`Right`/`PageUp`/`PageDown`/`Home`/`End` keys, slide transition, public view builder (`MetroFlipView.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests, shared `TestSupport` helpers | Complete |
 | PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls. Tests and the gallery check use the public API only. No reflection | Planned |
 | PR 8 | `metro/08-list-family` | | `MetroListView`, `MetroListBox`, `MetroGridView` on `Goo.Widgets.ListView`: sharp rows, selection modes | Planned |
 | PR 9 | `metro/09-long-list-selector` | | Grouped list with group headers and a jump list (`ElementHandle.ScrollToItem`) | Planned |
@@ -125,7 +130,7 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
    gh stack checkout 5
    # or: git fetch origin && git checkout metro/05-render-scenes
    ```
-2. Build and run all `35` headless tests plus the gallery smoke check:
+2. Build and run all `37` headless tests plus the gallery smoke check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj
