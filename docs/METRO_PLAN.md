@@ -103,22 +103,22 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls, so that the tests and the gallery check use the public API only | Deferred. See the note below the table |
 | PR 8 | `metro/08-list-view` | #8 | `MetroListView`: `Goo.Widgets.ListView` with sharp 44 px rows, a 3 px accent indicator and an accent tint on selected rows, selection modes `Activate`, `Single`, and `Multiple`, one event channel, a factory that keeps one callback set, gallery tab and scene, reflection-free tests | Complete |
 | PR 9 | `metro/09-list-box-grid` | #9 | `MetroListBox`: a sharp 2 px bordered box around a Metro list. `MetroGridViewFactory`: a virtual wrapped grid of square tile buttons on `VirtualItems`, with a 2 px accent border and an accent tint on selected tiles, selection modes `Activate`, `Single`, and `Multiple`, gallery additions, reflection-free tests | Complete |
-| PR 10 | `metro/09-long-list-selector` | | Grouped list with group headers and a jump list (`ElementHandle.ScrollToItem`) | Planned |
-| PR 11 | `metro/10-semantic-zoom` | | Zoomed-in and zoomed-out views with group synchronization | Planned |
-| PR 12 | `metro/11-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
-| PR 13 | `metro/12-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
-| PR 14 | `metro/13-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
-| PR 15 | `metro/14-combo-suggest` | | `MetroComboBox`, `MetroAutoSuggestBox` | Planned |
-| PR 16 | `metro/15-number-rating` | | `MetroNumberBox`, `MetroRating` | Planned |
-| PR 17 | `metro/16-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
-| PR 18 | `metro/17-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
-| PR 19 | `metro/18-notifications` | | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Planned |
-| PR 20 | `metro/19-split-tab` | | `MetroSplitView`, `MetroTabView` | Planned |
-| PR 21 | `metro/20-app-bar-parts` | | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Planned |
-| PR 22 | `metro/21-primitives` | | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Planned |
-| PR 23 | `metro/22-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
-| PR 24 | `metro/23-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
-| PR 25 | `metro/24-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
+| PR 10 | `metro/10-long-list-selector` | | Grouped list with group headers and a jump list (`ElementHandle.ScrollToItem`) | Planned |
+| PR 11 | `metro/11-semantic-zoom` | | Zoomed-in and zoomed-out views with group synchronization | Planned |
+| PR 12 | `metro/12-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
+| PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
+| PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
+| PR 15 | `metro/15-combo-suggest` | | `MetroComboBox`, `MetroAutoSuggestBox` | Planned |
+| PR 16 | `metro/16-number-rating` | | `MetroNumberBox`, `MetroRating` | Planned |
+| PR 17 | `metro/17-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
+| PR 18 | `metro/18-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
+| PR 19 | `metro/19-notifications` | | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Planned |
+| PR 20 | `metro/20-split-tab` | | `MetroSplitView`, `MetroTabView` | Planned |
+| PR 21 | `metro/21-app-bar-parts` | | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Planned |
+| PR 22 | `metro/22-primitives` | | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Planned |
+| PR 23 | `metro/23-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
+| PR 24 | `metro/24-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
+| PR 25 | `metro/25-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
 
 Rules for the planned rows: each row is one PR, one theme, one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the PR starts. Split a row into two PRs when it grows past the size of PR 3.
 
@@ -137,7 +137,7 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 1. Check out the stack top:
    ```sh
    gh stack checkout 5
-   # or: git fetch origin && git checkout metro/05-render-scenes
+   # or: git fetch origin && git checkout metro/09-list-box-grid
    ```
 2. Build and run all `43` headless tests plus the gallery smoke check:
    ```sh
