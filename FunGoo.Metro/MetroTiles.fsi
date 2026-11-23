@@ -132,7 +132,8 @@ type MetroLiveTileCell =
   /// Zero-based index of the currently displayed face.
   member ActiveFaceIndex: int
 
-  /// <c>true</c> while an automatic face-cycling timer is active.
+  /// <c>true</c> while an automatic face-cycling timer is active. A host window
+  /// that is not open, such as a <c>goo render</c> frame, never starts the timer.
   member IsTimerActive: bool
 
   /// Paint-bound translation animation for face entrance motion.
@@ -141,7 +142,8 @@ type MetroLiveTileCell =
   /// Paint-bound opacity animation for face entrance motion.
   member FaceOpacity: Anim<float>
 
-  /// Starts face cycling when mounted with multiple faces and standard motion.
+  /// Starts face cycling when mounted with multiple faces, standard motion, and
+  /// an open host window.
   override Mounted: unit -> unit
 
   /// Updates face bounds and cycle timer when input changes.
