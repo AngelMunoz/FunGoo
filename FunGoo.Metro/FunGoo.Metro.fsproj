@@ -21,6 +21,21 @@
     <Compile Include="MetroTokens.fs" />
     <Compile Include="MetroTheme.fsi" />
     <Compile Include="MetroTheme.fs" />
+    <Compile Include="MetroMotion.fsi" />
+    <Compile Include="MetroMotion.fs" />
+    <Compile Include="MetroShader.fsi" />
+    <Compile Include="MetroShader.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Shaders/metro_perspective.slang" />
+    <GooShaderEffect Include="Shaders/metro_perspective.slang"
+                     Embed="true"
+                     TargetPath="FunGoo.Metro.Shaders.metro_perspective.goo-effect"
+                     Condition="'$(CompileMetroShaders)' == 'true'" />
+    <EmbeddedResource Include="Shaders/metro_perspective.goo-effect"
+                      LogicalName="FunGoo.Metro.Shaders.metro_perspective.goo-effect"
+                      Condition="Exists('Shaders/metro_perspective.goo-effect') and '$(CompileMetroShaders)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
