@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="TestHost.fs" />
     <Compile Include="ThemeTests.fs" />
+    <Compile Include="MotionAndShaderTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

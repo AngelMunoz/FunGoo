@@ -1,7 +1,11 @@
 module FunGoo.Metro.Tests.TestHost
 
 open System
+open Xunit
 open Goo
+
+[<assembly: CollectionBehavior(DisableTestParallelization = true)>]
+do ()
 
 type HeadlessWindowHost() =
   inherit EmbeddedWindowHost()
