@@ -455,10 +455,7 @@ type private GalleryCell
     }
     { Id = "lists"; Header = "lists" }
     { Id = "zoom"; Header = "zoom" }
-    {
-      Id = "number-rating"
-      Header = "number"
-    }
+    { Id = "inputs"; Header = "inputs" }
     { Id = "motion"; Header = "motion" }
   |]
 
@@ -554,8 +551,7 @@ type private GalleryCell
   let listsTabFactory = fun () -> ListsTab.ListsTabCell() :> Cell
   let zoomTabFactory = fun () -> ZoomTab.ZoomTabCell() :> Cell
 
-  let numberRatingTabFactory =
-    fun () -> NumberRatingTab.NumberRatingTabCell() :> Cell
+  let inputsTabFactory = fun () -> InputsTab.InputsTabCell() :> Cell
 
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
@@ -852,8 +848,7 @@ type private GalleryCell
     | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", flipViewTabFactory)
     | "lists" -> Cell.Mount<Cell>("lists-tab", listsTabFactory)
     | "zoom" -> Cell.Mount<Cell>("zoom-tab", zoomTabFactory)
-    | "number-rating" ->
-      Cell.Mount<Cell>("number-rating-tab", numberRatingTabFactory)
+    | "inputs" -> Cell.Mount<Cell>("inputs-tab", inputsTabFactory)
     | "motion" -> renderMotionTab()
     | _ -> renderTypographyTab()
 
@@ -1095,9 +1090,9 @@ let private findNodeByKey(window: Window, key: string) : obj voption =
 let private sceneTabs = [|
   "controls"
   "flip-view"
+  "inputs"
   "lists"
   "motion"
-  "number-rating"
   "overview"
   "typography"
   "zoom"
@@ -1206,7 +1201,7 @@ let private runChecks() : int =
       "zoom"
       "motion"
       "overview"
-      "number-rating"
+      "inputs"
       "controls"
       "flip-view"
       "lists"
@@ -1214,7 +1209,7 @@ let private runChecks() : int =
       "typography"
       "motion"
       "overview"
-      "number-rating"
+      "inputs"
     |] do
     gallery.SelectTab tab
     pump 2
