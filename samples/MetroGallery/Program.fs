@@ -453,6 +453,7 @@ type private GalleryCell
       Id = "flip-view"
       Header = "flip view"
     }
+    { Id = "lists"; Header = "lists" }
     { Id = "motion"; Header = "motion" }
   |]
 
@@ -545,6 +546,7 @@ type private GalleryCell
 
   let controlsTabFactory = Func<Cell>(fun () -> ControlsTabCell(store) :> Cell)
   let flipViewTabFactory = fun () -> FlipViewTab.FlipViewTabCell() :> Cell
+  let listsTabFactory = fun () -> ListsTab.ListsTabCell() :> Cell
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
 
@@ -838,6 +840,7 @@ type private GalleryCell
     | "typography" -> renderTypographyTab()
     | "controls" -> Cell.Mount<Cell>("controls-tab", controlsTabFactory)
     | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", flipViewTabFactory)
+    | "lists" -> Cell.Mount<Cell>("lists-tab", listsTabFactory)
     | "motion" -> renderMotionTab()
     | _ -> renderTypographyTab()
 
@@ -1079,6 +1082,7 @@ let private findNodeByKey(window: Window, key: string) : obj voption =
 let private sceneTabs = [|
   "controls"
   "flip-view"
+  "lists"
   "motion"
   "overview"
   "typography"
@@ -1183,10 +1187,12 @@ let private runChecks() : int =
     [|
       "controls"
       "flip-view"
+      "lists"
       "motion"
       "overview"
       "controls"
       "flip-view"
+      "lists"
       "typography"
       "motion"
       "overview"

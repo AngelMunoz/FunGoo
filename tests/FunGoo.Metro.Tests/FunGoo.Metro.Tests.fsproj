@@ -14,6 +14,7 @@
     <Compile Include="ControlsTests.fs" />
     <Compile Include="NavigationAndOverlaysTests.fs" />
     <Compile Include="FlipViewTests.fs" />
+    <Compile Include="ListViewTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
