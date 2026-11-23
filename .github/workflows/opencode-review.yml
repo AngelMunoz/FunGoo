@@ -38,8 +38,8 @@ jobs:
         env:
           OPENCODE_PERMISSION: '{ "bash": {  "*": "deny", "gh*": "allow", "gh pr review*": "deny", "dotnet*": "allow" }, "external_directory": { "*": "deny" } }'
         with:
-          model: opencode-go/glm-5.3-flash
-          variant: high
+          model: opencode-go/deepseek-v4.1-flash
+          variant: max
           prompt: |
             Review this pull request:
             - Ensure AGENTS.md rules are respected
