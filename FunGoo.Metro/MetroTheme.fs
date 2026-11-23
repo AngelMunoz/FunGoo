@@ -268,75 +268,149 @@ module Metro =
 
   let private metroContext = Context<MetroTheme>()
 
-  type private MetroAttachment(window: Window, initialConfig: MetroConfig) =
-    let mutable config = initialConfig
-    let mutable widgetAttached = false
-    let mutable lastMode = initialConfig.Mode
-    let mutable lastSystemAccent: Color voption = ValueNone
+  /// The Metro attachment of one window. The module <c>Metro</c> holds one
+  /// attachment for each window. <c>MetroAttachment.create</c> makes it.
+  type private IMetroAttachment =
 
-    // Cached delegate per window keeps Theme equality stable across updates.
-    let variant =
-      Func<bool, Theme>(fun dark ->
-        let resolved =
-          resolveTheme(config, window.Preferences, ValueSome dark)
-          |> stripAccessibility
+    /// The configuration of the attachment.
+    abstract Config: MetroConfig with get, set
 
-        MetroTheme.toWidgetTheme(resolved, ValueNone))
+    /// Publishes the Metro theme. The widget theme is attached again when
+    /// <c>configChanged</c> is <c>true</c>.
+    abstract Apply: prefs: PlatformPreferences * configChanged: bool -> unit
 
-    member _.Config
-      with get () = config
-      and set value = config <- value
+    /// Applies a change of the platform preferences.
+    abstract OnPreferencesChanged: prefs: PlatformPreferences -> unit
 
-    member _.Apply(prefs: PlatformPreferences, configChanged: bool) =
-      let resolved = resolveTheme(config, prefs, ValueNone)
-      metroContext.Set(window, resolved)
-      lastSystemAccent <- ValueOption.ofNullable prefs.AccentColor
+  /// State of the attachment of one window. One mutable field per concern.
+  type private AttachmentState = {
+    mutable Config: MetroConfig
+    mutable WidgetAttached: bool
+    mutable LastMode: MetroMode
+    mutable LastSystemAccent: Color voption
+  }
 
-      if not widgetAttached || configChanged then
-        let widgetTheme =
-          MetroTheme.toWidgetTheme(
-            stripAccessibility resolved,
-            ValueSome variant
-          )
+  /// The values that the functions of an attachment work on.
+  type private Attachment = {
+    Window: Window
+    State: AttachmentState
+    /// Resolves the widget theme for one mode with the current configuration.
+    /// One delegate for the life of the window keeps the widget theme equal
+    /// across updates.
+    Variant: Func<bool, Theme>
+  }
 
-        Theme.Attach(window, widgetTheme)
+  [<RequireQualifiedAccess>]
+  module private MetroAttachment =
 
-        if not widgetAttached || lastMode <> config.Mode then
-          Theme.SetMode(window, toThemeMode config.Mode)
-          lastMode <- config.Mode
+    /// Resolves the widget theme for <c>dark</c>, with the current
+    /// configuration and no accessibility setting.
+    let variantTheme
+      (window: Window, state: AttachmentState, dark: bool)
+      : Theme =
+      let theme =
+        resolveTheme(state.Config, window.Preferences, ValueSome dark)
+        |> stripAccessibility
 
-        widgetAttached <- true
-      elif lastMode <> config.Mode then
-        Theme.SetMode(window, toThemeMode config.Mode)
-        lastMode <- config.Mode
+      MetroTheme.toWidgetTheme(theme, ValueNone)
 
-    member this.OnPreferencesChanged(prefs: PlatformPreferences) =
+    /// Sets the mode of the widget theme when the configuration changed it.
+    let syncMode(window: Window, state: AttachmentState) : unit =
+      if state.LastMode <> state.Config.Mode then
+        Theme.SetMode(window, toThemeMode state.Config.Mode)
+        state.LastMode <- state.Config.Mode
+
+    /// Attaches the widget theme. The first attach also sets its mode.
+    let attachWidget(attachment: Attachment, resolved: MetroTheme) : unit =
+      let state = attachment.State
+      let theme = stripAccessibility resolved
+
+      Theme.Attach(
+        attachment.Window,
+        MetroTheme.toWidgetTheme(theme, ValueSome attachment.Variant)
+      )
+
+      if state.WidgetAttached then
+        syncMode(attachment.Window, state)
+      else
+        Theme.SetMode(attachment.Window, toThemeMode state.Config.Mode)
+        state.LastMode <- state.Config.Mode
+
+      state.WidgetAttached <- true
+
+    /// Publishes the Metro theme, then the widget theme when necessary.
+    let apply
+      (attachment: Attachment, prefs: PlatformPreferences, configChanged: bool)
+      : unit =
+      let state = attachment.State
+      let resolved = resolveTheme(state.Config, prefs, ValueNone)
+      metroContext.Set(attachment.Window, resolved)
+      state.LastSystemAccent <- ValueOption.ofNullable prefs.AccentColor
+
+      if not state.WidgetAttached || configChanged then
+        attachWidget(attachment, resolved)
+      else
+        syncMode(attachment.Window, state)
+
+    /// Applies a change of the preferences. The widget theme is attached again
+    /// only when the system accent changed, because the widget theme updates
+    /// the mode and the accessibility through its variant.
+    let onPreferencesChanged
+      (attachment: Attachment, prefs: PlatformPreferences)
+      : unit =
       let nextSystemAccent = ValueOption.ofNullable prefs.AccentColor
 
-      // ThemeAttachment updates mode and accessibility via Variant; only
-      // re-attach when System accent actually changed.
       let systemAccentChanged =
-        config.Accent = MetroAccentKind.System
-        && nextSystemAccent <> lastSystemAccent
+        attachment.State.Config.Accent = MetroAccentKind.System
+        && nextSystemAccent <> attachment.State.LastSystemAccent
 
-      this.Apply(prefs, systemAccentChanged)
+      apply(attachment, prefs, systemAccentChanged)
 
-  let private attachments = ConditionalWeakTable<Window, MetroAttachment>()
+    let create(window: Window, initialConfig: MetroConfig) : IMetroAttachment =
+      let state: AttachmentState = {
+        Config = initialConfig
+        WidgetAttached = false
+        LastMode = initialConfig.Mode
+        LastSystemAccent = ValueNone
+      }
+
+      let variant =
+        Func<bool, Theme>(fun dark -> variantTheme(window, state, dark))
+
+      let attachment: Attachment = {
+        Window = window
+        State = state
+        Variant = variant
+      }
+
+      {
+        new IMetroAttachment with
+          member _.Config
+            with get () = state.Config
+            and set value = state.Config <- value
+
+          member _.Apply(prefs, configChanged) =
+            apply(attachment, prefs, configChanged)
+
+          member _.OnPreferencesChanged(prefs) =
+            onPreferencesChanged(attachment, prefs)
+      }
+
+  let private attachments = ConditionalWeakTable<Window, IMetroAttachment>()
 
   let private getOrCreateAttachment
     (window: Window, initialConfig: MetroConfig)
-    : MetroAttachment =
-    let mutable state = Unchecked.defaultof<MetroAttachment>
+    : IMetroAttachment =
+    let mutable state = Unchecked.defaultof<IMetroAttachment>
 
     if attachments.TryGetValue(window, &state) then
       state
     else
-      let created = MetroAttachment(window, initialConfig)
+      let created = MetroAttachment.create(window, initialConfig)
       attachments.Add(window, created)
 
-      window.add_PreferencesChanged(
-        Action<PlatformPreferences>(created.OnPreferencesChanged)
-      )
+      window.add_PreferencesChanged(fun prefs ->
+        created.OnPreferencesChanged prefs)
 
       created
 
@@ -360,7 +434,7 @@ module Metro =
 
   let read() : MetroTheme =
     let window = metroContext.Window
-    let mutable state = Unchecked.defaultof<MetroAttachment>
+    let mutable state = Unchecked.defaultof<IMetroAttachment>
 
     if not(attachments.TryGetValue(window, &state)) then
       attachDefault window
