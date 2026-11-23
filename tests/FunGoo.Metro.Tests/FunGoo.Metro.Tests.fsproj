@@ -15,6 +15,7 @@
     <Compile Include="NavigationAndOverlaysTests.fs" />
     <Compile Include="FlipViewTests.fs" />
     <Compile Include="ListViewTests.fs" />
+    <Compile Include="CollectionsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

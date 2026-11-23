@@ -65,10 +65,16 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
     - In a GPU-free test, assert the start of a motion (`Running`, `Target`, the tree) and timer-driven ends. Do not assert animation progress. Window timers (`Cell.After`, `Cell.Every`) do fire on `RenderFrame`, and they follow the wall clock, so a test waits in real time.
     - Verify motion values with a rendered frame (`goo render` does not advance app animations, so it shows the rest state).
 
+13. **Virtual collections:**
+    - `VirtualItems` returns a `Virtual` element that is its own scroll viewport. Set the wrap layout, the width, and the height on that element. A wrapper that holds the height leaves the element without a size, and it shows no items.
+    - The key of the content of a virtual item must be equal to the item key, or absent.
+    - An item that is equal to its previous value is not built again. Put the changing state of one item, such as its selection, into the item value.
+    - Give `VirtualItems` one key delegate and one builder delegate per owner cell, so that every build reuses them.
+
 ## Control Catalog Gap (2026-11-22)
 
-Metrino registers 74 controls. `FunGoo.Metro` ships 19 public control types:
-`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, and `MetroListViewFactory`.
+Metrino registers 74 controls. `FunGoo.Metro` ships 21 public control types:
+`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, `MetroListViewFactory`, `MetroListBox`, and `MetroGridViewFactory`.
 
 | Family | Metrino controls | In `FunGoo.Metro` | Missing |
 | --- | --- | --- | --- | --- |
@@ -79,7 +85,7 @@ Metrino registers 74 controls. `FunGoo.Metro` ships 19 public control types:
 | Layout | Canvas, Grid, ScrollViewer, StackPanel, TileGrid, VariableSizedWrapGrid, Viewbox, WrapPanel | TileGridLayout | Canvas, Grid, ScrollViewer, StackPanel, VariableSizedWrapGrid, Viewbox, WrapPanel |
 | Navigation | AppBar, AppBarButton, AppBarSeparator, AppBarToggleButton, Hub, HubSection, Panorama, PanoramaItem, Pivot, PivotItem, SplitView, TabView, TabViewItem | AppBar (commands only), Hub (with sections), Pivot | AppBarButton, AppBarSeparator, AppBarToggleButton, Panorama, SplitView, TabView |
 | Primitives | Border, ContextMenu, Expander, Icon, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, TextBlock, Toast, Tooltip | TextBlock (as `MetroText`), Icon (as `MaterialIcons` in tiles) | Border, ContextMenu, Expander, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, Toast, Tooltip |
-| Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | FlipView, ListView (as `MetroListView`) | GridView, ListBox, ListPicker, LongListSelector, SemanticZoom, TreeView |
+| Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | FlipView, ListView (`MetroListView`), ListBox (`MetroListBox`), GridView (`MetroGridView`) | ListPicker, LongListSelector, SemanticZoom, TreeView |
 | Tiles | CycleTile, FlipTile, IconicTile, LiveTile | IconicTile, LiveTile | CycleTile, FlipTile |
 
 ## Stackable PR Roadmap (GitHub Stack `#5`)
@@ -96,7 +102,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 6 | `metro/06-flip-view` | #7 | `MetroFlipView`: one item at a time, edge previous and next buttons, indicator dots, swipe, `Left`/`Right`/`PageUp`/`PageDown`/`Home`/`End` keys, slide transition, public view builder (`MetroFlipView.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests, shared `TestSupport` helpers | Complete |
 | PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls, so that the tests and the gallery check use the public API only | Deferred. See the note below the table |
 | PR 8 | `metro/08-list-view` | #8 | `MetroListView`: `Goo.Widgets.ListView` with sharp 44 px rows, a 3 px accent indicator and an accent tint on selected rows, selection modes `Activate`, `Single`, and `Multiple`, one event channel, a factory that keeps one callback set, gallery tab and scene, reflection-free tests | Complete |
-| PR 9 | `metro/09-list-box-grid` | | `MetroListBox` and `MetroGridView` on the list view and on a virtual collection | Planned |
+| PR 9 | `metro/09-list-box-grid` | | `MetroListBox`: a sharp 2 px bordered box around a Metro list. `MetroGridViewFactory`: a virtual wrapped grid of square tile buttons on `VirtualItems`, with a 2 px accent border and an accent tint on selected tiles, selection modes `Activate`, `Single`, and `Multiple`, gallery additions, reflection-free tests | Complete |
 | PR 10 | `metro/09-long-list-selector` | | Grouped list with group headers and a jump list (`ElementHandle.ScrollToItem`) | Planned |
 | PR 11 | `metro/10-semantic-zoom` | | Zoomed-in and zoomed-out views with group synchronization | Planned |
 | PR 12 | `metro/11-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
@@ -133,7 +139,7 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
    gh stack checkout 5
    # or: git fetch origin && git checkout metro/05-render-scenes
    ```
-2. Build and run all `40` headless tests plus the gallery smoke check:
+2. Build and run all `43` headless tests plus the gallery smoke check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj
