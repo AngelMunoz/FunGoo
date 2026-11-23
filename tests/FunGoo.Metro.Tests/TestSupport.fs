@@ -77,3 +77,16 @@ let findKeyBinding(bindings: KeyBinding array, key: Key) : KeyBinding =
   bindings
   |> Array.find(fun binding ->
     binding.Key = key && binding.Modifiers = KeyModifiers.None)
+
+/// Compares two lists with F# structural equality. xunit <c>Assert.Equal</c>
+/// has ambiguous overloads for lists.
+let assertListEqual(expected: 'T list, actual: 'T list) : unit =
+  if expected <> actual then
+    failwith $"Expected {expected}, got {actual}."
+
+/// Dark Metro configuration for test windows.
+let darkConfig: FunGoo.Metro.MetroConfig = {
+  FunGoo.Metro.MetroConfig.defaultConfig with
+      Mode = FunGoo.Metro.MetroMode.Dark
+      Accent = FunGoo.Metro.MetroAccentKind.Blue
+}

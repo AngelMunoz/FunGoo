@@ -67,8 +67,8 @@ This document is the durable source of truth for `FunGoo.Metro`: a native Metro 
 
 ## Control Catalog Gap (2026-11-22)
 
-Metrino registers 74 controls. `FunGoo.Metro` ships 17 public control and layout types:
-`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, and `MetroContentDialog`.
+Metrino registers 74 controls. `FunGoo.Metro` ships 19 public control types:
+`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, and `MetroListViewFactory`.
 
 | Family | Metrino controls | In `FunGoo.Metro` | Missing |
 | --- | --- | --- | --- | --- |
@@ -79,7 +79,7 @@ Metrino registers 74 controls. `FunGoo.Metro` ships 17 public control and layout
 | Layout | Canvas, Grid, ScrollViewer, StackPanel, TileGrid, VariableSizedWrapGrid, Viewbox, WrapPanel | TileGridLayout | Canvas, Grid, ScrollViewer, StackPanel, VariableSizedWrapGrid, Viewbox, WrapPanel |
 | Navigation | AppBar, AppBarButton, AppBarSeparator, AppBarToggleButton, Hub, HubSection, Panorama, PanoramaItem, Pivot, PivotItem, SplitView, TabView, TabViewItem | AppBar (commands only), Hub (with sections), Pivot | AppBarButton, AppBarSeparator, AppBarToggleButton, Panorama, SplitView, TabView |
 | Primitives | Border, ContextMenu, Expander, Icon, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, TextBlock, Toast, Tooltip | TextBlock (as `MetroText`), Icon (as `MaterialIcons` in tiles) | Border, ContextMenu, Expander, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, Toast, Tooltip |
-| Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | none | all 8 |
+| Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | FlipView, ListView (as `MetroListView`) | GridView, ListBox, ListPicker, LongListSelector, SemanticZoom, TreeView |
 | Tiles | CycleTile, FlipTile, IconicTile, LiveTile | IconicTile, LiveTile | CycleTile, FlipTile |
 
 ## Stackable PR Roadmap (GitHub Stack `#5`)
@@ -94,26 +94,29 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 4 | `metro/04-navigation-layout-gallery` | #4 | `MetroPivot` (peeking headers, slide, keyboard circular loop, swipe), `MetroHub` / `MetroPanorama` (peeking sections + scroll parallax), `IconicTile` / `LiveTile` + `TileGridLayout`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `samples/MetroGallery` (`--check` + interactive UI), `CHANGELOG.md` | Complete |
 | PR 5 | `metro/05-render-scenes` | #6 | Live tile starts its cycle timer only on an open window, so `goo render` works. Gallery registers one `Window.Scenes` scene per tab and follows `--theme`. Plan: design authority, delivery rules, new hard facts, catalog gap, planned PR set, known issues | Complete |
 | PR 6 | `metro/06-flip-view` | #7 | `MetroFlipView`: one item at a time, edge previous and next buttons, indicator dots, swipe, `Left`/`Right`/`PageUp`/`PageDown`/`Home`/`End` keys, slide transition, public view builder (`MetroFlipView.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests, shared `TestSupport` helpers | Complete |
-| PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls. Tests and the gallery check use the public API only. No reflection | Planned |
-| PR 8 | `metro/08-list-family` | | `MetroListView`, `MetroListBox`, `MetroGridView` on `Goo.Widgets.ListView`: sharp rows, selection modes | Planned |
-| PR 9 | `metro/09-long-list-selector` | | Grouped list with group headers and a jump list (`ElementHandle.ScrollToItem`) | Planned |
-| PR 10 | `metro/10-semantic-zoom` | | Zoomed-in and zoomed-out views with group synchronization | Planned |
-| PR 11 | `metro/11-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
-| PR 12 | `metro/12-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
-| PR 13 | `metro/13-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
-| PR 14 | `metro/14-combo-suggest` | | `MetroComboBox`, `MetroAutoSuggestBox` | Planned |
-| PR 15 | `metro/15-number-rating` | | `MetroNumberBox`, `MetroRating` | Planned |
-| PR 16 | `metro/16-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
-| PR 17 | `metro/17-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
-| PR 18 | `metro/18-notifications` | | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Planned |
-| PR 19 | `metro/19-split-tab` | | `MetroSplitView`, `MetroTabView` | Planned |
-| PR 20 | `metro/20-app-bar-parts` | | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Planned |
-| PR 21 | `metro/21-primitives` | | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Planned |
-| PR 22 | `metro/22-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
-| PR 23 | `metro/23-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
-| PR 24 | `metro/24-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
+| PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls, so that the tests and the gallery check use the public API only | Deferred. See the note below the table |
+| PR 8 | `metro/08-list-view` | | `MetroListView`: `Goo.Widgets.ListView` with sharp 44 px rows, a 3 px accent indicator and an accent tint on selected rows, selection modes `Activate`, `Single`, and `Multiple`, one event channel, a factory that keeps one callback set, gallery tab and scene, reflection-free tests | Complete |
+| PR 9 | `metro/09-list-box-grid` | | `MetroListBox` and `MetroGridView` on the list view and on a virtual collection | Planned |
+| PR 10 | `metro/09-long-list-selector` | | Grouped list with group headers and a jump list (`ElementHandle.ScrollToItem`) | Planned |
+| PR 11 | `metro/10-semantic-zoom` | | Zoomed-in and zoomed-out views with group synchronization | Planned |
+| PR 12 | `metro/11-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
+| PR 13 | `metro/12-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
+| PR 14 | `metro/13-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
+| PR 15 | `metro/14-combo-suggest` | | `MetroComboBox`, `MetroAutoSuggestBox` | Planned |
+| PR 16 | `metro/15-number-rating` | | `MetroNumberBox`, `MetroRating` | Planned |
+| PR 17 | `metro/16-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
+| PR 18 | `metro/17-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
+| PR 19 | `metro/18-notifications` | | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Planned |
+| PR 20 | `metro/19-split-tab` | | `MetroSplitView`, `MetroTabView` | Planned |
+| PR 21 | `metro/20-app-bar-parts` | | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Planned |
+| PR 22 | `metro/21-primitives` | | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Planned |
+| PR 23 | `metro/22-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
+| PR 24 | `metro/23-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
+| PR 25 | `metro/24-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
 
 Rules for the planned rows: each row is one PR, one theme, one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the PR starts. Split a row into two PRs when it grows past the size of PR 3.
+
+**PR 7 is deferred and needs a decision.** The existing tests read style values (`Style.Entries`) and tick animations (`Window.UpdateTree`) through reflection. Hard facts 6 and 12 show that the public API cannot do either in a GPU-free test. Two options exist: (a) move the tree assertions to public view builders and keep the reflective calls for style values and animation ticks only; (b) verify visuals through `goo render` frames compared with `goo diff`. New controls use public view seams from the start, as `MetroFlipView` does.
 
 Metrino controls with no planned port: `RichEditBox` (no rich editing base in Goo.Widgets 0.22.2), `MediaElement` (no media base), and `Canvas`, `StackPanel`, `Grid` (Goo `Container`, `Row`, `Column`, and `Goo.Widgets.Grid` already supply these layouts under the Metro theme). Confirm each decision in its own row before work starts.
 
@@ -130,7 +133,7 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
    gh stack checkout 5
    # or: git fetch origin && git checkout metro/05-render-scenes
    ```
-2. Build and run all `37` headless tests plus the gallery smoke check:
+2. Build and run all `40` headless tests plus the gallery smoke check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj

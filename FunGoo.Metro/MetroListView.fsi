@@ -1,0 +1,98 @@
+namespace FunGoo.Metro
+
+open Goo
+open Goo.Widgets.Data
+
+/// One row of a Metro list.
+[<Struct; NoComparison>]
+type MetroListItem = {
+  /// Stable unique identifier of the row.
+  Id: string
+  /// Primary label of the row. An empty label shows the identifier.
+  Label: string
+  /// Optional secondary caption under the label.
+  Caption: string voption
+  /// Optional count at the end of the row.
+  Count: int voption
+  /// Rejects interaction for this row and dims its presentation.
+  Disabled: bool
+}
+
+/// Selection behavior of a Metro list.
+[<Struct>]
+type MetroListSelectionMode =
+  /// Rows do not select. Activation raises
+  /// <see cref="MetroListEvent.ItemClick"/>.
+  | Activate
+  /// One row selects at a time.
+  | Single
+  /// Any number of rows select.
+  | Multiple
+
+/// Data-only properties for a Metro list view.
+[<Struct; NoComparison>]
+type MetroListViewProps = {
+  /// Rows in display order.
+  Items: MetroListItem array
+  /// Identifiers of the selected rows. <see cref="MetroListSelectionMode.Activate"/>
+  /// ignores this field.
+  SelectedIds: string array
+  /// Selection behavior.
+  Mode: MetroListSelectionMode
+  /// Row height in logical pixels. A value that is not finite and positive
+  /// selects <see cref="MetroListView.defaultRowHeightPx"/>.
+  RowHeight: float
+  /// Height of the list. <c>ValueNone</c> lets the list grow and shrink to fill
+  /// the free space of its parent.
+  Height: Length voption
+  /// Optional accessible name of the list.
+  AccessibilityName: string voption
+}
+
+/// Events raised by a Metro list view.
+[<Struct; NoComparison>]
+type MetroListEvent =
+  /// The selection changed. An empty array clears the selection.
+  | SelectionChanged of ids: string array
+  /// The user activated a row.
+  | ItemClick of id: string
+
+/// Property mapping for the Metro list view, a virtual list with sharp rows,
+/// a 3 px accent indicator on the start edge of each selected row, and an
+/// accent tint on selected rows.
+[<RequireQualifiedAccess>]
+module MetroListView =
+
+  /// Row height in logical pixels when <c>RowHeight</c> is not set.
+  val defaultRowHeightPx: float
+
+  /// Width in logical pixels of the accent indicator on a selected row.
+  val indicatorWidthPx: float
+
+  /// Creates <see cref="MetroListViewProps"/> for <paramref name="items"/> with
+  /// single selection, no selection, and the default row height.
+  val defaults: items: MetroListItem array -> MetroListViewProps
+
+  /// Maps <paramref name="props"/> to the <see cref="ListViewInput"/> data,
+  /// without callbacks. <see cref="MetroListViewFactory.CreateInput"/> adds the
+  /// callbacks.
+  val toInput: props: MetroListViewProps -> ListViewInput
+
+/// Factory for Metro list views. The host owns the selection: update the props
+/// after each event and rebuild the owner cell. Create one factory per owner
+/// cell, outside <c>Build</c>, so that every input carries the same callback
+/// instances and an unchanged input does not rebuild the list.
+[<Sealed>]
+type MetroListViewFactory =
+
+  /// Creates a factory that raises <paramref name="onEvent"/> for selection
+  /// changes and row activation.
+  new: onEvent: (MetroListEvent -> unit) -> MetroListViewFactory
+
+  /// Returns the widget input for <paramref name="props"/>, with the callbacks
+  /// and the Metro row style of this factory. While <c>Items</c> is the same
+  /// array instance, the mapped rows are also the same instance.
+  member CreateInput: props: MetroListViewProps -> ListViewInput
+
+  /// Mounts a Metro list view under the stable <paramref name="key"/>.
+  member Mount: key: string * props: MetroListViewProps -> Blob
