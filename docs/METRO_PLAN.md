@@ -113,7 +113,7 @@ Each PR stacks on the previous branch via `gh stack`, builds cleanly, formats wi
 | PR 12 | `metro/12-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
 | PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
 | PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
-| PR 15 | `metro/13-combo-suggest` | | `MetroComboBoxFactory` on `Goo.Widgets.Inputs.ComboBox`: a combo box (`MetroComboBox.defaults`) and an auto-suggest box (`MetroComboBox.autoSuggest`) with one event channel (`Selected`, `QueryChanged`, `OpenChanged`), a pure `toData` mapping, cached callbacks and mapped options, the gallery `inputs` tab (which replaces the `number` tab) and its `inputs` scene, reflection-free tests | Complete |
+| PR 15 | `metro/13-combo-suggest` | #12 | `MetroComboBoxFactory` on `Goo.Widgets.Inputs.ComboBox`: a combo box (`MetroComboBox.defaults`) and an auto-suggest box (`MetroComboBox.autoSuggest`) with one event channel (`Selected`, `QueryChanged`, `OpenChanged`), a pure `toData` mapping, cached callbacks and mapped options, the gallery `inputs` tab (which replaces the `number` tab) and its `inputs` scene, reflection-free tests | Complete |
 | PR 16 | `metro/12-number-rating` | #11 | `MetroNumberBox` on `Goo.Widgets.Inputs.NumberInput` (spin buttons, bounds, step, label) and `MetroRating` on `Goo.Widgets.Inputs.RatingControl` (accent stars), each with a pure `toInput` mapping, a gallery tab and scene, reflection-free tests | Complete |
 | PR 17 | `metro/17-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
 | PR 18 | `metro/18-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
