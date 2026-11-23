@@ -454,9 +454,10 @@ type private GalleryCell
       Header = "flip view"
     }
     { Id = "lists"; Header = "lists" }
+    { Id = "zoom"; Header = "zoom" }
     {
-      Id = "zoom"
-      Header = "semantic zoom"
+      Id = "number-rating"
+      Header = "number"
     }
     { Id = "motion"; Header = "motion" }
   |]
@@ -552,6 +553,10 @@ type private GalleryCell
   let flipViewTabFactory = fun () -> FlipViewTab.FlipViewTabCell() :> Cell
   let listsTabFactory = fun () -> ListsTab.ListsTabCell() :> Cell
   let zoomTabFactory = fun () -> ZoomTab.ZoomTabCell() :> Cell
+
+  let numberRatingTabFactory =
+    fun () -> NumberRatingTab.NumberRatingTabCell() :> Cell
+
   let continuumFactory = Func<Cell>(fun () -> ContinuumDemoCell() :> Cell)
   let staggerFactory = Func<Cell>(fun () -> StaggerDemoCell() :> Cell)
 
@@ -847,6 +852,8 @@ type private GalleryCell
     | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", flipViewTabFactory)
     | "lists" -> Cell.Mount<Cell>("lists-tab", listsTabFactory)
     | "zoom" -> Cell.Mount<Cell>("zoom-tab", zoomTabFactory)
+    | "number-rating" ->
+      Cell.Mount<Cell>("number-rating-tab", numberRatingTabFactory)
     | "motion" -> renderMotionTab()
     | _ -> renderTypographyTab()
 
@@ -1090,6 +1097,7 @@ let private sceneTabs = [|
   "flip-view"
   "lists"
   "motion"
+  "number-rating"
   "overview"
   "typography"
   "zoom"
@@ -1198,6 +1206,7 @@ let private runChecks() : int =
       "zoom"
       "motion"
       "overview"
+      "number-rating"
       "controls"
       "flip-view"
       "lists"
@@ -1205,6 +1214,7 @@ let private runChecks() : int =
       "typography"
       "motion"
       "overview"
+      "number-rating"
     |] do
     gallery.SelectTab tab
     pump 2
