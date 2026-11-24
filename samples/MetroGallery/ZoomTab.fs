@@ -29,12 +29,12 @@ type ZoomTabCell() as this =
   let mutable lastOverview: Blob = null
   let mutable zoomRef: MetroSemanticZoomCell voption = ValueNone
 
+  // The zoom cell gives each zoom request to this tab through
+  // InvokeInputCallback, so the owner rule rebuilds this tab.
   let onEvent(event: MetroSemanticZoomEvent) =
     zoomedOut <- (event = MetroSemanticZoomEvent.ZoomOut)
 
     lastAction <- (if zoomedOut then "Zoomed out" else "Zoomed in")
-
-    this.Rebuild()
 
   // The zoom cell builds the detail and the overview trees inside its own
   // Build, so it owns the callbacks of their tiles. The owner rule then
@@ -159,7 +159,7 @@ type ZoomTabCell() as this =
 
   // Created once: every Build reuses the same factory.
   let zoomFactory() : MetroSemanticZoomCell =
-    let cell = MetroSemanticZoomCell(onEvent, render)
+    let cell = MetroSemanticZoom.create(onEvent, render)
     zoomRef <- ValueSome cell
     cell
 

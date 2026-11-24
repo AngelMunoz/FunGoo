@@ -240,20 +240,19 @@ let ``MetroFlipView view builds one panel edge buttons and indicator dots``() =
 [<Fact>]
 let ``MetroFlipViewCell slides on navigation and honors reduced motion``() =
   let mutable selectedId = "alpha"
-  let mutable rootRef: CaptureCell voption = ValueNone
   let mutable flipRef: MetroFlipViewCell voption = ValueNone
   let rendered = ResizeArray<string>()
 
-  let onSelect(id: string) =
-    selectedId <- id
-    rootRef |> ValueOption.iter(fun root -> root.Rebuild())
+  // The handler writes the state only. The flip view gives each navigation
+  // request to the host cell, so the owner rule rebuilds the host.
+  let onSelect(id: string) = selectedId <- id
 
   let renderItem(id: string) : Blob =
     rendered.Add id
     Container(Key = $"content-{id}")
 
   let factory() : MetroFlipViewCell =
-    let cell = MetroFlipViewCell(onSelect, renderItem)
+    let cell = MetroFlipView.create(onSelect, renderItem)
     flipRef <- ValueSome cell
     cell
 
@@ -264,8 +263,6 @@ let ``MetroFlipViewCell slides on navigation and honors reduced motion``() =
         MetroFlipView.defaults(items, selectedId),
         factory
       ))
-
-  rootRef <- ValueSome root
 
   use host = createHost(800, 600)
   let window = Window(Root = root)
@@ -300,11 +297,14 @@ let ``MetroFlipViewCell slides on navigation and honors reduced motion``() =
         $"The slide did not end within two seconds. Running={track.Running} \
          Value.X={track.Value.X} Target.X={track.Target.X}"
 
-  // Next: the outgoing item leads and the track runs on paint.
+  // Next: the outgoing item leads and the track runs on paint. The host
+  // rebuilds through the owner rule.
+  let buildsBefore = root.Builds
   (requireBlobByKey(viewport(), "flip-next") :?> Button).OnClick.Invoke()
   pumpFrames(host, 1)
 
   Assert.Equal("beta", selectedId)
+  Assert.True(root.Builds > buildsBefore)
   Assert.True(cell.IsSliding)
   Assert.Equal(ValueSome "alpha", cell.OutgoingId)
   Assert.Equal(1.0, cell.State.Direction)

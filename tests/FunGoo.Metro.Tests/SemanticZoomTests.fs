@@ -89,20 +89,20 @@ let ``MetroSemanticZoom view shows one view and a zoom toggle``() =
 [<Fact>]
 let ``MetroSemanticZoomCell zooms on request and honors reduced motion``() =
   let mutable zoomedOut = false
-  let mutable rootRef: CaptureCell voption = ValueNone
   let mutable zoomRef: MetroSemanticZoomCell voption = ValueNone
   let events = ResizeArray<MetroSemanticZoomEvent>()
 
+  // The handler writes the state only. The zoom cell gives each zoom
+  // request to the host cell, so the owner rule rebuilds the host.
   let onEvent(event: MetroSemanticZoomEvent) =
     events.Add event
     zoomedOut <- (event = MetroSemanticZoomEvent.ZoomOut)
-    rootRef |> ValueOption.iter(fun root -> root.Rebuild())
 
   let render(isZoomedOut: bool) : Blob =
     Container(Key = (if isZoomedOut then "overview" else "detail"))
 
   let factory() : MetroSemanticZoomCell =
-    let cell = MetroSemanticZoomCell(onEvent, render)
+    let cell = MetroSemanticZoom.create(onEvent, render)
     zoomRef <- ValueSome cell
     cell
 
@@ -113,8 +113,6 @@ let ``MetroSemanticZoomCell zooms on request and honors reduced motion``() =
         MetroSemanticZoom.defaults zoomedOut,
         factory
       ))
-
-  rootRef <- ValueSome root
 
   use host = createHost(800, 600)
   let window = Window(Root = root)
@@ -133,11 +131,14 @@ let ``MetroSemanticZoomCell zooms on request and honors reduced motion``() =
     root.DuringBuild(host, fun () -> tree <- cell.View)
     requireBlobByKey(tree, "zoom-toggle") :?> Button
 
-  // The toggle zooms out, and the view transition starts on paint.
+  // The toggle zooms out, and the view transition starts on paint. The host
+  // rebuilds through the owner rule.
+  let buildsBefore = root.Builds
   toggle().OnClick.Invoke()
   pumpFrames(host, 1)
 
   Assert.True(cell.IsZoomedOut)
+  Assert.True(root.Builds > buildsBefore)
   Assert.True(cell.ScaleAnim.Running)
   Assert.True(cell.OpacityAnim.Running)
   assertListEqual([ MetroSemanticZoomEvent.ZoomOut ], List.ofSeq events)
@@ -182,9 +183,10 @@ let ``A tile of a zoom view belongs to the zoom cell so the host rebuilds itself
   let mutable zoomRef: MetroSemanticZoomCell voption = ValueNone
   let mutable lastTile: Blob = null
 
+  // The handler writes the state only. The zoom cell gives each zoom request
+  // to the host cell, so the owner rule rebuilds the host.
   let onEvent(event: MetroSemanticZoomEvent) =
     hostZoomedOut <- (event = MetroSemanticZoomEvent.ZoomOut)
-    hostRef |> ValueOption.iter(fun host -> host.Rebuild())
 
   // The zoom cell calls this callback inside its own Build.
   let render(_isZoomedOut: bool) : Blob =
@@ -203,7 +205,7 @@ let ``A tile of a zoom view belongs to the zoom cell so the host rebuilds itself
     tile
 
   let factory() : MetroSemanticZoomCell =
-    let cell = MetroSemanticZoomCell(onEvent, render)
+    let cell = MetroSemanticZoom.create(onEvent, render)
     zoomRef <- ValueSome cell
     cell
 

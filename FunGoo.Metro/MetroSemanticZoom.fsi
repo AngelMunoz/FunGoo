@@ -1,5 +1,6 @@
 namespace FunGoo.Metro
 
+open System
 open Goo
 
 /// Data-only input snapshot for <see cref="MetroSemanticZoomCell"/>.
@@ -38,51 +39,38 @@ type MetroSemanticZoomState = {
 /// Stateful Metro SemanticZoom cell: a zoomed-in detail view and a zoomed-out
 /// overview view of the same content, with a zoom toggle button and a short
 /// scale and fade transition. Only the active view mounts.
-[<Sealed>]
+/// <c>MetroSemanticZoom.create</c> makes the cell. The type holds the surface
+/// that hosts and tests use.
+[<AbstractClass>]
 type MetroSemanticZoomCell =
   inherit Cell<MetroSemanticZoomInput>
 
-  /// Creates a semantic zoom cell. The cell raises <paramref name="onEvent"/>
-  /// for zoom requests. <paramref name="render"/> builds the active view:
-  /// <c>true</c> selects the zoomed-out overview, <c>false</c> the zoomed-in
-  /// detail.
-  /// The cell calls <paramref name="render"/> inside its own
-  /// <c>Build</c>. A callback that <paramref name="render"/> creates
-  /// belongs to this cell, so the owner rule rebuilds this cell and not the
-  /// caller. Such a callback must rebuild the caller cell when it changes the
-  /// state of the caller cell.
-  new:
-    onEvent: (MetroSemanticZoomEvent -> unit) * render: (bool -> Blob) ->
-      MetroSemanticZoomCell
-
   /// Paint-bound scale of the active view during a zoom transition.
-  member ScaleAnim: Anim<float>
+  abstract ScaleAnim: Anim<float>
 
   /// Paint-bound opacity of the active view during a zoom transition.
-  member OpacityAnim: Anim<float>
+  abstract OpacityAnim: Anim<float>
 
   /// <c>true</c> when the active view is the zoomed-out overview.
-  member IsZoomedOut: bool
+  abstract IsZoomedOut: bool
 
   /// Current state of the cell, for <see cref="MetroSemanticZoom.buildView"/>.
-  member State: MetroSemanticZoomState
+  abstract State: MetroSemanticZoomState
 
-  /// Builds the semantic zoom tree for <see cref="State"/>. Call it inside a
-  /// <c>Cell.Build</c>, because it reads the active Metro theme.
-  member View: Blob
+  /// Builds the semantic zoom tree for <see cref="MetroSemanticZoomCell.State"/>.
+  /// Call it inside a <c>Cell.Build</c>, because it reads the active Metro
+  /// theme.
+  abstract View: Blob
 
-  /// Event handler of the view tree.
-  member Handle: event: MetroSemanticZoomEvent -> unit
+  /// Event handler of the view tree. A zoom request goes to the host.
+  abstract Handle: event: MetroSemanticZoomEvent -> unit
 
-  /// Starts the zoom transition when the view changes, or snaps into place when
-  /// reduced motion is active.
-  override InputChanged: input: MetroSemanticZoomInput -> unit
-
-  /// Resets the transition on unmount.
-  override Unmounting: unit -> unit
-
-  /// Builds the semantic zoom through <see cref="MetroSemanticZoom.buildView"/>.
-  override Build: input: MetroSemanticZoomInput -> Blob
+  /// Gives one zoom request of this cell to the host cell, as a Goo.Widgets
+  /// control does. The owner rule then rebuilds the host cell, so a host
+  /// does not call <c>Rebuild</c> on itself in the event callback.
+  member Raise:
+    callback: Action<MetroSemanticZoomEvent> * value: MetroSemanticZoomEvent ->
+      unit
 
 /// Metro SemanticZoom tree builder and construction helpers.
 [<RequireQualifiedAccess>]
@@ -100,6 +88,19 @@ module MetroSemanticZoom =
     render: (bool -> Blob) *
     onEvent: (MetroSemanticZoomEvent -> unit) ->
       Blob
+
+  /// Creates a semantic zoom cell. The cell gives each zoom request to
+  /// <paramref name="onEvent"/>, and the owner rule then rebuilds the host
+  /// cell. <paramref name="render"/> builds the active view: <c>true</c>
+  /// selects the zoomed-out overview, <c>false</c> the zoomed-in detail.
+  /// The cell calls <paramref name="render"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="render"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
+  val create:
+    onEvent: (MetroSemanticZoomEvent -> unit) * render: (bool -> Blob) ->
+      MetroSemanticZoomCell
 
   /// Creates a reusable cell factory for <see cref="MetroSemanticZoomCell"/>.
   /// Create the factory once, outside <c>Build</c>.

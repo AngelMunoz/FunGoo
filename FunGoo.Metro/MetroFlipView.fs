@@ -38,6 +38,33 @@ type MetroFlipViewState = {
   ViewportHandle: ElementHandle
 }
 
+[<AbstractClass>]
+type MetroFlipViewCell() =
+  inherit Cell<MetroFlipViewInput>()
+
+  abstract TrackTranslate: Anim<Point>
+
+  abstract OutgoingId: string voption
+
+  abstract IsSliding: bool
+
+  abstract State: MetroFlipViewState
+
+  abstract View: Blob
+
+  abstract Handle: event: MetroFlipViewEvent -> unit
+
+  // Gives a navigation request of the host to the host cell, as a
+  // Goo.Widgets control does. The owner rule then rebuilds the host cell.
+  member this.Raise(callback: Action<string>, value: string) =
+    this.InvokeInputCallback(callback, value)
+
+  // Runs an action once on the window timer of this cell. `After` is a
+  // protected member of the cell, and F# does not permit a call to it from a
+  // function outside the type.
+  member internal this.Schedule(delayMs: float, action: Action) : WindowTimer =
+    this.After(delayMs, action)
+
 module private FlipInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
@@ -377,230 +404,6 @@ module private FlipInternals =
     )
       .Children(viewport)
 
-[<Sealed>]
-type MetroFlipViewCell(onSelect: string -> unit, renderItem: string -> Blob) as this
-  =
-  inherit Cell<MetroFlipViewInput>()
-
-  let viewportHandle = ElementHandle()
-  let trackTranslate = this.AnimateValue(FlipInternals.zeroPoint)
-
-  let emptyInput: MetroFlipViewInput = {
-    Items = Array.empty
-    SelectedId = ""
-    ShowNavigation = true
-    ShowIndicators = true
-    AccessibilityName = ValueNone
-  }
-
-  let mutable currentInput = emptyInput
-  let mutable lastSelectedId: string voption = ValueNone
-  let mutable outgoingId: string voption = ValueNone
-  let mutable slideDirection = 1.0
-  let mutable slideTimer: WindowTimer voption = ValueNone
-  let mutable lastReducedMotion = false
-  let mutable scopedReducedMotion = false
-
-  let mutable swipeActive = false
-  let mutable swipePointerId = 0L
-  let mutable swipeStartX = 0.0
-  let mutable swipeStartY = 0.0
-
-  let hostIsOpen() =
-    let host = this.Host
-    not(isNull host) && host.IsOpen
-
-  let isReducedMotion() =
-    scopedReducedMotion
-    || (if isNull this.Host then
-          lastReducedMotion
-        else
-          Metro.readWindow(this.Host).ReducedMotion)
-
-  let cancelSlideTimer() =
-    slideTimer |> ValueOption.iter(fun timer -> timer.Dispose())
-    slideTimer <- ValueNone
-
-  // Drops the outgoing panel and restores the resting track position in the
-  // same turn, so the active panel never shifts between the two trees.
-  let finishSlide() =
-    slideTimer <- ValueNone
-    outgoingId <- ValueNone
-    slideDirection <- 1.0
-    trackTranslate.Snap(FlipInternals.zeroPoint)
-
-  let endSlide() =
-    cancelSlideTimer()
-    finishSlide()
-
-  // Ends the slide after the track animation settles. The timer follows the
-  // wall clock and the animation follows simulated time, so a stalled frame can
-  // leave the track running when the first timer fires. The wait is bounded by
-  // one more slide duration, so a window that stops rendering still settles.
-  let rec scheduleSlideEnd(delayMs: float, remainingMs: float) =
-    slideTimer <-
-      ValueSome(
-        this.After(
-          delayMs,
-          fun () ->
-            if
-              trackTranslate.Running && remainingMs > FlipInternals.settlePollMs
-            then
-              scheduleSlideEnd(
-                FlipInternals.settlePollMs,
-                remainingMs - FlipInternals.settlePollMs
-              )
-            else
-              finishSlide()
-        )
-      )
-
-  let navigateTo(targetIdx: int) =
-    let items = FlipInternals.itemsOf currentInput
-
-    if targetIdx >= 0 && targetIdx < items.Length then
-      let currentIdx = FlipInternals.indexOf(items, currentInput.SelectedId)
-
-      if targetIdx <> currentIdx then
-        onSelect items[targetIdx].Id
-
-  let navigateBy(delta: int) =
-    let items = FlipInternals.itemsOf currentInput
-
-    navigateTo(FlipInternals.indexOf(items, currentInput.SelectedId) + delta)
-
-  let handle(event: MetroFlipViewEvent) : unit =
-    match event with
-    | MetroFlipViewEvent.Navigate index -> navigateTo index
-    | MetroFlipViewEvent.PointerDown e ->
-      if e.IsPrimary then
-        swipeActive <- true
-        swipePointerId <- e.PointerId
-        swipeStartX <- e.Position.X
-        swipeStartY <- e.Position.Y
-    | MetroFlipViewEvent.PointerMoved e ->
-      if swipeActive && e.PointerId = swipePointerId then
-        let dx = e.Position.X - swipeStartX
-        let dy = e.Position.Y - swipeStartY
-
-        // A mostly vertical travel ends the gesture, so vertical pans win.
-        if abs dy > abs dx && abs dy > FlipInternals.swipeThresholdPx then
-          swipeActive <- false
-    | MetroFlipViewEvent.PointerUp e ->
-      if swipeActive && e.PointerId = swipePointerId then
-        swipeActive <- false
-        let dx = e.Position.X - swipeStartX
-        let dy = e.Position.Y - swipeStartY
-
-        if abs dx >= FlipInternals.swipeThresholdPx && abs dx > abs dy then
-          if dx < 0.0 then navigateBy 1 else navigateBy -1
-    | MetroFlipViewEvent.PointerCanceled e ->
-      if swipeActive && e.PointerId = swipePointerId then
-        swipeActive <- false
-
-  member _.TrackTranslate = trackTranslate
-
-  member _.OutgoingId = outgoingId
-
-  member _.IsSliding = outgoingId.IsSome
-
-  member _.State: MetroFlipViewState = {
-    Input = currentInput
-    ActiveIndex =
-      FlipInternals.indexOf(
-        FlipInternals.itemsOf currentInput,
-        currentInput.SelectedId
-      )
-    OutgoingId = outgoingId
-    Direction = slideDirection
-    TrackTranslate = trackTranslate
-    ViewportHandle = viewportHandle
-  }
-
-  member this.View: Blob =
-    FlipInternals.buildView(this.State, renderItem, handle)
-
-  member _.Handle(event: MetroFlipViewEvent) : unit = handle event
-
-  override this.InputChanged(input: MetroFlipViewInput) =
-    currentInput <- input
-    let items = FlipInternals.itemsOf input
-    let nextIdx = FlipInternals.indexOf(items, input.SelectedId)
-
-    let selectionChanged =
-      lastSelectedId
-      |> ValueOption.map(fun prevId -> prevId <> input.SelectedId)
-      |> ValueOption.defaultValue false
-
-    cancelSlideTimer()
-
-    let previousItem =
-      lastSelectedId
-      |> ValueOption.bind(fun prevId -> FlipInternals.tryIndexOf(items, prevId))
-
-    if selectionChanged && nextIdx >= 0 then
-      if previousItem.IsNone || isReducedMotion() || not(hostIsOpen()) then
-        endSlide()
-      else
-        let previousIdx = previousItem.Value
-        let direction = if nextIdx >= previousIdx then 1.0 else -1.0
-        let width = viewportHandle.BorderBox.Width
-
-        let distance =
-          if Double.IsFinite width && width > 0.0 then
-            width
-          else
-            FlipInternals.fallbackSlidePx
-
-        outgoingId <- lastSelectedId
-        slideDirection <- direction
-
-        let startPoint = Point(X = min direction 0.0 * distance, Y = 0.0)
-
-        let endPoint = Point(X = -(max direction 0.0) * distance, Y = 0.0)
-
-        trackTranslate.Snap(startPoint)
-        trackTranslate.Play(startPoint, endPoint, MetroMotion.slow)
-
-        // Goo rebuilds this cell after the final timer action, so the rebuilt
-        // tree holds the active panel only.
-        scheduleSlideEnd(MetroTiming.slowMs, MetroTiming.slowMs)
-    elif lastSelectedId.IsNone then
-      endSlide()
-
-    lastSelectedId <-
-      (if nextIdx >= 0 then
-         ValueSome input.SelectedId
-       else
-         ValueNone)
-
-  override _.Unmounting() =
-    cancelSlideTimer()
-    swipeActive <- false
-    outgoingId <- ValueNone
-    slideDirection <- 1.0
-    lastSelectedId <- ValueNone
-    scopedReducedMotion <- false
-    trackTranslate.Snap(FlipInternals.zeroPoint)
-
-  override this.Build(input: MetroFlipViewInput) : Blob =
-    currentInput <- input
-    let theme = Metro.read()
-
-    let windowReduced =
-      if isNull this.Host then
-        false
-      else
-        Metro.readWindow(this.Host).ReducedMotion
-
-    scopedReducedMotion <- theme.ReducedMotion && not windowReduced
-    lastReducedMotion <- theme.ReducedMotion
-
-    if theme.ReducedMotion then
-      endSlide()
-
-    this.View
-
 [<RequireQualifiedAccess>]
 module MetroFlipView =
 
@@ -627,10 +430,364 @@ module MetroFlipView =
     ) : Blob =
     FlipInternals.buildView(state, renderItem, onEvent)
 
+  /// State of a flip view cell. One mutable field per concern.
+  type private FlipState = {
+    ViewportHandle: ElementHandle
+    mutable Input: MetroFlipViewInput
+    mutable LastSelectedId: string voption
+    mutable OutgoingId: string voption
+    mutable SlideDirection: float
+    mutable SlideTimer: WindowTimer voption
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    mutable SwipeActive: bool
+    mutable SwipePointerId: int64
+    mutable SwipeStartX: float
+    mutable SwipeStartY: float
+    // A slot for the animation value. `create` fills it after the cell exists.
+    mutable TrackTranslate: Anim<Point>
+  }
+
+  /// The values that the functions of a flip view cell work on.
+  type private FlipContext = {
+    State: FlipState
+    /// Gives one navigation request to the host cell.
+    Select: Action<string>
+    RenderItem: string -> Blob
+  }
+
+  /// What the host window tells a change of the input.
+  type private HostFacts = {
+    Open: bool
+    /// <c>ValueNone</c> when the cell has no window.
+    ReducedMotion: bool voption
+  }
+
+  /// A change of the input with the facts of the host window.
+  type private FlipInputChange = {
+    Input: MetroFlipViewInput
+    Host: HostFacts
+  }
+
+  /// The wait for the end of a slide.
+  type private SlideWait = { DelayMs: float; RemainingMs: float }
+
+  let private emptyInput: MetroFlipViewInput = {
+    Items = Array.empty
+    SelectedId = ""
+    ShowNavigation = true
+    ShowIndicators = true
+    AccessibilityName = ValueNone
+  }
+
+  let private initialState() : FlipState = {
+    ViewportHandle = ElementHandle()
+    Input = emptyInput
+    LastSelectedId = ValueNone
+    OutgoingId = ValueNone
+    SlideDirection = 1.0
+    SlideTimer = ValueNone
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    SwipeActive = false
+    SwipePointerId = 0L
+    SwipeStartX = 0.0
+    SwipeStartY = 0.0
+    TrackTranslate = Unchecked.defaultof<Anim<Point>>
+  }
+
+  /// The facts of the host window. A cell without a window has no open
+  /// window and no preference.
+  let private hostFacts(host: Window) : HostFacts = {
+    Open = not(isNull host) && host.IsOpen
+    ReducedMotion =
+      (if isNull host then
+         ValueNone
+       else
+         ValueSome(Metro.readWindow(host).ReducedMotion))
+  }
+
+  /// The explicit state of the tree, for <c>buildView</c>.
+  let private currentState(ctx: FlipContext) : MetroFlipViewState = {
+    Input = ctx.State.Input
+    ActiveIndex =
+      FlipInternals.indexOf(
+        FlipInternals.itemsOf ctx.State.Input,
+        ctx.State.Input.SelectedId
+      )
+    OutgoingId = ctx.State.OutgoingId
+    Direction = ctx.State.SlideDirection
+    TrackTranslate = ctx.State.TrackTranslate
+    ViewportHandle = ctx.State.ViewportHandle
+  }
+
+  let private isReducedMotion
+    (state: FlipState, hostReduced: bool voption)
+    : bool =
+    state.ScopedReducedMotion
+    || ValueOption.defaultValue state.LastReducedMotion hostReduced
+
+  let private cancelSlideTimer(state: FlipState) : unit =
+    state.SlideTimer |> ValueOption.iter(fun timer -> timer.Dispose())
+    state.SlideTimer <- ValueNone
+
+  // Drops the outgoing panel and restores the resting track position in the
+  // same turn, so the active panel never shifts between the two trees.
+  let private finishSlide(state: FlipState) : unit =
+    state.SlideTimer <- ValueNone
+    state.OutgoingId <- ValueNone
+    state.SlideDirection <- 1.0
+    state.TrackTranslate.Snap(FlipInternals.zeroPoint)
+
+  let private endSlide(state: FlipState) : unit =
+    cancelSlideTimer state
+    finishSlide state
+
+  let private navigateTo(ctx: FlipContext, targetIdx: int) : unit =
+    let input = ctx.State.Input
+    let items = FlipInternals.itemsOf input
+
+    if targetIdx >= 0 && targetIdx < items.Length then
+      let currentIdx = FlipInternals.indexOf(items, input.SelectedId)
+
+      if targetIdx <> currentIdx then
+        ctx.Select.Invoke(items[targetIdx].Id)
+
+  let private navigateBy(ctx: FlipContext, delta: int) : unit =
+    let input = ctx.State.Input
+    let items = FlipInternals.itemsOf input
+
+    navigateTo(ctx, FlipInternals.indexOf(items, input.SelectedId) + delta)
+
+  /// Handles one event of the tree: a navigation request or a pointer
+  /// gesture on the content area.
+  let private handle(ctx: FlipContext, event: MetroFlipViewEvent) : unit =
+    let state = ctx.State
+
+    match event with
+    | MetroFlipViewEvent.Navigate index -> navigateTo(ctx, index)
+    | MetroFlipViewEvent.PointerDown e ->
+      if e.IsPrimary then
+        state.SwipeActive <- true
+        state.SwipePointerId <- e.PointerId
+        state.SwipeStartX <- e.Position.X
+        state.SwipeStartY <- e.Position.Y
+    | MetroFlipViewEvent.PointerMoved e ->
+      if state.SwipeActive && e.PointerId = state.SwipePointerId then
+        let dx = e.Position.X - state.SwipeStartX
+        let dy = e.Position.Y - state.SwipeStartY
+
+        // A mostly vertical travel ends the gesture, so vertical pans win.
+        if abs dy > abs dx && abs dy > FlipInternals.swipeThresholdPx then
+          state.SwipeActive <- false
+    | MetroFlipViewEvent.PointerUp e ->
+      if state.SwipeActive && e.PointerId = state.SwipePointerId then
+        state.SwipeActive <- false
+        let dx = e.Position.X - state.SwipeStartX
+        let dy = e.Position.Y - state.SwipeStartY
+
+        if abs dx >= FlipInternals.swipeThresholdPx && abs dx > abs dy then
+          // The content moves with the pointer, thus a swipe to the left
+          // advances.
+          if dx < 0.0 then navigateBy(ctx, 1) else navigateBy(ctx, -1)
+    | MetroFlipViewEvent.PointerCanceled e ->
+      if state.SwipeActive && e.PointerId = state.SwipePointerId then
+        state.SwipeActive <- false
+
+  let private view(ctx: FlipContext) : Blob =
+    FlipInternals.buildView(
+      currentState ctx,
+      ctx.RenderItem,
+      fun event -> handle(ctx, event)
+    )
+
+  // Ends the slide after the track animation settles. The timer follows the
+  // wall clock and the animation follows simulated time, so a stalled frame can
+  // leave the track running when the first timer fires. The wait is bounded by
+  // one more slide duration, so a window that stops rendering still settles.
+  let rec private scheduleSlideEnd
+    (cell: MetroFlipViewCell, ctx: FlipContext, wait: SlideWait)
+    : unit =
+    let timer =
+      cell.Schedule(
+        wait.DelayMs,
+        Action(fun () ->
+          let running = ctx.State.TrackTranslate.Running
+
+          if running && wait.RemainingMs > FlipInternals.settlePollMs then
+            scheduleSlideEnd(
+              cell,
+              ctx,
+              {
+                DelayMs = FlipInternals.settlePollMs
+                RemainingMs = wait.RemainingMs - FlipInternals.settlePollMs
+              }
+            )
+          else
+            finishSlide ctx.State)
+      )
+
+    ctx.State.SlideTimer <- ValueSome timer
+
+  // Starts the slide from the previous item to the next item.
+  let private startSlide
+    (cell: MetroFlipViewCell, ctx: FlipContext, indices: struct (int * int))
+    : unit =
+    let state = ctx.State
+    let struct (previousIdx, nextIdx) = indices
+    let direction = if nextIdx >= previousIdx then 1.0 else -1.0
+    let width = state.ViewportHandle.BorderBox.Width
+
+    let distance =
+      if Double.IsFinite width && width > 0.0 then
+        width
+      else
+        FlipInternals.fallbackSlidePx
+
+    state.OutgoingId <- state.LastSelectedId
+    state.SlideDirection <- direction
+
+    let startPoint = Point(X = min direction 0.0 * distance, Y = 0.0)
+    let endPoint = Point(X = -(max direction 0.0 * distance), Y = 0.0)
+
+    state.TrackTranslate.Snap(startPoint)
+    state.TrackTranslate.Play(startPoint, endPoint, MetroMotion.slow)
+
+    // Goo rebuilds this cell after the final timer action, so the rebuilt
+    // tree holds the active panel only.
+    scheduleSlideEnd(
+      cell,
+      ctx,
+      {
+        DelayMs = MetroTiming.slowMs
+        RemainingMs = MetroTiming.slowMs
+      }
+    )
+
+  let private inputChanged
+    (cell: MetroFlipViewCell, ctx: FlipContext, change: FlipInputChange)
+    : unit =
+    let state = ctx.State
+    let input = change.Input
+    state.Input <- input
+    let items = FlipInternals.itemsOf input
+    let nextIdx = FlipInternals.indexOf(items, input.SelectedId)
+
+    let selectionChanged =
+      state.LastSelectedId
+      |> ValueOption.map(fun prevId -> prevId <> input.SelectedId)
+      |> ValueOption.defaultValue false
+
+    cancelSlideTimer state
+
+    let previousItem =
+      state.LastSelectedId
+      |> ValueOption.bind(fun prevId -> FlipInternals.tryIndexOf(items, prevId))
+
+    if selectionChanged && nextIdx >= 0 then
+      // A slide needs a previous item, no reduced motion, and an open window.
+      let canSlide =
+        not(isReducedMotion(state, change.Host.ReducedMotion))
+        && change.Host.Open
+
+      match previousItem with
+      | ValueSome previousIdx when canSlide ->
+        startSlide(cell, ctx, struct (previousIdx, nextIdx))
+      | _ -> endSlide state
+    elif state.LastSelectedId.IsNone then
+      endSlide state
+
+    state.LastSelectedId <-
+      (if nextIdx >= 0 then
+         ValueSome input.SelectedId
+       else
+         ValueNone)
+
+  /// Cancels the slide timer and the pointer gesture, then puts the track
+  /// at rest.
+  let private unmount(state: FlipState) : unit =
+    cancelSlideTimer state
+    state.SwipeActive <- false
+    state.OutgoingId <- ValueNone
+    state.SlideDirection <- 1.0
+    state.LastSelectedId <- ValueNone
+    state.ScopedReducedMotion <- false
+    state.TrackTranslate.Snap(FlipInternals.zeroPoint)
+
+  /// Reads the theme, ends a slide under reduced motion, then builds the
+  /// tree.
+  let private build
+    (ctx: FlipContext, input: MetroFlipViewInput, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
+
+    if theme.ReducedMotion then
+      endSlide state
+
+    view ctx
+
+  let create
+    (onSelect: string -> unit, renderItem: string -> Blob)
+    : MetroFlipViewCell =
+    let state = initialState()
+
+    // The slot of the cell: the selection delegate is made before the cell
+    // exists.
+    let mutable self: MetroFlipViewCell voption = ValueNone
+    let onSelectAction = Action<string>(onSelect)
+
+    // One delegate for the life of the cell. It gives each navigation request
+    // to the host cell, so the owner rule rebuilds the host.
+    let select =
+      Action<string>(fun id ->
+        self |> ValueOption.iter(fun cell -> cell.Raise(onSelectAction, id)))
+
+    let context: FlipContext = {
+      State = state
+      Select = select
+      RenderItem = renderItem
+    }
+
+    let cell = {
+      new MetroFlipViewCell() with
+        override _.TrackTranslate = state.TrackTranslate
+        override _.OutgoingId = state.OutgoingId
+        override _.IsSliding = state.OutgoingId.IsSome
+        override _.State = currentState context
+        override _.View = view context
+
+        override this.Handle(event) = handle(context, event)
+
+        override this.InputChanged(input) =
+          inputChanged(
+            this,
+            context,
+            {
+              Input = input
+              Host = hostFacts this.Host
+            }
+          )
+
+        override _.Unmounting() = unmount state
+
+        override this.Build(input) : Blob =
+          build(context, input, (hostFacts this.Host).ReducedMotion)
+    }
+
+    // The cell exists now: Goo ties the animation to it.
+    state.TrackTranslate <- cell.AnimateValue(FlipInternals.zeroPoint)
+    self <- ValueSome cell
+    cell
+
   let createFactory
     (onSelect: string -> unit, renderItem: string -> Blob)
     : unit -> MetroFlipViewCell =
-    fun () -> MetroFlipViewCell(onSelect, renderItem)
+    fun () -> create(onSelect, renderItem)
 
   let mount
     (key: string, input: MetroFlipViewInput, factory: unit -> MetroFlipViewCell)

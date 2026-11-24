@@ -1,5 +1,6 @@
 namespace FunGoo.Metro
 
+open System
 open Goo
 
 /// Descriptor for one item in a <see cref="MetroFlipViewCell"/>.
@@ -64,50 +65,36 @@ type MetroFlipViewState = {
 /// swipe, and keyboard navigation. Only the active item mounts, plus the
 /// outgoing item while a slide runs, so a <c>Cell.Mount</c> factory inside
 /// <c>renderItem</c> must return a fresh <c>Cell</c>.
-[<Sealed>]
+/// <c>MetroFlipView.create</c> makes the cell. The type holds the surface that
+/// hosts and tests use.
+[<AbstractClass>]
 type MetroFlipViewCell =
   inherit Cell<MetroFlipViewInput>
 
-  /// Creates a flip view cell. Each navigation request invokes
-  /// <paramref name="onSelect"/> with the identifier of the requested item.
-  /// <paramref name="renderItem"/> builds the content of one item.
-  /// The cell calls <paramref name="renderItem"/> inside its own
-  /// <c>Build</c>. A callback that <paramref name="renderItem"/> creates
-  /// belongs to this cell, so the owner rule rebuilds this cell and not the
-  /// caller. Such a callback must rebuild the caller cell when it changes the
-  /// state of the caller cell.
-  new:
-    onSelect: (string -> unit) * renderItem: (string -> Blob) ->
-      MetroFlipViewCell
-
   /// Paint-bound translation shared by both content panels during a slide.
-  member TrackTranslate: Anim<Point>
+  abstract TrackTranslate: Anim<Point>
 
   /// Identifier of the item that slides out. <c>ValueNone</c> when no slide runs.
-  member OutgoingId: string voption
+  abstract OutgoingId: string voption
 
   /// <c>true</c> from the start of a slide until its timer completes.
-  member IsSliding: bool
+  abstract IsSliding: bool
 
   /// Current state of the cell, for <see cref="MetroFlipView.buildView"/>.
-  member State: MetroFlipViewState
+  abstract State: MetroFlipViewState
 
-  /// Builds the flip view tree for <see cref="State"/>. Call it inside a
-  /// <c>Cell.Build</c>, because it reads the active Metro theme.
-  member View: Blob
+  /// Builds the flip view tree for <see cref="MetroFlipViewCell.State"/>.
+  /// Call it inside a <c>Cell.Build</c>, because it reads the active Metro
+  /// theme.
+  abstract View: Blob
 
-  /// Event handler of the view tree. A navigation request invokes <c>onSelect</c>.
-  member Handle: event: MetroFlipViewEvent -> unit
+  /// Event handler of the view tree. A navigation request goes to the host.
+  abstract Handle: event: MetroFlipViewEvent -> unit
 
-  /// Starts the slide when the active item changes, or snaps into place when
-  /// reduced motion is active or the host window is not open.
-  override InputChanged: input: MetroFlipViewInput -> unit
-
-  /// Cancels the slide timer and the pointer gesture on unmount.
-  override Unmounting: unit -> unit
-
-  /// Builds the flip view through <see cref="MetroFlipView.buildView"/>.
-  override Build: input: MetroFlipViewInput -> Blob
+  /// Gives one navigation request of this cell to the host cell, as a
+  /// Goo.Widgets control does. The owner rule then rebuilds the host cell, so
+  /// a host does not call <c>Rebuild</c> on itself in the selection callback.
+  member Raise: callback: Action<string> * value: string -> unit
 
 /// Metro FlipView tree builder and construction helpers.
 [<RequireQualifiedAccess>]
@@ -135,6 +122,18 @@ module MetroFlipView =
     renderItem: (string -> Blob) *
     onEvent: (MetroFlipViewEvent -> unit) ->
       Blob
+
+  /// Creates a flip view cell. Each navigation request goes to
+  /// <paramref name="onSelect"/>, and the owner rule then rebuilds the host
+  /// cell. <paramref name="renderItem"/> builds the content of one item.
+  /// The cell calls <paramref name="renderItem"/> inside its own
+  /// <c>Build</c>. A callback that <paramref name="renderItem"/> creates
+  /// belongs to this cell, so the owner rule rebuilds this cell and not the
+  /// caller. Such a callback must rebuild the caller cell when it changes the
+  /// state of the caller cell.
+  val create:
+    onSelect: (string -> unit) * renderItem: (string -> Blob) ->
+      MetroFlipViewCell
 
   /// Creates a reusable cell factory for <see cref="MetroFlipViewCell"/>. Create
   /// the factory once, outside <c>Build</c>.

@@ -24,6 +24,29 @@ type MetroSemanticZoomState = {
   OpacityAnim: Anim<float>
 }
 
+[<AbstractClass>]
+type MetroSemanticZoomCell() =
+  inherit Cell<MetroSemanticZoomInput>()
+
+  abstract ScaleAnim: Anim<float>
+
+  abstract OpacityAnim: Anim<float>
+
+  abstract IsZoomedOut: bool
+
+  abstract State: MetroSemanticZoomState
+
+  abstract View: Blob
+
+  abstract Handle: event: MetroSemanticZoomEvent -> unit
+
+  // Gives a zoom request of the host to the host cell, as a Goo.Widgets
+  // control does. The owner rule then rebuilds the host cell.
+  member this.Raise
+    (callback: Action<MetroSemanticZoomEvent>, value: MetroSemanticZoomEvent)
+    =
+    this.InvokeInputCallback(callback, value)
+
 module private ZoomInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
@@ -148,105 +171,6 @@ module private ZoomInternals =
 
     root
 
-[<Sealed>]
-type MetroSemanticZoomCell
-  (onEvent: MetroSemanticZoomEvent -> unit, render: bool -> Blob) as this =
-  inherit Cell<MetroSemanticZoomInput>()
-
-  let scaleAnim = this.AnimateValue(1.0)
-  let opacityAnim = this.AnimateValue(1.0)
-
-  let emptyInput: MetroSemanticZoomInput = {
-    IsZoomedOut = false
-    ShowToggleButton = true
-    AccessibilityName = ValueNone
-  }
-
-  let mutable currentInput = emptyInput
-  let mutable lastZoomedOut: bool voption = ValueNone
-  let mutable lastReducedMotion = false
-  let mutable scopedReducedMotion = false
-
-  let isReducedMotion() =
-    scopedReducedMotion
-    || (if isNull this.Host then
-          lastReducedMotion
-        else
-          Metro.readWindow(this.Host).ReducedMotion)
-
-  // Restores the resting scale and opacity of the active view.
-  let endZoom() =
-    scaleAnim.Snap(1.0)
-    opacityAnim.Snap(1.0)
-
-  let handle(event: MetroSemanticZoomEvent) : unit =
-    (match event with
-     | MetroSemanticZoomEvent.ZoomOut ->
-       if not currentInput.IsZoomedOut then
-         onEvent(MetroSemanticZoomEvent.ZoomOut)
-     | MetroSemanticZoomEvent.ZoomIn ->
-       if currentInput.IsZoomedOut then
-         onEvent(MetroSemanticZoomEvent.ZoomIn))
-    |> ignore
-
-  member _.ScaleAnim = scaleAnim
-
-  member _.OpacityAnim = opacityAnim
-
-  member _.IsZoomedOut = currentInput.IsZoomedOut
-
-  member _.State: MetroSemanticZoomState = {
-    Input = currentInput
-    ScaleAnim = scaleAnim
-    OpacityAnim = opacityAnim
-  }
-
-  member this.View: Blob = ZoomInternals.buildView(this.State, render, handle)
-
-  member _.Handle(event: MetroSemanticZoomEvent) : unit = handle event
-
-  override this.InputChanged(input: MetroSemanticZoomInput) =
-    currentInput <- input
-
-    let viewChanged =
-      lastZoomedOut
-      |> ValueOption.map(fun previous -> previous <> input.IsZoomedOut)
-      |> ValueOption.defaultValue false
-
-    if viewChanged then
-      if isReducedMotion() then
-        endZoom()
-      else
-        scaleAnim.Play(0.96, 1.0, MetroMotion.normal)
-        opacityAnim.Play(0.0, 1.0, MetroMotion.normal)
-    elif lastZoomedOut.IsNone then
-      endZoom()
-
-    lastZoomedOut <- ValueSome input.IsZoomedOut
-
-  override _.Unmounting() =
-    lastZoomedOut <- ValueNone
-    scopedReducedMotion <- false
-    endZoom()
-
-  override this.Build(input: MetroSemanticZoomInput) : Blob =
-    currentInput <- input
-    let theme = Metro.read()
-
-    let windowReduced =
-      if isNull this.Host then
-        false
-      else
-        Metro.readWindow(this.Host).ReducedMotion
-
-    scopedReducedMotion <- theme.ReducedMotion && not windowReduced
-    lastReducedMotion <- theme.ReducedMotion
-
-    if theme.ReducedMotion then
-      endZoom()
-
-    this.View
-
 [<RequireQualifiedAccess>]
 module MetroSemanticZoom =
 
@@ -264,10 +188,180 @@ module MetroSemanticZoom =
     ) : Blob =
     ZoomInternals.buildView(state, render, onEvent)
 
+  /// State of a semantic zoom cell. One mutable field per concern.
+  type private ZoomState = {
+    mutable Input: MetroSemanticZoomInput
+    mutable LastZoomedOut: bool voption
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    // Slots for the two animation values. `create` fills them after the cell
+    // exists.
+    mutable Scale: Anim<float>
+    mutable Opacity: Anim<float>
+  }
+
+  /// The values that the functions of a semantic zoom cell work on.
+  type private ZoomContext = {
+    State: ZoomState
+    /// Gives one zoom request to the host cell.
+    Raise: Action<MetroSemanticZoomEvent>
+    Render: bool -> Blob
+  }
+
+  let private emptyInput: MetroSemanticZoomInput = {
+    IsZoomedOut = false
+    ShowToggleButton = true
+    AccessibilityName = ValueNone
+  }
+
+  let private initialState() : ZoomState = {
+    Input = emptyInput
+    LastZoomedOut = ValueNone
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    Scale = Unchecked.defaultof<Anim<float>>
+    Opacity = Unchecked.defaultof<Anim<float>>
+  }
+
+  /// The explicit state of the tree, for <c>buildView</c>.
+  let private currentState(ctx: ZoomContext) : MetroSemanticZoomState = {
+    Input = ctx.State.Input
+    ScaleAnim = ctx.State.Scale
+    OpacityAnim = ctx.State.Opacity
+  }
+
+  /// Restores the resting scale and opacity of the active view.
+  let private endZoom(state: ZoomState) : unit =
+    state.Scale.Snap(1.0)
+    state.Opacity.Snap(1.0)
+
+  /// Handles one event of the tree. A request for the view that is already
+  /// active raises nothing.
+  let private handle(ctx: ZoomContext, event: MetroSemanticZoomEvent) : unit =
+    match event with
+    | MetroSemanticZoomEvent.ZoomOut ->
+      if not ctx.State.Input.IsZoomedOut then
+        ctx.Raise.Invoke(MetroSemanticZoomEvent.ZoomOut)
+    | MetroSemanticZoomEvent.ZoomIn ->
+      if ctx.State.Input.IsZoomedOut then
+        ctx.Raise.Invoke(MetroSemanticZoomEvent.ZoomIn)
+
+  let private view(ctx: ZoomContext) : Blob =
+    ZoomInternals.buildView(
+      currentState ctx,
+      ctx.Render,
+      fun event -> handle(ctx, event)
+    )
+
+  /// Plays the zoom transition when the view changes, or snaps into place
+  /// under reduced motion.
+  let private inputChanged
+    (ctx: ZoomContext, input: MetroSemanticZoomInput, hostReduced: bool voption)
+    : unit =
+    let state = ctx.State
+    state.Input <- input
+
+    let viewChanged =
+      state.LastZoomedOut
+      |> ValueOption.map(fun previous -> previous <> input.IsZoomedOut)
+      |> ValueOption.defaultValue false
+
+    if viewChanged then
+      let reducedMotion =
+        state.ScopedReducedMotion
+        || ValueOption.defaultValue state.LastReducedMotion hostReduced
+
+      if reducedMotion then
+        endZoom state
+      else
+        state.Scale.Play(0.96, 1.0, MetroMotion.normal)
+        state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
+    elif state.LastZoomedOut.IsNone then
+      endZoom state
+
+    state.LastZoomedOut <- ValueSome input.IsZoomedOut
+
+  /// Resets the transition on unmount.
+  let private unmount(state: ZoomState) : unit =
+    state.LastZoomedOut <- ValueNone
+    state.ScopedReducedMotion <- false
+    endZoom state
+
+  /// Reads the theme, snaps into place under reduced motion, then builds the
+  /// tree.
+  let private build
+    (ctx: ZoomContext, input: MetroSemanticZoomInput, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
+
+    if theme.ReducedMotion then
+      endZoom state
+
+    view ctx
+
+  /// The reduced motion preference of the host window. <c>ValueNone</c> when
+  /// the cell has no window.
+  let private reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  let create
+    (onEvent: MetroSemanticZoomEvent -> unit, render: bool -> Blob)
+    : MetroSemanticZoomCell =
+    let state = initialState()
+
+    // The slot of the cell: the raise delegate is made before the cell exists.
+    let mutable self: MetroSemanticZoomCell voption = ValueNone
+    let onEventAction = Action<MetroSemanticZoomEvent>(onEvent)
+
+    // One delegate for the life of the cell. It gives each zoom request to
+    // the host cell, so the owner rule rebuilds the host.
+    let raise =
+      Action<MetroSemanticZoomEvent>(fun event ->
+        self |> ValueOption.iter(fun cell -> cell.Raise(onEventAction, event)))
+
+    let context: ZoomContext = {
+      State = state
+      Raise = raise
+      Render = render
+    }
+
+    let cell = {
+      new MetroSemanticZoomCell() with
+        override _.ScaleAnim = state.Scale
+        override _.OpacityAnim = state.Opacity
+        override _.IsZoomedOut = state.Input.IsZoomedOut
+        override _.State = currentState context
+        override _.View = view context
+
+        override this.Handle(event) = handle(context, event)
+
+        override this.InputChanged(input) =
+          inputChanged(context, input, reducedMotionOf this.Host)
+
+        override _.Unmounting() = unmount state
+
+        override this.Build(input) : Blob =
+          build(context, input, reducedMotionOf this.Host)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Scale <- cell.AnimateValue(1.0)
+    state.Opacity <- cell.AnimateValue(1.0)
+    self <- ValueSome cell
+    cell
+
   let createFactory
     (onEvent: MetroSemanticZoomEvent -> unit, render: bool -> Blob)
     : unit -> MetroSemanticZoomCell =
-    fun () -> MetroSemanticZoomCell(onEvent, render)
+    fun () -> create(onEvent, render)
 
   let mount
     (

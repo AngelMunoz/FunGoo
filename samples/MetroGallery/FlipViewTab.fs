@@ -35,14 +35,14 @@ module private Content =
 
 /// Gallery tab that shows a Metro FlipView with three content items.
 [<Sealed>]
-type FlipViewTabCell() as this =
+type FlipViewTabCell() =
   inherit Cell()
 
   let mutable selectedId = "one"
 
-  let onSelect(id: string) =
-    selectedId <- id
-    this.Rebuild()
+  // The flip view gives each selection to this tab through
+  // InvokeInputCallback, so the owner rule rebuilds this tab.
+  let onSelect(id: string) = selectedId <- id
 
   let renderItem(id: string) : Blob =
     let theme = Metro.read()
