@@ -213,6 +213,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "overlays"
       "notifications"
       "navigation"
+      "primitives"
       "controls"
       "flip-view"
       "lists"
@@ -226,6 +227,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "overlays"
       "notifications"
       "navigation"
+      "primitives"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -664,6 +666,38 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if abs(pan.TitleTranslate.Value.X - (-35.0)) > 0.5 then
     failwith
       $"Expected Panorama title parallax -35.0, got {pan.TitleTranslate.Value.X}."
+
+  // 15. Primitives & Layout tab: Icon, PersonPicture, Image, RichTextBlock,
+  // Expander, VariableSizedWrapGrid, WrapPanel, Viewbox, and ScrollViewer
+  // mount and switch modes cleanly.
+  gallery.SelectTab "primitives"
+  pump 2
+
+  let primTab = requireSome("Expected primitives tab.", gallery.PrimitivesTab)
+
+  if not primTab.ExpanderOpen then
+    failwith "Expected primitives expander open initially."
+
+  primTab.SetExpanderOpen false
+  primTab.SetGridOrientation MetroWrapOrientation.Vertical
+  primTab.SetViewboxStretch MetroStretch.Fill
+  pump 2
+
+  if
+    primTab.ExpanderOpen
+    || primTab.GridOrientation <> MetroWrapOrientation.Vertical
+    || primTab.ViewboxStretch <> MetroStretch.Fill
+  then
+    failwith "Expected PrimitivesTab state updates to apply cleanly."
+
+  // The responsive viewbox cell of the primitives tab mounted and scales its
+  // content.
+  let viewboxCell =
+    requireSome("Expected the responsive viewbox cell.", primTab.ViewboxCell)
+
+  if viewboxCell.ScaleX <= 0.0 || viewboxCell.ScaleY <= 0.0 then
+    failwith
+      $"Expected the responsive viewbox scale above 0.0, got {viewboxCell.ScaleX} and {viewboxCell.ScaleY}."
 
   printfn "MetroGallery checks passed."
   0

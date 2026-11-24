@@ -29,6 +29,10 @@
     <Compile Include="MetroTilt.fs" />
     <Compile Include="MetroText.fsi" />
     <Compile Include="MetroText.fs" />
+    <Compile Include="MetroPrimitives.fsi" />
+    <Compile Include="MetroPrimitives.fs" />
+    <Compile Include="MetroLayout.fsi" />
+    <Compile Include="MetroLayout.fs" />
     <Compile Include="MetroButton.fsi" />
     <Compile Include="MetroButton.fs" />
     <Compile Include="MetroInputs.fsi" />

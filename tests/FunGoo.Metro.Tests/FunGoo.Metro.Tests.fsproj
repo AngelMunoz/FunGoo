@@ -28,6 +28,7 @@
     <Compile Include="DialogsAndMenusTests.fs" />
     <Compile Include="NotificationsTests.fs" />
     <Compile Include="NavigationControlsTests.fs" />
+    <Compile Include="PrimitivesAndLayoutTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

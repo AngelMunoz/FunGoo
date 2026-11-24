@@ -17,6 +17,7 @@ let sceneTabs = [|
   "notifications"
   "overlays"
   "overview"
+  "primitives"
   "selection"
   "typography"
   "zoom"

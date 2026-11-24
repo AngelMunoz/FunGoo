@@ -62,6 +62,9 @@ type GalleryCell() =
   /// The mounted navigation tab, for the headless check.
   abstract NavigationTab: NavigationTab.NavigationTabCell voption
 
+  /// The mounted primitives and layout tab, for the headless check.
+  abstract PrimitivesTab: PrimitivesTab.PrimitivesTabCell voption
+
   /// The mounted settings flyout, for the headless check.
   abstract SettingsFlyout: MetroSettingsFlyoutCell voption
 
@@ -140,6 +143,7 @@ type GalleryFactories = {
   OverlaysTab: unit -> Cell
   NotificationsTab: unit -> Cell
   NavigationTab: unit -> Cell
+  PrimitivesTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
@@ -190,6 +194,10 @@ let pivotItems = [|
   {
     Id = "navigation"
     Header = "navigation"
+  }
+  {
+    Id = "primitives"
+    Header = "primitives"
   }
   { Id = "motion"; Header = "motion" }
 |]
@@ -571,6 +579,8 @@ let tabContent
     Cell.Mount<Cell>("notifications-tab", ctx.Factories.NotificationsTab)
   | "navigation" ->
     Cell.Mount<Cell>("navigation-tab", ctx.Factories.NavigationTab)
+  | "primitives" ->
+    Cell.Mount<Cell>("primitives-tab", ctx.Factories.PrimitivesTab)
   | "motion" ->
     MotionTab.view(ctx.Factories.ContinuumDemo, ctx.Factories.StaggerDemo)
   | _ -> TypographyTab.view()
@@ -802,6 +812,9 @@ let create
   let mutable navigationTabRef: NavigationTab.NavigationTabCell voption =
     ValueNone
 
+  let mutable primitivesTabRef: PrimitivesTab.PrimitivesTabCell voption =
+    ValueNone
+
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
   let mutable dialogRef: MetroContentDialogCell voption = ValueNone
 
@@ -907,6 +920,11 @@ let create
         let tab = NavigationTab.create()
         navigationTabRef <- ValueSome tab
         tab :> Cell
+    PrimitivesTab =
+      fun () ->
+        let tab = PrimitivesTab.create()
+        primitivesTabRef <- ValueSome tab
+        tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
     LiveTile = MetroLiveTile.createFactory(fun () -> tapLiveTile state.Store)
@@ -956,6 +974,7 @@ let create
       override _.OverlaysTab = overlaysTabRef
       override _.NotificationsTab = notificationsTabRef
       override _.NavigationTab = navigationTabRef
+      override _.PrimitivesTab = primitivesTabRef
       override _.SettingsFlyout = flyoutRef
       override _.ContentDialog = dialogRef
       override _.Builds = state.Builds
