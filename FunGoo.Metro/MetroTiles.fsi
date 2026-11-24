@@ -142,39 +142,27 @@ type MetroLiveTileInput = {
 
 /// Stateful cycling Metro live tile cell driven by <c>Cell.Every</c> and
 /// paint-bound slide/fade animations, honoring reduced motion.
-[<Sealed>]
+/// <c>MetroLiveTile.create</c> makes the cell. The type holds the surface that
+/// hosts and tests use.
+[<AbstractClass>]
 type MetroLiveTileCell =
   inherit Cell<MetroLiveTileInput>
 
-  /// Creates a live tile cell invoking <paramref name="onClick"/> on
-  /// activation.
-  new: onClick: (unit -> unit) -> MetroLiveTileCell
-
-  /// Zero-based index of the currently displayed face.
-  member ActiveFaceIndex: int
+  /// Zero-based index of the currently displayed face. A test reads it.
+  abstract ActiveFaceIndex: int
 
   /// <c>true</c> while an automatic face-cycling timer is active. A host window
   /// that is not open, such as a <c>goo render</c> frame, never starts the timer.
-  member IsTimerActive: bool
+  abstract IsTimerActive: bool
 
-  /// Paint-bound translation animation for face entrance motion.
-  member FaceTranslate: Anim<Point>
+  /// The tree of the current input. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
 
-  /// Paint-bound opacity animation for face entrance motion.
-  member FaceOpacity: Anim<float>
-
-  /// Starts face cycling when mounted with multiple faces, standard motion, and
-  /// an open host window.
-  override Mounted: unit -> unit
-
-  /// Updates face bounds and cycle timer when input changes.
-  override InputChanged: input: MetroLiveTileInput -> unit
-
-  /// Cancels any active cycle timer and snaps animations on unmount.
-  override Unmounting: unit -> unit
-
-  /// Builds the live tile container and active face presentation.
-  override Build: input: MetroLiveTileInput -> Blob
+  /// Gives one click of this cell to the host cell, as a Goo.Widgets control
+  /// does. The owner rule then rebuilds the host cell, so a host does not
+  /// call <c>Rebuild</c> on itself in the click callback.
+  member Raise: callback: Action -> unit
 
 /// Construction and mounting helpers for <see cref="MetroLiveTileCell"/>.
 [<RequireQualifiedAccess>]
@@ -184,6 +172,11 @@ module MetroLiveTile =
   /// <paramref name="faces"/> using wide size, <c>72.0</c> px cell unit,
   /// <c>8.0</c> px gap, and <c>4500.0</c> ms interval.
   val defaults: faces: MetroLiveTileFace array -> MetroLiveTileInput
+
+  /// Creates a live tile cell. The cell gives each activation to
+  /// <paramref name="onClick"/>, and the owner rule then rebuilds the host
+  /// cell.
+  val create: onClick: (unit -> unit) -> MetroLiveTileCell
 
   /// Creates a reusable cell factory for <see cref="MetroLiveTileCell"/>. Cache
   /// the returned factory outside <c>Build</c>.

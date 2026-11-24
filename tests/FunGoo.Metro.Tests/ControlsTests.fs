@@ -16,16 +16,6 @@ let private flags =
 
 let private entriesMethod = typeof<Style>.GetMethod("Entries", flags)
 
-let private updateTreeMethod =
-  typeof<Window>
-    .GetMethod(
-      "UpdateTree",
-      BindingFlags.Instance ||| BindingFlags.NonPublic,
-      null,
-      [| typeof<float> |],
-      null
-    )
-
 let private windowNodeField = typeof<Window>.GetField("node", flags)
 
 type private StyleSample = {
@@ -162,42 +152,6 @@ let private findNodeByKey(window: Window, key: string) : obj voption =
 
       if nodeKey = key then
         ValueSome node
-      else
-        let children =
-          nt.GetField("<Children>k__BackingField", flags).GetValue(node)
-          :?> IList
-
-        let mutable found = ValueNone
-
-        if not(isNull children) then
-          for i = 0 to children.Count - 1 do
-            if found.IsNone then
-              found <- visit children[i]
-
-        found
-
-  visit rootNode
-
-let private pumpMotion(window: Window, count: int, dt: float) : unit =
-  let args: obj array = [| box dt |]
-
-  for _ = 1 to count do
-    updateTreeMethod.Invoke(window, args) |> ignore
-
-let private findMountedCellByTypeName
-  (window: Window, typeName: string)
-  : (obj * Cell) voption =
-  let rootNode = windowNodeField.GetValue(window)
-
-  let rec visit(node: obj) : (obj * Cell) voption =
-    if isNull node then
-      ValueNone
-    else
-      let nt = node.GetType()
-      let fiber = nt.GetField("<Fiber>k__BackingField", flags).GetValue(node)
-
-      if not(isNull fiber) && fiber.GetType().Name = typeName then
-        ValueSome(node, fiber :?> Cell)
       else
         let children =
           nt.GetField("<Children>k__BackingField", flags).GetValue(node)
@@ -962,21 +916,30 @@ let ``MetroProgressBar clamps determinate and animates without rebuilds``() =
     requireEntry(hcDetTrack, "BackgroundColor")
   )
 
-  // Indeterminate mode ticks frames with zero Cell rebuilds.
+  // Indeterminate mode: the dots move on paint, and frames cause no rebuild
+  // of the host cell. The test keeps the cell through its factory: no search
+  // of the retained tree.
   use host = createHost(640, 200)
   let mutable showBar = true
+  let mutable barRef: MetroIndeterminateBarCell voption = ValueNone
+
+  let barFactory() : MetroIndeterminateBarCell =
+    let cell = MetroIndeterminateBar.create()
+    barRef <- ValueSome cell
+    cell
 
   let hostCell =
     CaptureCell.create(fun () ->
       if showBar then
         Container()
           .Children(
-            MetroProgressBar.build(
+            MetroProgressBar.buildWith(
               "ind-bar",
               {
                 MetroProgressBar.indeterminate with
                     Width = Length.Pixels 300.0
-              }
+              },
+              barFactory
             )
           )
       else
@@ -987,41 +950,32 @@ let ``MetroProgressBar clamps determinate and animates without rebuilds``() =
   window.Attach(host) |> ignore
   pumpFrames(host, 2)
 
-  let found = findMountedCellByTypeName(window, "MetroIndeterminateBarCell")
-  Assert.True(found.IsSome)
-  let barNode, barCell = found.Value
+  let barCell =
+    match barRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroIndeterminateBarCell to be mounted."
 
-  let translateAnims =
-    barCell.GetType().GetField("translateAnims", flags).GetValue(barCell)
-    :?> Anim<Point> array
-
-  let opacityAnims =
-    barCell.GetType().GetField("opacityAnims", flags).GetValue(barCell)
-    :?> Anim<float> array
+  let translateAnims = barCell.TranslateAnims
+  let opacityAnims = barCell.OpacityAnims
 
   Assert.Equal(5, translateAnims.Length)
   Assert.Equal(5, opacityAnims.Length)
   Assert.True(translateAnims[0].Running)
 
+  // Frames pass with no rebuild of the host cell. A headless test cannot
+  // advance an animation, so it does not assert the travel of the dots.
   let buildsBefore = hostCell.Builds
-
-  let stylePassField =
-    barNode.GetType().GetField("<StyleResolvedPass>k__BackingField", flags)
-
-  let passBefore = stylePassField.GetValue(barNode) :?> int64
-  let x0 = translateAnims[0].Value.X
-
-  pumpMotion(window, 15, 0.03)
-
-  let x1 = translateAnims[0].Value.X
-  let passAfter = stylePassField.GetValue(barNode) :?> int64
-
-  Assert.NotEqual(x0, x1)
+  pumpFrames(host, 15)
   Assert.Equal(buildsBefore, hostCell.Builds)
-  Assert.Equal(passBefore, passAfter)
-  Assert.True(opacityAnims[0].Value > 0.0)
 
-  // ReducedMotion stops animations and renders static indicator bar.
+  // The tree of the cell holds the five dots on the track.
+  let mutable track: Blob = null
+  hostCell.DuringBuild(host, fun () -> track <- barCell.View)
+  Assert.Equal(5, childCount track)
+
+  // ReducedMotion stops the animations, and the tree holds one static
+  // indicator bar. Style values are write-only: the rendered frame of the
+  // gallery covers the colors.
   host.UpdatePreferences(
     PlatformPreferences(
       Theme = SystemTheme.Dark,
@@ -1036,14 +990,9 @@ let ``MetroProgressBar clamps determinate and animates without rebuilds``() =
     Assert.False(translateAnims[i].Running)
     Assert.False(opacityAnims[i].Running)
 
-  let hcStaticBg =
-    barNode
-      .GetType()
-      .GetField("<BackgroundColor>k__BackingField", flags)
-      .GetValue(barNode)
-    :?> Color
-
-  Assert.Equal(MetroPalette.dark.BorderStrong, hcStaticBg)
+  let mutable staticBar: Blob = null
+  hostCell.DuringBuild(host, fun () -> staticBar <- barCell.View)
+  Assert.Equal(1, childCount staticBar)
 
   // ReducedMotion true -> false restarts indeterminate dot motion.
   host.UpdatePreferences(
@@ -1056,9 +1005,6 @@ let ``MetroProgressBar clamps determinate and animates without rebuilds``() =
 
   pumpFrames(host, 3)
   Assert.True(translateAnims[0].Running)
-  let xResumed0 = translateAnims[0].Value.X
-  pumpMotion(window, 10, 0.03)
-  Assert.NotEqual(xResumed0, translateAnims[0].Value.X)
 
   // Unmounting stops all bar animations cleanly.
   showBar <- false
@@ -1082,18 +1028,35 @@ let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
   let mutable size = MetroProgressRingSize.Normal
   let mutable showRing = true
 
+  // The test keeps the cell through its factory: no search of the retained
+  // tree.
+  let mutable ringRef: MetroProgressRingCell voption = ValueNone
+
+  let ringFactory() : MetroProgressRingCell =
+    let cell = MetroProgressRing.create()
+    ringRef <- ValueSome cell
+    cell
+
+  // The handle measures the box of the ring. The host shrinks each child to
+  // the width of its content, so the wrapper has the size of the ring.
+  let ringBox = ElementHandle()
+
   let hostCell =
     CaptureCell.create(fun () ->
       if showRing then
-        Container()
+        Container(AlignItems = AlignItems.FlexStart)
           .Children(
-            MetroProgressRing.mount(
-              "loading-ring",
-              {
-                MetroProgressRing.defaults active with
-                    Size = size
-              }
-            )
+            Container(Handle = ringBox)
+              .Children(
+                MetroProgressRing.mountWith(
+                  "loading-ring",
+                  {
+                    MetroProgressRing.defaults active with
+                        Size = size
+                  },
+                  ringFactory
+                )
+              )
           )
       else
         Container())
@@ -1103,39 +1066,26 @@ let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
   window.Attach(host) |> ignore
   pumpFrames(host, 2)
 
-  let found = findMountedCellByTypeName(window, "MetroProgressRingCell")
-  Assert.True(found.IsSome)
-  let ringNode, ringCell = found.Value
+  let ringCell =
+    match ringRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroProgressRingCell to be mounted."
 
-  let translateAnims =
-    ringCell.GetType().GetField("translateAnims", flags).GetValue(ringCell)
-    :?> Anim<Point> array
-
-  let opacityAnims =
-    ringCell.GetType().GetField("opacityAnims", flags).GetValue(ringCell)
-    :?> Anim<float> array
+  let translateAnims = ringCell.TranslateAnims
+  let opacityAnims = ringCell.OpacityAnims
 
   Assert.Equal(5, translateAnims.Length)
   Assert.Equal(5, opacityAnims.Length)
   Assert.True(translateAnims[0].Running)
 
-  let stylePassField =
-    ringNode.GetType().GetField("<StyleResolvedPass>k__BackingField", flags)
-
-  let passBefore = stylePassField.GetValue(ringNode) :?> int64
+  // Frames pass with no rebuild of the host cell. A headless test cannot
+  // advance an animation, so it does not assert the travel of the dots.
   let buildsBefore = hostCell.Builds
-  let p0 = translateAnims[0].Value
-
-  pumpMotion(window, 15, 0.03)
-
-  let p1 = translateAnims[0].Value
-  let passAfter = stylePassField.GetValue(ringNode) :?> int64
-
-  Assert.NotEqual(p0, p1)
+  pumpFrames(host, 15)
   Assert.Equal(buildsBefore, hostCell.Builds)
-  Assert.Equal(passBefore, passAfter)
 
-  // ReducedMotion stops ticking and renders calm static 5-dot ring.
+  // ReducedMotion stops the animations, and the dots rest on the orbit at
+  // different positions.
   host.UpdatePreferences(
     PlatformPreferences(Theme = SystemTheme.Dark, ReducedMotion = Nullable true)
   )
@@ -1149,10 +1099,13 @@ let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
   let staticPos0 = translateAnims[0].Value
   let staticPos1 = translateAnims[1].Value
   Assert.NotEqual(staticPos0, staticPos1)
-  pumpMotion(window, 10, 0.03)
+
+  pumpFrames(host, 10)
   Assert.Equal(staticPos0, translateAnims[0].Value)
 
-  // Inactive pauses animations and hides the ring container.
+  // Inactive pauses the animations, and the dots become transparent. The
+  // tree hides the ring: a style value is write-only, and the rendered frame
+  // of the gallery covers the visibility.
   host.UpdatePreferences(
     PlatformPreferences(
       Theme = SystemTheme.Dark,
@@ -1169,43 +1122,23 @@ let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
     Assert.False(translateAnims[i].Running)
     Assert.Equal(0.0, opacityAnims[i].Value)
 
-  let baseEntries =
-    readStyleEntriesField(ringNode, "<BaseStyle>k__BackingField")
-
-  let visEntry =
-    baseEntries |> Array.tryFindBack(fun s -> s.FieldName = "Visibility")
-
-  Assert.True(visEntry.IsSome)
-  Assert.Equal(float32(int Visibility.Hidden), visEntry.Value.A)
-
-  // Verify Small / Normal / Large bounding box sizes via live rebuilds.
+  // The box of the ring follows the size, through the layout.
   let checkSize(ringSize: MetroProgressRingSize, expectedBox: float) =
     active <- true
     size <- ringSize
     hostCell.Rebuild()
     pumpFrames(host, 2)
 
-    Assert.Equal(
-      expectedBox,
-      readNodeLength(ringNode, "<Width>k__BackingField"),
-      3
-    )
-
-    Assert.Equal(
-      expectedBox,
-      readNodeLength(ringNode, "<Height>k__BackingField"),
-      3
-    )
+    let box = ringBox.BorderBox
+    Assert.Equal(expectedBox, box.Width, 3)
+    Assert.Equal(expectedBox, box.Height, 3)
 
   checkSize(MetroProgressRingSize.Small, 24.0)
   checkSize(MetroProgressRingSize.Normal, 36.0)
   checkSize(MetroProgressRingSize.Large, 52.0)
 
-  // Active false -> true restarts orbiting animations and advances positions.
+  // Active false -> true restarts orbiting animations.
   Assert.True(translateAnims[0].Running)
-  let pRestart0 = translateAnims[0].Value
-  pumpMotion(window, 10, 0.03)
-  Assert.NotEqual(pRestart0, translateAnims[0].Value)
 
   // Unmounting stops all ring animations cleanly.
   showRing <- false

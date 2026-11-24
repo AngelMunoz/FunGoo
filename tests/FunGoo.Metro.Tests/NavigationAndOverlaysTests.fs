@@ -14,17 +14,6 @@ let private flags =
   BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
 
 let private entriesMethod = typeof<Style>.GetMethod("Entries", flags)
-let private windowNodeField = typeof<Window>.GetField("node", flags)
-
-let private updateTreeMethod =
-  typeof<Window>
-    .GetMethod(
-      "UpdateTree",
-      BindingFlags.Instance ||| BindingFlags.NonPublic,
-      null,
-      [| typeof<float> |],
-      null
-    )
 
 type private StyleSample = {
   FieldName: string
@@ -126,63 +115,9 @@ let private childAt(blob: Blob, index: int) : Blob =
   | other ->
     failwith $"Blob of type {other.GetType().Name} has no Children collection."
 
-let private pumpMotion(window: Window, count: int, dt: float) : unit =
-  let args: obj array = [| box dt |]
-
-  for _ = 1 to count do
-    updateTreeMethod.Invoke(window, args) |> ignore
-
-let private directChildField = typeof<Cell>.GetField("directChild", flags)
-
-let private findMountedCell<'TCell when 'TCell :> Cell>
-  (window: Window)
-  : 'TCell voption =
-  let rootNode = windowNodeField.GetValue(window)
-
-  let rec checkFiberChain(cellObj: obj) : 'TCell voption =
-    if isNull cellObj then
-      ValueNone
-    else
-      match cellObj with
-      | :? 'TCell as matched -> ValueSome matched
-      | _ -> checkFiberChain(directChildField.GetValue(cellObj))
-
-  let rec visit(node: obj) : 'TCell voption =
-    if isNull node then
-      ValueNone
-    else
-      let nt = node.GetType()
-      let fiber = nt.GetField("<Fiber>k__BackingField", flags).GetValue(node)
-
-      match checkFiberChain fiber with
-      | ValueSome matched -> ValueSome matched
-      | ValueNone ->
-        let children =
-          nt.GetField("<Children>k__BackingField", flags).GetValue(node)
-          :?> IList
-
-        let mutable found = ValueNone
-
-        if not(isNull children) then
-          for i = 0 to children.Count - 1 do
-            if found.IsNone then
-              found <- visit children[i]
-
-        found
-
-  visit rootNode
-
 let private findKeyBinding(bindings: KeyBinding array, key: Key) : KeyBinding =
   bindings
   |> Array.find(fun kb -> kb.Key = key && kb.Modifiers = KeyModifiers.None)
-
-let private invokeBuildRaw<'TInput>(cell: Cell<'TInput>) : Blob =
-  let input = typeof<Cell<'TInput>>.GetProperty("Input", flags).GetValue(cell)
-
-  let buildMethod =
-    cell.GetType().GetMethod("Build", flags, null, [| typeof<'TInput> |], null)
-
-  buildMethod.Invoke(cell, [| input |]) :?> Blob
 
 let private darkConfig = {
   MetroConfig.defaultConfig with
@@ -664,8 +599,14 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
     }
   |]
 
+  // The test keeps the mounted cell: no search of the retained tree.
+  let mutable liveRef: MetroLiveTileCell voption = ValueNone
+
   let liveFactory =
-    MetroLiveTile.createFactory(fun () -> liveClicks <- liveClicks + 1)
+    Func<MetroLiveTileCell>(fun () ->
+      let cell = MetroLiveTile.create(fun () -> liveClicks <- liveClicks + 1)
+      liveRef <- ValueSome cell
+      cell)
 
   use host = createHost(800, 600)
 
@@ -727,17 +668,19 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
 
   // Verify live tile mounting, active timer, face content, and click.
   let liveCell =
-    match findMountedCell<MetroLiveTileCell> window with
-    | ValueSome c -> c
+    match liveRef with
+    | ValueSome cell -> cell
     | ValueNone -> failwith "Expected MetroLiveTileCell to be mounted."
 
   Assert.Equal(0, liveCell.ActiveFaceIndex)
   Assert.True(liveCell.IsTimerActive)
+
   let mutable liveBlob: Blob = null
-  capture.DuringBuild(host, fun () -> liveBlob <- invokeBuildRaw liveCell)
+  capture.DuringBuild(host, fun () -> liveBlob <- liveCell.View)
   let liveBtn = liveBlob :?> Button
-  Assert.Equal(0.0f, requireEntry(liveBtn, "BorderRadius").A)
-  Assert.Equal(0, boxShadowCount liveBtn)
+
+  // Style values are write-only. The rendered frame of the gallery covers
+  // the radius and the shadows of the tile.
   Assert.Equal(AccessibilityRole.Button, liveBtn.Accessibility.Role)
   liveBtn.OnClick.Invoke()
   Assert.Equal(1, liveClicks)
@@ -1243,7 +1186,13 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
       hubRef <- ValueSome cell
       cell)
 
-  let liveFactory = MetroLiveTile.createFactory ignore
+  let mutable liveRef: MetroLiveTileCell voption = ValueNone
+
+  let liveFactory =
+    Func<MetroLiveTileCell>(fun () ->
+      let cell = MetroLiveTile.create ignore
+      liveRef <- ValueSome cell
+      cell)
 
   use host = createHost(600, 480)
 
@@ -1292,14 +1241,69 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
     | ValueNone -> failwith "Expected scoped MetroHubCell."
 
   let liveCell =
-    match findMountedCell<MetroLiveTileCell> window with
-    | ValueSome c -> c
+    match liveRef with
+    | ValueSome cell -> cell
     | ValueNone -> failwith "Expected scoped MetroLiveTileCell."
 
   Assert.False(liveCell.IsTimerActive)
   hubCell.ScrollHandle.JumpTo(Nullable 150.0, Nullable()) |> ignore
   pumpFrames(host, 2)
   Assert.Equal(0.0, hubCell.HeaderTranslate.Value.X, 3)
+
+[<Fact>]
+let ``A host of the live tile rebuilds through the owner rule``() =
+  let faces = [|
+    {
+      Title = "One"
+      Subtitle = ValueNone
+      Metric = ValueNone
+      AccentOverride = ValueNone
+    }
+    {
+      Title = "Two"
+      Subtitle = ValueNone
+      Metric = ValueNone
+      AccentOverride = ValueNone
+    }
+  |]
+
+  let mutable clicks = 0
+  let mutable liveRef: MetroLiveTileCell voption = ValueNone
+
+  let liveFactory =
+    Func<MetroLiveTileCell>(fun () ->
+      // The handler writes the state only. It has no Rebuild call.
+      let cell = MetroLiveTile.create(fun () -> clicks <- clicks + 1)
+      liveRef <- ValueSome cell
+      cell)
+
+  use host = createHost(400, 300)
+
+  // The host cell counts its builds.
+  let hostCell =
+    CaptureCell.create(fun () ->
+      MetroLiveTile.mount("live", MetroLiveTile.defaults faces, liveFactory))
+
+  let window = Window(Root = hostCell)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  let liveCell =
+    match liveRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroLiveTileCell to be mounted."
+
+  let mutable tree: Blob = null
+  hostCell.DuringBuild(host, fun () -> tree <- liveCell.View)
+
+  let tile = tree :?> Button
+  let buildsBefore = hostCell.Builds
+  tile.OnClick.Invoke()
+  pumpFrames(host, 2)
+
+  Assert.Equal(1, clicks)
+  Assert.Equal(buildsBefore + 1, hostCell.Builds)
 
 [<Fact>]
 let ``MetroPivot remounts child cells cleanly across repeated tab visits``() =

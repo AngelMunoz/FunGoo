@@ -436,20 +436,74 @@ type MetroLiveTileInput = {
   AccessibilityName: string voption
 }
 
-[<Sealed>]
-type MetroLiveTileCell(onClick: unit -> unit) as this =
+[<AbstractClass>]
+type MetroLiveTileCell() =
   inherit Cell<MetroLiveTileInput>()
 
-  let translateAnim = this.AnimateValue(TileInternals.zeroPoint)
-  let opacityAnim = this.AnimateValue(1.0)
-  let clickAction = Action(onClick)
+  abstract ActiveFaceIndex: int
 
-  let keyBindings = [|
-    KeyBinding(Key.Enter, KeyModifiers.None, clickAction)
-    KeyBinding(Key.Space, KeyModifiers.None, clickAction)
-  |]
+  abstract IsTimerActive: bool
 
-  let mutable currentInput: MetroLiveTileInput = {
+  abstract View: Blob
+
+  // Gives a click of the host to the host cell, as a Goo.Widgets control
+  // does. The owner rule then rebuilds the host cell.
+  member this.Raise(callback: Action) = this.InvokeInputCallback(callback)
+
+  // Runs an action again and again on the window timer of this cell. `Every`
+  // is a protected member of the cell, and F# does not permit a call to it
+  // from a function outside the type.
+  member internal this.ScheduleEvery
+    (intervalMs: float, action: Action)
+    : WindowTimer =
+    this.Every(intervalMs, action)
+
+[<RequireQualifiedAccess>]
+module MetroLiveTile =
+
+  let defaults(faces: MetroLiveTileFace array) : MetroLiveTileInput = {
+    Faces = faces
+    Size = MetroTileSize.Wide
+    CellSize = 72.0
+    Gap = 8.0
+    IntervalMs = 4500.0
+    Disabled = false
+    AccessibilityName = ValueNone
+  }
+
+  /// State of a live tile cell. One mutable field per concern.
+  type private LiveTileState = {
+    mutable Input: MetroLiveTileInput
+    mutable AttachedHost: Window voption
+    mutable FaceIndex: int
+    mutable Timer: WindowTimer voption
+    mutable ActiveIntervalMs: float
+    mutable IsMounted: bool
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    // Slots for the two animation values. `create` fills them after the cell
+    // exists.
+    mutable Translate: Anim<Point>
+    mutable Opacity: Anim<float>
+  }
+
+  /// The values that the functions of a live tile cell work on.
+  type private LiveTileContext = {
+    State: LiveTileState
+    /// Gives one click to the host cell.
+    Click: Action
+    /// The bindings of the Enter key and of the Space key. `create` makes
+    /// them once.
+    Keys: KeyBinding array
+  }
+
+  /// The host window with the handler of its preferences.
+  type private HostAttachment = {
+    Host: Window voption
+    Handler: Action<PlatformPreferences>
+  }
+
+  let private emptyInput: MetroLiveTileInput = {
     Faces = Array.empty
     Size = MetroTileSize.Wide
     CellSize = 72.0
@@ -459,130 +513,140 @@ type MetroLiveTileCell(onClick: unit -> unit) as this =
     AccessibilityName = ValueNone
   }
 
-  let mutable attachedHost: Window voption = ValueNone
-  let mutable faceIndex = 0
-  let mutable timer: WindowTimer voption = ValueNone
-  let mutable activeIntervalMs = 0.0
-  let mutable isMounted = false
-  let mutable lastReducedMotion = false
-  let mutable scopedReducedMotion = false
+  let private initialState() : LiveTileState = {
+    Input = emptyInput
+    AttachedHost = ValueNone
+    FaceIndex = 0
+    Timer = ValueNone
+    ActiveIntervalMs = 0.0
+    IsMounted = false
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    Translate = Unchecked.defaultof<Anim<Point>>
+    Opacity = Unchecked.defaultof<Anim<float>>
+  }
 
-  let stopTimer() =
-    timer |> ValueOption.iter(fun t -> t.Dispose())
-    timer <- ValueNone
-    activeIntervalMs <- 0.0
+  let private stopTimer(state: LiveTileState) : unit =
+    state.Timer |> ValueOption.iter(fun timer -> timer.Dispose())
+    state.Timer <- ValueNone
+    state.ActiveIntervalMs <- 0.0
 
-  let isReducedMotion() =
-    scopedReducedMotion
-    || (attachedHost
+  /// <c>true</c> when a scope or the host window asks for reduced motion.
+  let private isReducedMotion(state: LiveTileState) : bool =
+    state.ScopedReducedMotion
+    || (state.AttachedHost
         |> ValueOption.map(fun w -> Metro.readWindow(w).ReducedMotion)
-        |> ValueOption.defaultValue lastReducedMotion)
+        |> ValueOption.defaultValue state.LastReducedMotion)
 
-  let onPreferencesChanged =
-    Action<PlatformPreferences>(fun _ -> this.SyncTimer currentInput)
+  let private isTimerActive(state: LiveTileState) : bool =
+    state.Timer
+    |> ValueOption.map(fun timer -> timer.IsActive)
+    |> ValueOption.defaultValue false
 
-  member private this.AdvanceFace() =
-    let faces = currentInput.Faces
+  /// Puts the face at rest: no translation and fully opaque.
+  let private snapToRest(state: LiveTileState) : unit =
+    state.Translate.Snap(TileInternals.zeroPoint)
+    state.Opacity.Snap(1.0)
 
-    if isNull faces || faces.Length <= 1 || isReducedMotion() then
-      stopTimer()
-      translateAnim.Snap(TileInternals.zeroPoint)
-      opacityAnim.Snap(1.0)
+  /// Moves to the next face with a slide. It stops the cycle when there is
+  /// one face or reduced motion.
+  let private advanceFace
+    (cell: MetroLiveTileCell, ctx: LiveTileContext)
+    : unit =
+    let state = ctx.State
+    let faces = state.Input.Faces
+
+    if isNull faces || faces.Length <= 1 || isReducedMotion state then
+      stopTimer state
+      snapToRest state
     else
-      faceIndex <- (faceIndex + 1) % faces.Length
+      state.FaceIndex <- (state.FaceIndex + 1) % faces.Length
 
-      translateAnim.Play(
+      state.Translate.Play(
         Point(X = 0.0, Y = 24.0),
         TileInternals.zeroPoint,
         MetroMotion.normal
       )
 
-      opacityAnim.Play(0.0, 1.0, MetroMotion.normal)
-      this.Rebuild()
+      state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
+      cell.Rebuild()
 
-  member private this.SyncTimer(input: MetroLiveTileInput) =
+  /// Starts, keeps, or stops the cycle timer for the input.
+  let private syncTimer
+    (cell: MetroLiveTileCell, ctx: LiveTileContext, input: MetroLiveTileInput)
+    : unit =
+    let state = ctx.State
     let faceCount = if isNull input.Faces then 0 else input.Faces.Length
     let interval = TileInternals.resolveIntervalMs input.IntervalMs
 
     // A mounted window that is not open, such as a `goo render` frame,
     // rejects window timers, so an open host window is required to cycle.
     let hostOpen =
-      attachedHost
+      state.AttachedHost
       |> ValueOption.map(fun w -> w.IsOpen)
       |> ValueOption.defaultValue false
 
     let shouldRun =
-      isMounted && hostOpen && faceCount > 1 && not(isReducedMotion())
+      state.IsMounted && hostOpen && faceCount > 1 && not(isReducedMotion state)
 
     if not shouldRun then
-      stopTimer()
-    elif timer.IsNone || activeIntervalMs <> interval then
-      stopTimer()
-      activeIntervalMs <- interval
-      timer <- ValueSome(this.Every(interval, Action(this.AdvanceFace)))
+      stopTimer state
+    elif state.Timer.IsNone || state.ActiveIntervalMs <> interval then
+      stopTimer state
+      state.ActiveIntervalMs <- interval
 
-  member _.ActiveFaceIndex = faceIndex
+      let advance = Action(fun () -> advanceFace(cell, ctx))
+      state.Timer <- ValueSome(cell.ScheduleEvery(interval, advance))
 
-  member _.IsTimerActive =
-    timer
-    |> ValueOption.map(fun t -> t.IsActive)
-    |> ValueOption.defaultValue false
-
-  member _.FaceTranslate = translateAnim
-  member _.FaceOpacity = opacityAnim
-
-  override this.Mounted() =
-    isMounted <- true
-    attachedHost <- if isNull this.Host then ValueNone else ValueSome this.Host
-
-    attachedHost
-    |> ValueOption.iter(fun w -> w.add_PreferencesChanged onPreferencesChanged)
-
-    this.SyncTimer currentInput
-
-  override this.InputChanged(input: MetroLiveTileInput) =
-    currentInput <- input
+  /// Keeps the index of the face inside the new faces, then syncs the timer.
+  let private inputChanged
+    (cell: MetroLiveTileCell, ctx: LiveTileContext, input: MetroLiveTileInput)
+    : unit =
+    let state = ctx.State
+    state.Input <- input
     let count = if isNull input.Faces then 0 else input.Faces.Length
 
     if count = 0 then
-      faceIndex <- 0
-    elif faceIndex >= count then
-      faceIndex <- 0
+      state.FaceIndex <- 0
+    elif state.FaceIndex >= count then
+      state.FaceIndex <- 0
 
-    if isMounted then
-      this.SyncTimer input
+    if state.IsMounted then
+      syncTimer(cell, ctx, input)
 
-  override _.Unmounting() =
-    isMounted <- false
+  /// Subscribes the handler to the preferences of the host window, then
+  /// syncs the timer.
+  let private mounted
+    (cell: MetroLiveTileCell, ctx: LiveTileContext, attachment: HostAttachment)
+    : unit =
+    let state = ctx.State
+    state.IsMounted <- true
+    state.AttachedHost <- attachment.Host
 
-    attachedHost
-    |> ValueOption.iter(fun w ->
-      w.remove_PreferencesChanged onPreferencesChanged)
+    attachment.Host
+    |> ValueOption.iter(fun w -> w.add_PreferencesChanged attachment.Handler)
 
-    attachedHost <- ValueNone
-    scopedReducedMotion <- false
-    stopTimer()
-    translateAnim.Snap(TileInternals.zeroPoint)
-    opacityAnim.Snap(1.0)
+    syncTimer(cell, ctx, state.Input)
 
-  override this.Build(input: MetroLiveTileInput) : Blob =
-    currentInput <- input
-    let theme = Metro.read()
+  /// Unsubscribes the handler, stops the timer, and puts the face at rest.
+  let private unmount
+    (ctx: LiveTileContext, handler: Action<PlatformPreferences>)
+    : unit =
+    let state = ctx.State
+    state.IsMounted <- false
 
-    let windowReduced =
-      if not(isNull this.Host) then
-        Metro.readWindow(this.Host).ReducedMotion
-      else
-        false
+    state.AttachedHost
+    |> ValueOption.iter(fun w -> w.remove_PreferencesChanged handler)
 
-    scopedReducedMotion <- theme.ReducedMotion && not windowReduced
-    lastReducedMotion <- theme.ReducedMotion
+    state.AttachedHost <- ValueNone
+    state.ScopedReducedMotion <- false
+    stopTimer state
+    snapToRest state
 
-    if theme.ReducedMotion then
-      stopTimer()
-      translateAnim.Snap(TileInternals.zeroPoint)
-      opacityAnim.Snap(1.0)
-
+  let private view
+    (ctx: LiveTileContext, input: MetroLiveTileInput, theme: MetroTheme)
+    : Blob =
+    let state = ctx.State
     let p = theme.Palette
     let faces = if isNull input.Faces then Array.empty else input.Faces
 
@@ -590,7 +654,7 @@ type MetroLiveTileCell(onClick: unit -> unit) as this =
       if faces.Length = 0 then
         ValueNone
       else
-        let idx = Math.Clamp(faceIndex, 0, faces.Length - 1)
+        let idx = Math.Clamp(state.FaceIndex, 0, faces.Length - 1)
         ValueSome faces[idx]
 
     let accent =
@@ -650,8 +714,8 @@ type MetroLiveTileCell(onClick: unit -> unit) as this =
         FlexGrow = 1.0,
         Width = Length.Percent 100.0,
         Height = Length.Percent 100.0,
-        TranslateAnim = translateAnim,
-        OpacityAnim = opacityAnim
+        TranslateAnim = state.Translate,
+        OpacityAnim = state.Opacity
       )
 
     faceOpt
@@ -737,26 +801,101 @@ type MetroLiveTileCell(onClick: unit -> unit) as this =
       )
 
     if not input.Disabled then
-      tileBtn.OnClick <- clickAction
-      tileBtn.KeyBindings <- keyBindings
+      tileBtn.OnClick <- ctx.Click
+      tileBtn.KeyBindings <- ctx.Keys
 
     tileBtn.Children(faceContainer)
 
-[<RequireQualifiedAccess>]
-module MetroLiveTile =
+  /// Reads the theme, stops the cycle and the animations under reduced
+  /// motion, then builds the tree.
+  let private build
+    (ctx: LiveTileContext, input: MetroLiveTileInput, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
 
-  let defaults(faces: MetroLiveTileFace array) : MetroLiveTileInput = {
-    Faces = faces
-    Size = MetroTileSize.Wide
-    CellSize = 72.0
-    Gap = 8.0
-    IntervalMs = 4500.0
-    Disabled = false
-    AccessibilityName = ValueNone
+    if theme.ReducedMotion then
+      stopTimer state
+      snapToRest state
+
+    view(ctx, input, theme)
+
+  /// The reduced motion preference of the host window. <c>ValueNone</c> when
+  /// the cell has no window.
+  let private reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  /// The window of a cell with the handler of its preferences.
+  let private attachmentOf
+    (host: Window, handler: Action<PlatformPreferences>)
+    : HostAttachment = {
+    Host = (if isNull host then ValueNone else ValueSome host)
+    Handler = handler
   }
 
+  let create(onClick: unit -> unit) : MetroLiveTileCell =
+    let state = initialState()
+
+    // The slot of the cell: the click delegate is made before the cell exists.
+    let mutable self: MetroLiveTileCell voption = ValueNone
+    let onClickAction = Action(onClick)
+
+    // One delegate for the life of the cell. It gives each click to the host
+    // cell, so the owner rule rebuilds the host.
+    let click =
+      Action(fun () ->
+        self |> ValueOption.iter(fun cell -> cell.Raise(onClickAction)))
+
+    let keys = [|
+      KeyBinding(Key.Enter, KeyModifiers.None, click)
+      KeyBinding(Key.Space, KeyModifiers.None, click)
+    |]
+
+    let context: LiveTileContext = {
+      State = state
+      Click = click
+      Keys = keys
+    }
+
+    // One delegate for the life of the cell. The host window subscribes to it.
+    let onPreferencesChanged =
+      Action<PlatformPreferences>(fun _ ->
+        self
+        |> ValueOption.iter(fun cell -> syncTimer(cell, context, state.Input)))
+
+    let cell = {
+      new MetroLiveTileCell() with
+        override _.ActiveFaceIndex = state.FaceIndex
+        override _.IsTimerActive = isTimerActive state
+
+        override _.View = view(context, state.Input, Metro.read())
+
+        override this.Mounted() =
+          mounted(this, context, attachmentOf(this.Host, onPreferencesChanged))
+
+        override this.InputChanged(input) = inputChanged(this, context, input)
+
+        override _.Unmounting() = unmount(context, onPreferencesChanged)
+
+        override this.Build(input) : Blob =
+          build(context, input, reducedMotionOf this.Host)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <- cell.AnimateValue(TileInternals.zeroPoint)
+    state.Opacity <- cell.AnimateValue(1.0)
+    self <- ValueSome cell
+    cell
+
   let createFactory(onClick: unit -> unit) : Func<MetroLiveTileCell> =
-    Func<MetroLiveTileCell>(fun () -> MetroLiveTileCell(onClick))
+    Func<MetroLiveTileCell>(fun () -> create onClick)
 
   let mount
     (key: string, input: MetroLiveTileInput, factory: Func<MetroLiveTileCell>)

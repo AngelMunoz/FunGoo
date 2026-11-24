@@ -13,7 +13,7 @@ type MetroProgressBarProps = {
 }
 
 [<Struct; NoComparison>]
-type internal MetroIndeterminateBarInput = {
+type MetroIndeterminateBarInput = {
   Height: float
   Width: Length
   AccessibilityName: string voption
@@ -221,93 +221,145 @@ module private ProgressInternals =
   let zeroYFactory =
     Func<float, float, float, Simulation>(fun _ _ _ -> constantInfinite 0.0)
 
-[<Sealed>]
-type internal MetroIndeterminateBarCell() as this =
+[<AbstractClass>]
+type MetroIndeterminateBarCell() =
   inherit Cell<MetroIndeterminateBarInput>()
 
-  let periodic = PeriodicSimulation.create ProgressInternals.barPeriodSeconds
-  let trackHandle = ElementHandle()
+  abstract TranslateAnims: Anim<Point> array
 
-  let mutable pixelWidth = 0.0
-  let mutable dotSize = 4.0
-  let mutable running = false
+  abstract OpacityAnims: Anim<float> array
 
-  let getGeometry() : struct (float * float) =
-    let boxWidth = trackHandle.BorderBox.Width
+  abstract View: Blob
+
+[<RequireQualifiedAccess>]
+module MetroIndeterminateBar =
+
+  /// State of an indeterminate bar cell. One mutable field per concern.
+  type private BarState = {
+    TrackHandle: ElementHandle
+    Periodic: Simulation
+    mutable Input: MetroIndeterminateBarInput
+    mutable PixelWidth: float
+    mutable DotSize: float
+    mutable Running: bool
+    // Slots for the animation values. `create` fills them after the cell
+    // exists.
+    mutable Translate: Anim<Point> array
+    mutable Opacity: Anim<float> array
+  }
+
+  /// The values that the functions of an indeterminate bar cell work on.
+  type private BarContext = {
+    State: BarState
+    XFactories: Func<float, float, float, Simulation> array
+    OpacityFactories: Func<float, float, float, Simulation> array
+  }
+
+  let private emptyInput: MetroIndeterminateBarInput = {
+    Height = 4.0
+    Width = Length.Percent 100.0
+    AccessibilityName = ValueNone
+  }
+
+  let private initialState() : BarState = {
+    TrackHandle = ElementHandle()
+    Periodic = PeriodicSimulation.create ProgressInternals.barPeriodSeconds
+    Input = emptyInput
+    PixelWidth = 0.0
+    DotSize = 4.0
+    Running = false
+    Translate = Array.empty
+    Opacity = Array.empty
+  }
+
+  /// The track width and the dot size of the horizontal travel. The width
+  /// comes from the measured track, else from the input, else from the
+  /// default of 240 px.
+  let private geometry(state: BarState) : struct (float * float) =
+    let boxWidth = state.TrackHandle.BorderBox.Width
 
     let measured =
       if Double.IsFinite boxWidth && boxWidth > 0.0 then boxWidth
-      elif pixelWidth > 0.0 then pixelWidth
+      elif state.PixelWidth > 0.0 then state.PixelWidth
       else 240.0
 
-    struct (measured, dotSize)
+    struct (measured, state.DotSize)
 
-  let translateAnims =
-    Array.init ProgressInternals.dotCount (fun _ ->
-      this.AnimateValue(Point(X = -4.0, Y = 0.0)))
-
-  let opacityAnims =
-    Array.init ProgressInternals.dotCount (fun _ -> this.AnimateValue(0.0))
-
-  let xFactories =
+  let private xFactoriesOf
+    (state: BarState)
+    : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.barStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.barDotXSimulation(periodic, offset, getGeometry)))
+        ProgressInternals.barDotXSimulation(
+          state.Periodic,
+          offset,
+          fun () -> geometry state
+        )))
 
-  let opacityFactories =
+  let private opacityFactoriesOf
+    (state: BarState)
+    : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.barStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.barDotOpacitySimulation(periodic, offset)))
+        ProgressInternals.barDotOpacitySimulation(state.Periodic, offset)))
 
-  let startDots() =
-    if not running then
+  let private stopDots(state: BarState) : unit =
+    if state.Running then
       for i = 0 to ProgressInternals.dotCount - 1 do
-        translateAnims[i]
+        state.Translate[i].Snap(Point(X = -state.DotSize, Y = 0.0))
+        state.Opacity[i].Snap(0.0)
+
+      state.Running <- false
+
+  let private startDots(ctx: BarContext) : unit =
+    let state = ctx.State
+
+    if not state.Running then
+      for i = 0 to ProgressInternals.dotCount - 1 do
+        state.Translate[i]
           .Play(
             ProgressInternals.zeroPoint,
             ProgressInternals.zeroPoint,
-            xFactories[i],
+            ctx.XFactories[i],
             ProgressInternals.zeroYFactory
           )
 
-        opacityAnims[i].Play(0.0, 1.0, opacityFactories[i])
+        state.Opacity[i].Play(0.0, 1.0, ctx.OpacityFactories[i])
 
-      running <- true
+      state.Running <- true
 
-  let stopDots() =
-    if running then
-      for i = 0 to ProgressInternals.dotCount - 1 do
-        translateAnims[i].Snap(Point(X = -dotSize, Y = 0.0))
-        opacityAnims[i].Snap(0.0)
-
-      running <- false
-
-  override _.Unmounting() = stopDots()
-
-  override _.Build(input: MetroIndeterminateBarInput) : Blob =
-    let theme = Metro.read()
-    dotSize <- ProgressInternals.resolveBarHeight input.Height
-
-    pixelWidth <-
-      if
-        not input.Width.IsPercent
-        && input.Width.HasMagnitude
-        && Double.IsFinite input.Width.Magnitude
-        && input.Width.Magnitude > 0.0
-      then
-        input.Width.Magnitude
-      else
-        0.0
-
+  let private view
+    (ctx: BarContext, input: MetroIndeterminateBarInput, theme: MetroTheme)
+    : Blob =
+    let state = ctx.State
     let accName = input.AccessibilityName |> ValueOption.defaultValue "Loading"
 
-    if theme.ReducedMotion then
-      stopDots()
+    let accessibility =
+      Accessibility(
+        Role = AccessibilityRole.ProgressBar,
+        Name = accName,
+        Busy = Nullable true
+      )
 
+    let track =
+      Container(
+        Handle = state.TrackHandle,
+        Width = input.Width,
+        Height = Length.Pixels state.DotSize,
+        Position = PositionType.Relative,
+        BackgroundColor = Color.Transparent,
+        BorderRadius = ProgressInternals.zeroRadius,
+        BoxShadows = ProgressInternals.emptyShadows,
+        Overflow = Overflow.Hidden,
+        Accessibility = accessibility
+      )
+
+    if theme.ReducedMotion then
+      // A static indicator bar of 30 percent of the track.
       let indicator =
         Container(
           Width = Length.Percent 30.0,
@@ -317,68 +369,91 @@ type internal MetroIndeterminateBarCell() as this =
           BoxShadows = ProgressInternals.emptyShadows
         )
 
-      let trackBg =
-        if theme.HighContrast then
-          theme.Palette.BorderStrong
-        else
-          theme.Palette.Border
+      track.BackgroundColor <-
+        (if theme.HighContrast then
+           theme.Palette.BorderStrong
+         else
+           theme.Palette.Border)
 
-      Container(
-        Handle = trackHandle,
-        Width = input.Width,
-        Height = Length.Pixels dotSize,
-        FlexDirection = FlexDirection.Row,
-        JustifyContent = JustifyContent.Center,
-        BackgroundColor = trackBg,
-        BorderRadius = ProgressInternals.zeroRadius,
-        BoxShadows = ProgressInternals.emptyShadows,
-        Overflow = Overflow.Hidden,
-        Accessibility =
-          Accessibility(
-            Role = AccessibilityRole.ProgressBar,
-            Name = accName,
-            Busy = Nullable true
-          )
-      )
-        .Children(indicator)
+      track.JustifyContent <- JustifyContent.Center
+      track.FlexDirection <- FlexDirection.Row
+      track.Add(indicator)
     else
-      startDots()
-
-      let track =
-        Container(
-          Handle = trackHandle,
-          Width = input.Width,
-          Height = Length.Pixels dotSize,
-          Position = PositionType.Relative,
-          BackgroundColor = Color.Transparent,
-          BorderRadius = ProgressInternals.zeroRadius,
-          BoxShadows = ProgressInternals.emptyShadows,
-          Overflow = Overflow.Hidden,
-          Accessibility =
-            Accessibility(
-              Role = AccessibilityRole.ProgressBar,
-              Name = accName,
-              Busy = Nullable true
-            )
-        )
-
       for i = 0 to ProgressInternals.dotCount - 1 do
         track.Add(
           Container(
-            Width = Length.Pixels dotSize,
-            Height = Length.Pixels dotSize,
+            Width = Length.Pixels state.DotSize,
+            Height = Length.Pixels state.DotSize,
             Position = PositionType.Absolute,
             Left = ProgressInternals.zeroRadius,
             Top = ProgressInternals.zeroRadius,
             BorderRadius = ProgressInternals.zeroRadius,
             BoxShadows = ProgressInternals.emptyShadows,
             BackgroundColor = theme.Accent.Base,
-            TranslateAnim = translateAnims[i],
-            OpacityAnim = opacityAnims[i]
+            TranslateAnim = state.Translate[i],
+            OpacityAnim = state.Opacity[i]
           )
         )
 
-      track
+    track
+
+  /// Reads the theme and the geometry of the input, starts or stops the
+  /// dots, then builds the tree.
+  let private build(ctx: BarContext, input: MetroIndeterminateBarInput) : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
+    state.DotSize <- ProgressInternals.resolveBarHeight input.Height
+
+    state.PixelWidth <-
+      (if
+         not input.Width.IsPercent
+         && input.Width.HasMagnitude
+         && Double.IsFinite input.Width.Magnitude
+         && input.Width.Magnitude > 0.0
+       then
+         input.Width.Magnitude
+       else
+         0.0)
+
+    if theme.ReducedMotion then
+      stopDots state
+    else
+      startDots ctx
+
+    view(ctx, input, theme)
+
+  let create() : MetroIndeterminateBarCell =
+    let state = initialState()
+
+    // The factories are made once: each dot keeps its simulation spec.
+    let context: BarContext = {
+      State = state
+      XFactories = xFactoriesOf state
+      OpacityFactories = opacityFactoriesOf state
+    }
+
+    let cell = {
+      new MetroIndeterminateBarCell() with
+        override _.TranslateAnims = state.Translate
+        override _.OpacityAnims = state.Opacity
+
+        override _.View = view(context, state.Input, Metro.read())
+
+        override _.Unmounting() = stopDots state
+
+        override _.Build(input) : Blob = build(context, input)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <-
+      Array.init ProgressInternals.dotCount (fun _ ->
+        cell.AnimateValue(Point(X = -4.0, Y = 0.0)))
+
+    state.Opacity <-
+      Array.init ProgressInternals.dotCount (fun _ -> cell.AnimateValue(0.0))
+
+    cell
 
 [<RequireQualifiedAccess>]
 module MetroProgressBar =
@@ -397,7 +472,12 @@ module MetroProgressBar =
     AccessibilityName = ValueNone
   }
 
-  let build(key: string, props: MetroProgressBarProps) : Blob =
+  let buildWith
+    (
+      key: string,
+      props: MetroProgressBarProps,
+      factory: unit -> MetroIndeterminateBarCell
+    ) : Blob =
     props.Value
     |> ValueOption.map(fun rawValue ->
       let theme = Metro.read()
@@ -456,122 +536,156 @@ module MetroProgressBar =
 
       Cell.Mount<MetroIndeterminateBarInput, MetroIndeterminateBarCell>(
         key,
-        input
+        input,
+        Func<MetroIndeterminateBarCell>(factory)
       ))
 
-[<Sealed>]
-type internal MetroProgressRingCell() as this =
+  let build(key: string, props: MetroProgressBarProps) : Blob =
+    buildWith(key, props, MetroIndeterminateBar.create)
+
+/// Builds a determinate bar, or mounts the indeterminate cell that
+/// <c>factory</c> creates. A test passes a factory to keep the cell.
+
+[<AbstractClass>]
+type MetroProgressRingCell() =
   inherit Cell<MetroProgressRingProps>()
 
-  let periodic = PeriodicSimulation.create ProgressInternals.ringPeriodSeconds
+  abstract TranslateAnims: Anim<Point> array
 
-  let mutable boxSize = 36.0
-  let mutable radius = 14.0
-  let mutable dotSize = 5.0
-  let mutable running = false
+  abstract OpacityAnims: Anim<float> array
 
-  let getGeometry() : struct (float * float * float) =
-    struct (boxSize, radius, dotSize)
+  abstract View: Blob
 
-  let translateAnims =
-    Array.init ProgressInternals.dotCount (fun _ ->
-      this.AnimateValue(ProgressInternals.zeroPoint))
+[<RequireQualifiedAccess>]
+module MetroProgressRing =
 
-  let opacityAnims =
-    Array.init ProgressInternals.dotCount (fun _ -> this.AnimateValue(0.0))
+  let defaults(active: bool) : MetroProgressRingProps = {
+    Active = active
+    Size = MetroProgressRingSize.Normal
+    Color = ValueNone
+    AccessibilityName = ValueNone
+  }
 
-  let xFactories =
+  /// State of a progress ring cell. One mutable field per concern.
+  type private RingState = {
+    Periodic: Simulation
+    mutable Input: MetroProgressRingProps
+    mutable BoxSize: float
+    mutable Radius: float
+    mutable DotSize: float
+    mutable Running: bool
+    // Slots for the animation values. `create` fills them after the cell
+    // exists.
+    mutable Translate: Anim<Point> array
+    mutable Opacity: Anim<float> array
+  }
+
+  /// The values that the functions of a progress ring cell work on.
+  type private RingContext = {
+    State: RingState
+    XFactories: Func<float, float, float, Simulation> array
+    YFactories: Func<float, float, float, Simulation> array
+    OpacityFactories: Func<float, float, float, Simulation> array
+  }
+
+  let private initialInput: MetroProgressRingProps = {
+    Active = false
+    Size = MetroProgressRingSize.Normal
+    Color = ValueNone
+    AccessibilityName = ValueNone
+  }
+
+  let private initialState() : RingState = {
+    Periodic = PeriodicSimulation.create ProgressInternals.ringPeriodSeconds
+    Input = initialInput
+    BoxSize = 36.0
+    Radius = 14.0
+    DotSize = 5.0
+    Running = false
+    Translate = Array.empty
+    Opacity = Array.empty
+  }
+
+  /// The box size, the orbit radius, and the dot size of the travel.
+  let private geometry(state: RingState) : struct (float * float * float) =
+    struct (state.BoxSize, state.Radius, state.DotSize)
+
+  let private axisFactoriesOf
+    (state: RingState, isX: bool)
+    : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.ringStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
         ProgressInternals.ringDotAxisSimulation {
-          Periodic = periodic
+          Periodic = state.Periodic
           Offset = offset
-          IsX = true
-          Geometry = getGeometry
+          IsX = isX
+          Geometry = fun () -> geometry state
         }))
 
-  let yFactories =
+  let private opacityFactoriesOf
+    (state: RingState)
+    : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
       let offset = float i * ProgressInternals.ringStaggerStep
 
       Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.ringDotAxisSimulation {
-          Periodic = periodic
-          Offset = offset
-          IsX = false
-          Geometry = getGeometry
-        }))
+        ProgressInternals.ringDotOpacitySimulation(state.Periodic, offset)))
 
-  let opacityFactories =
-    Array.init ProgressInternals.dotCount (fun i ->
-      let offset = float i * ProgressInternals.ringStaggerStep
+  let private startOrbit(ctx: RingContext) : unit =
+    let state = ctx.State
 
-      Func<float, float, float, Simulation>(fun _ _ _ ->
-        ProgressInternals.ringDotOpacitySimulation(periodic, offset)))
-
-  let startOrbit() =
-    if not running then
+    if not state.Running then
       for i = 0 to ProgressInternals.dotCount - 1 do
-        translateAnims[i]
+        state.Translate[i]
           .Play(
             ProgressInternals.zeroPoint,
             ProgressInternals.zeroPoint,
-            xFactories[i],
-            yFactories[i]
+            ctx.XFactories[i],
+            ctx.YFactories[i]
           )
 
-        opacityAnims[i].Play(0.0, 1.0, opacityFactories[i])
+        state.Opacity[i].Play(0.0, 1.0, ctx.OpacityFactories[i])
 
-      running <- true
+      state.Running <- true
 
-  let snapStaticRing() =
-    let center = (boxSize - dotSize) * 0.5
+  /// Puts the dots on the orbit at rest. The opacity fades from dot to dot.
+  let private snapStaticRing(state: RingState) : unit =
+    let center = (state.BoxSize - state.DotSize) * 0.5
     let step = 2.0 * Math.PI / float ProgressInternals.dotCount
 
     for i = 0 to ProgressInternals.dotCount - 1 do
       let angle = -Math.PI * 0.5 + float i * step
-      let x = center + radius * Math.Cos(angle)
-      let y = center + radius * Math.Sin(angle)
-      translateAnims[i].Snap(Point(X = x, Y = y))
-      opacityAnims[i].Snap(1.0 - float i * 0.14)
+      let x = center + state.Radius * Math.Cos(angle)
+      let y = center + state.Radius * Math.Sin(angle)
+      state.Translate[i].Snap(Point(X = x, Y = y))
+      state.Opacity[i].Snap(1.0 - float i * 0.14)
 
-    running <- false
+    state.Running <- false
 
-  let snapHidden() =
-    let center = (boxSize - dotSize) * 0.5
+  /// Puts all the dots in the center, fully transparent.
+  let private snapHidden(state: RingState) : unit =
+    let center = (state.BoxSize - state.DotSize) * 0.5
     let centerPt = Point(X = center, Y = center)
 
     for i = 0 to ProgressInternals.dotCount - 1 do
-      translateAnims[i].Snap(centerPt)
-      opacityAnims[i].Snap(0.0)
+      state.Translate[i].Snap(centerPt)
+      state.Opacity[i].Snap(0.0)
 
-    running <- false
+    state.Running <- false
 
-  override _.Unmounting() = snapHidden()
-
-  override _.Build(input: MetroProgressRingProps) : Blob =
-    let theme = Metro.read()
-
-    let struct (nextBox, nextRadius, nextDot) =
-      ProgressInternals.ringMetrics input.Size
-
-    boxSize <- nextBox
-    radius <- nextRadius
-    dotSize <- nextDot
-
-    if not input.Active then snapHidden()
-    elif theme.ReducedMotion then snapStaticRing()
-    else startOrbit()
-
+  let private view
+    (ctx: RingContext, input: MetroProgressRingProps, theme: MetroTheme)
+    : Blob =
+    let state = ctx.State
     let dotColor = input.Color |> ValueOption.defaultValue theme.Accent.Base
     let accName = input.AccessibilityName |> ValueOption.defaultValue "Loading"
 
     let root =
       Container(
-        Width = Length.Pixels boxSize,
-        Height = Length.Pixels boxSize,
+        Width = Length.Pixels state.BoxSize,
+        Height = Length.Pixels state.BoxSize,
         Position = PositionType.Relative,
         Visibility =
           (if input.Active then
@@ -588,35 +702,92 @@ type internal MetroProgressRingCell() as this =
           )
       )
 
-    let dotRadius = Length.Pixels(dotSize * 0.5)
+    let dotRadius = Length.Pixels(state.DotSize * 0.5)
 
     for i = 0 to ProgressInternals.dotCount - 1 do
       root.Add(
         Container(
-          Width = Length.Pixels dotSize,
-          Height = Length.Pixels dotSize,
+          Width = Length.Pixels state.DotSize,
+          Height = Length.Pixels state.DotSize,
           Position = PositionType.Absolute,
           Left = ProgressInternals.zeroRadius,
           Top = ProgressInternals.zeroRadius,
           BorderRadius = dotRadius,
           BoxShadows = ProgressInternals.emptyShadows,
           BackgroundColor = dotColor,
-          TranslateAnim = translateAnims[i],
-          OpacityAnim = opacityAnims[i]
+          TranslateAnim = state.Translate[i],
+          OpacityAnim = state.Opacity[i]
         )
       )
 
     root
 
-[<RequireQualifiedAccess>]
-module MetroProgressRing =
+  /// Reads the theme and the metrics of the size, starts, freezes, or hides
+  /// the dots, then builds the tree.
+  let private build(ctx: RingContext, input: MetroProgressRingProps) : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
 
-  let defaults(active: bool) : MetroProgressRingProps = {
-    Active = active
-    Size = MetroProgressRingSize.Normal
-    Color = ValueNone
-    AccessibilityName = ValueNone
-  }
+    let struct (nextBox, nextRadius, nextDot) =
+      ProgressInternals.ringMetrics input.Size
+
+    state.BoxSize <- nextBox
+    state.Radius <- nextRadius
+    state.DotSize <- nextDot
+
+    if not input.Active then snapHidden state
+    elif theme.ReducedMotion then snapStaticRing state
+    else startOrbit ctx
+
+    view(ctx, input, theme)
+
+  let create() : MetroProgressRingCell =
+    let state = initialState()
+
+    // The factories are made once: each dot keeps its simulation spec.
+    let context: RingContext = {
+      State = state
+      XFactories = axisFactoriesOf(state, true)
+      YFactories = axisFactoriesOf(state, false)
+      OpacityFactories = opacityFactoriesOf state
+    }
+
+    let cell = {
+      new MetroProgressRingCell() with
+        override _.TranslateAnims = state.Translate
+        override _.OpacityAnims = state.Opacity
+
+        override _.View = view(context, state.Input, Metro.read())
+
+        override _.Unmounting() = snapHidden state
+
+        override _.Build(input) : Blob = build(context, input)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <-
+      Array.init ProgressInternals.dotCount (fun _ ->
+        cell.AnimateValue(ProgressInternals.zeroPoint))
+
+    state.Opacity <-
+      Array.init ProgressInternals.dotCount (fun _ -> cell.AnimateValue(0.0))
+
+    cell
+
+  /// Mounts the ring cell that <c>factory</c> creates. A test passes a
+  /// factory to keep the cell.
+  let mountWith
+    (
+      key: string,
+      props: MetroProgressRingProps,
+      factory: unit -> MetroProgressRingCell
+    ) : Blob =
+    Cell.Mount<MetroProgressRingProps, MetroProgressRingCell>(
+      key,
+      props,
+      Func<MetroProgressRingCell>(factory)
+    )
 
   let mount(key: string, props: MetroProgressRingProps) : Blob =
-    Cell.Mount<MetroProgressRingProps, MetroProgressRingCell>(key, props)
+    mountWith(key, props, create)

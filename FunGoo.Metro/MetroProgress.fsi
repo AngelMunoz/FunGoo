@@ -1,5 +1,6 @@
 namespace FunGoo.Metro
 
+open System
 open Goo
 
 /// Data-only properties for a determinate or indeterminate Metro progress bar.
@@ -15,6 +16,42 @@ type MetroProgressBarProps = {
   /// Optional accessible name for screen readers.
   AccessibilityName: string voption
 }
+
+/// Data-only input snapshot for <see cref="MetroIndeterminateBarCell"/>.
+[<Struct; NoComparison>]
+type MetroIndeterminateBarInput = {
+  /// Bar and dot height in logical pixels.
+  Height: float
+  /// Track width.
+  Width: Length
+  /// Optional accessible name.
+  AccessibilityName: string voption
+}
+
+/// The indeterminate 5-dot progress cell. The dots move on paint, so a frame
+/// causes no cell rebuild. <c>MetroIndeterminateBar.create</c> makes the cell.
+/// The type holds the surface that tests use.
+[<AbstractClass>]
+type MetroIndeterminateBarCell =
+  inherit Cell<MetroIndeterminateBarInput>
+
+  /// The paint-bound translation of each dot. A test reads them.
+  abstract TranslateAnims: Anim<Point> array
+
+  /// The paint-bound opacity of each dot. A test reads them.
+  abstract OpacityAnims: Anim<float> array
+
+  /// The tree of the current input. A test reads it, and only inside a
+  /// build, where the Metro theme is readable.
+  abstract View: Blob
+
+/// Construction of the indeterminate bar cell. <see cref="MetroProgressBar.build"/>
+/// mounts it.
+[<RequireQualifiedAccess>]
+module MetroIndeterminateBar =
+
+  /// Creates the indeterminate 5-dot progress cell.
+  val create: unit -> MetroIndeterminateBarCell
 
 /// Metro progress bar supporting sharp determinate fills and zero-rebuild
 /// indeterminate 5-dot motion.
@@ -32,6 +69,15 @@ module MetroProgressBar =
   /// Builds a determinate bar or mounts the indeterminate 5-dot progress cell
   /// under stable <paramref name="key"/>.
   val build: key: string * props: MetroProgressBarProps -> Blob
+
+  /// Builds a determinate bar, or mounts the indeterminate 5-dot progress cell
+  /// that <paramref name="factory"/> creates, under stable
+  /// <paramref name="key"/>. A test passes a factory to keep the cell.
+  val buildWith:
+    key: string *
+    props: MetroProgressBarProps *
+    factory: (unit -> MetroIndeterminateBarCell) ->
+      Blob
 
 /// Size preset for <see cref="MetroProgressRing"/>.
 [<Struct>]
@@ -57,6 +103,23 @@ type MetroProgressRingProps = {
   AccessibilityName: string voption
 }
 
+/// The orbiting 5-dot progress ring cell. The dots move on paint, so a frame
+/// causes no cell rebuild. <c>MetroProgressRing.create</c> makes the cell. The
+/// type holds the surface that tests use.
+[<AbstractClass>]
+type MetroProgressRingCell =
+  inherit Cell<MetroProgressRingProps>
+
+  /// The paint-bound translation of each dot. A test reads them.
+  abstract TranslateAnims: Anim<Point> array
+
+  /// The paint-bound opacity of each dot. A test reads them.
+  abstract OpacityAnims: Anim<float> array
+
+  /// The tree of the current input. A test reads it, and only inside a
+  /// build, where the Metro theme is readable.
+  abstract View: Blob
+
 /// Orbiting 5-dot Metro progress ring driven by paint-bound animations without
 /// per-tick cell rebuilds.
 [<RequireQualifiedAccess>]
@@ -66,6 +129,18 @@ module MetroProgressRing =
   /// <see cref="MetroProgressRingSize.Normal"/> and theme accent color.
   val defaults: active: bool -> MetroProgressRingProps
 
+  /// Creates the orbiting 5-dot progress ring cell.
+  val create: unit -> MetroProgressRingCell
+
   /// Mounts the orbiting 5-dot progress ring cell under stable
   /// <paramref name="key"/>.
   val mount: key: string * props: MetroProgressRingProps -> Blob
+
+  /// Mounts the orbiting 5-dot progress ring cell that <paramref name="factory"/>
+  /// creates, under stable <paramref name="key"/>. A test passes a factory to
+  /// keep the cell.
+  val mountWith:
+    key: string *
+    props: MetroProgressRingProps *
+    factory: (unit -> MetroProgressRingCell) ->
+      Blob
