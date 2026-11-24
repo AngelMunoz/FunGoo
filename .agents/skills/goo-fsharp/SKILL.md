@@ -178,9 +178,11 @@ other cell. Two rules remove the cause.
 
 A typed cell of yours that receives a callback gives it to the host through
 `InvokeInputCallback`, as a Goo.Widgets control does. Then the host needs no `Rebuild()`.
-`InvokeInputCallback` is a protected member, and F# does not permit a call to a protected
-member from a lambda of an object expression (FS0491). Thus the abstract typed cell type
-declares one forwarding member per callback shape:
+`InvokeInputCallback` is a member of `Cell<TInput>` only. A plain `Cell` cannot give a
+callback to a host, thus a cell that gives one is a typed cell. The member is protected, and
+F# does not permit a call to a protected member from a lambda of an object expression
+(FS0491). Thus the abstract typed cell type declares one forwarding member per callback
+shape:
 
 ```fsharp
 [<AbstractClass>]
@@ -428,7 +430,7 @@ F# friction families and their FunGoo answers:
 | Friction                                                             | Rule                                                                                                                                                                                 |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Child collections                                                    | Use the `.Children(...)` ParamArray extension (`FunGoo.Children`); it erases to `Add` calls. Never hand-convert an F# list to `IList<Blob>`.                                         |
-| Callbacks and factories                                              | Write the F# function. F# converts a function value to `Action` or `Func` where a delegate is expected. A typed wrapper is necessary in three cases: a lambda passed to an F# function whose parameter has a delegate type, a lambda with a parameter that has no type, and a conditional with `null`. |
+| Callbacks and factories                                              | Write the F# function. F# converts a function value to `Action` or `Func` where a delegate is expected, also at a parameter of an F# function. A typed wrapper is necessary in four cases: a lambda passed to an F# function whose parameter has a delegate type, a lambda with a parameter that has no type, a conditional with `null`, and a lambda in a record field of a delegate type. |
 | `op_Implicit` (int → `Length`, `Length` → `Edges`, string → `Color`) | F# applies no implicit conversions. Use named factories `Length.Pixels`, `Length.Percent`, `Color.Rgb`, or `FunGoo` converters `lengthFromFloat`, `edgesFromFloat`, `percent 100.0`. |
 | Nullable value fields and arguments                                  | Pass by name: `Padding = Nullable 20.`. Nullable struct fields take generated optional setters that accept `'T voption`.                                                             |
 | `Try*` with `out`                                                    | Returns a tuple: `match handle.TryGetTextPositionAt(p, space) with true, pos -> ...`. FunGoo.Interop wraps these as `voption`.                                                       |

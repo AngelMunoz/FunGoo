@@ -95,10 +95,10 @@ Each commit of the re-shape and each new control passes gate 9.
     - A `Blob` records its `CallbackOwner` when it is created. The owner rule rebuilds that cell after a callback.
     - A host callback that a cell calls inside its own `Build` (`renderContent`, `renderSection`, `renderItem`, `render`) creates its Blobs in that cell. The callbacks of those Blobs belong to the cell, and not to the host.
     - When such a callback changes the state of the host cell, it must also rebuild the host cell.
-    - `MetroListViewFactory` and `MetroComboBoxFactory` send the events of all their controls to one handler, and the events do not name the control. Use one factory for each control.
-    - A timer action of a cell runs through `RunOwnedAction`, and Goo rebuilds the cell after the action (`RebuildAfterCallback`).
+    - One factory of `MetroListView`, of `MetroGridView`, or of `MetroComboBox` sends the events of all its controls to one handler, and the events do not name the control. Use one factory for each control.
+    - A timer action of a cell runs through `RunOwnedAction`, and Goo rebuilds the cell after the action (`RebuildAfterCallback`). Measured on 2026-11-23 in a headless window with a probe cell: after a window timer ran the action, the cell built again, with no `Rebuild()` call in the action. A window timer uses the wall clock and not the frame time. A test that waits for a timer waits in real time.
     - A Goo.Widgets control calls `InvokeInputCallback` for the callbacks of its input (45 widget source files, among them `Slider`, `NumberInput`, `RatingControl`, `ComboBox`, and `ListView`). Goo runs the callback in the callback scope of the host cell, and the owner rule rebuilds the host. A host handler of a widget callback writes its state and returns. It does not call `Rebuild()`. Measured on 2026-11-23 in a headless window: one click on a spin button of `NumberInput` rebuilt the host from 1 to 2 builds, with no `Rebuild()` call.
-    - A typed cell of `FunGoo.Metro` calls the callbacks of its host (`onSelect`, `onEvent`, `onClick`) directly, inside a Blob of the cell. The cell owns that callback, and the host must rebuild itself. The re-shape moves these calls to `InvokeInputCallback`.
+    - Since the re-shape (R5, R6, R7), each typed cell of `FunGoo.Metro` gives the callbacks of its host (`onSelect`, `onEvent`, `onClick`) to the host cell through `InvokeInputCallback`, as a Goo.Widgets control does. Thus no host rebuilds itself from such a callback. No cell of `FunGoo.Metro` calls `Rebuild()`.
 
 16. **Object expressions (measured on 2026-11-23 in a headless window):**
     - An object expression behaves like the type that it expresses. `{ new Cell() with ... }`, `{ new Cell<TInput>() with ... }`, `{ new Simulation() with ... }`, and `{ new EmbeddedWindowHost() with ... }` compile and run. `Build(input)`, `InputChanged`, `Mounted`, and `Unmounting` are overridden in the object expression.
@@ -107,6 +107,9 @@ Each commit of the re-shape and each new control passes gate 9.
     - An object expression cannot declare a member of its own (FS0767). A forwarding member needs the abstract type.
     - `InvokeInputCallback` is a protected member of `Cell<TInput>`. F# does not permit a call to a protected member from a lambda of an object expression (FS0491). The abstract cell type declares the forwarding member, `member this.Raise(callback: Action<string>, value: string) = this.InvokeInputCallback(callback, value)`, and the lambda calls `this.Raise`. Measured: the host of such a cell rebuilt from 1 to 2 builds with no `Rebuild()` call.
     - A cell reaches itself outside `Build` in three ways. The cell is a parameter of a plain function. A self slot (`let mutable self: Cell voption = ValueNone`, set after the object expression) gives `Rebuild()` to a callback that was made before the cell. `AnimateValue` is called after the object expression exists. `let rec` on an object expression compiles with warning FS0040.
+    - `InvokeInputCallback` is on `Cell<TInput>` only. A plain `Cell` has no member that gives a callback to a host: `BeginCallback`, `EndCallback`, `RunOwnedAction`, and `RebuildAfterCallback` are internal. A cell that must give a callback to its host is a typed cell.
+    - A Goo.Widgets control (`Slider`, `NumberInput`, `RatingControl`, `ComboBox`, `ListView`) declares no public member that starts the callback of its input. `Window` has no public member that injects a pointer event or a key event. Thus a check that uses the public API only drives a host rebuild through a typed cell of this library: the `OnClick` of a Blob of its `View`, or its `Handle` member. The gallery check does this in its steps 1, 7, and 9.
+    - `View` builds the tree from the current state on each read. A changed `View` does not prove that the cell built again. A build count on the abstract cell type proves it (`Builds`). An input of a mounted cell also proves it, when only a build of the host changes that input (`IsZoomedOut`).
     - Observed: the retained node of the root Blob of a mounted cell did not keep the `Key` of that Blob. A check that looks for a node by key needs a keyed child below the root.
 
 17. **API of Goo 0.31.0:**
@@ -117,13 +120,14 @@ Each commit of the re-shape and each new control passes gate 9.
 
 18. **Function to delegate:**
     - F# converts a function value to `Action` or `Func` at a delegate parameter, property, or constructor: `this.Raise(onSelect, id)`, `Cell.Mount<Cell>(key, factory)`, `MediaTransportInput(OnPlayPause = onPlayPause)`. A lambda converts at a property, at a constructor, and at a method argument: `Button(OnClick = fun () -> ...)`.
-    - The compiler requires a typed wrapper (`Action<float>(...)`, `Func<Song, Blob>(...)`) in three cases: a lambda passed to an F# function whose parameter has a delegate type (FS0002, for example the third argument of `MetroSlider.mount`), a lambda with a parameter that has no type (`Action(fun value -> ...)` binds the non-generic `Action`), and a conditional with `null`.
+    - The compiler requires a typed wrapper (`Action<float>(...)`, `Func<Song, Blob>(...)`) in four cases: a lambda passed to an F# function whose parameter has a delegate type (FS0002, for example the third argument of `MetroSlider.mount`), a lambda with a parameter that has no type (`Action(fun value -> ...)` binds the non-generic `Action`), a conditional with `null`, and a lambda in a record field of a delegate type (FS0002, for example `OnSelect = fun id -> ...` where the field has the type `Action<string>`).
+    - A function value needs no wrapper, also at a parameter of an F# function that has a delegate type, and also as a record field of a function type. `let onSliderChange (value: float) = ...` then `MetroSlider.mount(key, props, onSliderChange)` compiles. `MetroFlipView.mount(key, input, factory)` takes `unit -> MetroFlipViewCell`. Measured on 2026-11-23 (R9, R9b).
     - Measured with `NumberInputInput` and `MediaTransportInput`: a function value that F# converts at each build keeps the input equal, because the target of the delegate is the function value. One delegate made once keeps the input equal. A lambda with a capture that is written inside `Build` makes the input different.
 
 ## Control Catalog Gap (2026-11-22)
 
 Metrino registers 74 controls. `FunGoo.Metro` ships 25 public control types:
-`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, `MetroListViewFactory`, `MetroListBox`, `MetroGridViewFactory`, `MetroSemanticZoomCell`, `MetroNumberBox`, `MetroRating`, and `MetroComboBoxFactory` (combo box and auto-suggest box).
+`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, `MetroListView`, `MetroListBox`, `MetroGridView`, `MetroSemanticZoomCell`, `MetroNumberBox`, `MetroRating`, and `MetroComboBox` (combo box and auto-suggest box).
 
 | Family | Metrino controls | In `FunGoo.Metro` | Missing |
 | --- | --- | --- | --- | --- |
@@ -151,13 +155,13 @@ Stack `#5` was delivered as stacked pull requests. GitHub merged the 12 pull req
 | PR 6 | `metro/06-flip-view` | #7 | `MetroFlipView`: one item at a time, edge previous and next buttons, indicator dots, swipe, `Left`/`Right`/`PageUp`/`PageDown`/`Home`/`End` keys, slide transition, public view builder (`MetroFlipView.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests, shared `TestSupport` helpers | Complete |
 | PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls, so that the tests and the gallery check use the public API only | Deferred. See the note below the table |
 | PR 8 | `metro/08-list-view` | #8 | `MetroListView`: `Goo.Widgets.ListView` with sharp 44 px rows, a 3 px accent indicator and an accent tint on selected rows, selection modes `Activate`, `Single`, and `Multiple`, one event channel, a factory that keeps one callback set, gallery tab and scene, reflection-free tests | Complete |
-| PR 9 | `metro/09-list-box-grid` | #9 | `MetroListBox`: a sharp 2 px bordered box around a Metro list. `MetroGridViewFactory`: a virtual wrapped grid of square tile buttons on `VirtualItems`, with a 2 px accent border and an accent tint on selected tiles, selection modes `Activate`, `Single`, and `Multiple`, gallery additions, reflection-free tests | Complete |
+| PR 9 | `metro/09-list-box-grid` | #9 | `MetroListBox`: a sharp 2 px bordered box around a Metro list. `MetroGridViewFactory` (now `MetroGridView.createFactory`): a virtual wrapped grid of square tile buttons on `VirtualItems`, with a 2 px accent border and an accent tint on selected tiles, selection modes `Activate`, `Single`, and `Multiple`, gallery additions, reflection-free tests | Complete |
 | PR 10 | `metro/10-long-list-selector` | | Grouped list with group headers and a jump list. Needs its own virtual list with its own handle, because `ListView` gives no public access to its scroll viewport (hard fact 14) | Planned |
 | PR 11 | `metro/11-semantic-zoom` | #10 | `MetroSemanticZoomCell`: a zoomed-in detail view and a zoomed-out overview view of the same content, a zoom toggle button in the top end corner, a scale and fade transition on each zoom, reduced motion, public view seam (`MetroSemanticZoom.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests | Complete |
 | PR 12 | `metro/12-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
 | PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
 | PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
-| PR 15 | `metro/13-combo-suggest` | #12 | `MetroComboBoxFactory` on `Goo.Widgets.Inputs.ComboBox`: a combo box (`MetroComboBox.defaults`) and an auto-suggest box (`MetroComboBox.autoSuggest`) with one event channel (`Selected`, `QueryChanged`, `OpenChanged`), a pure `toData` mapping, cached callbacks and mapped options, the gallery `inputs` tab (which replaces the `number` tab) and its `inputs` scene, reflection-free tests | Complete |
+| PR 15 | `metro/13-combo-suggest` | #12 | `MetroComboBoxFactory` (now `MetroComboBox.createFactory`) on `Goo.Widgets.Inputs.ComboBox`: a combo box (`MetroComboBox.defaults`) and an auto-suggest box (`MetroComboBox.autoSuggest`) with one event channel (`Selected`, `QueryChanged`, `OpenChanged`), a pure `toData` mapping, cached callbacks and mapped options, the gallery `inputs` tab (which replaces the `number` tab) and its `inputs` scene, reflection-free tests | Complete |
 | PR 16 | `metro/12-number-rating` | #11 | `MetroNumberBox` on `Goo.Widgets.Inputs.NumberInput` (spin buttons, bounds, step, label) and `MetroRating` on `Goo.Widgets.Inputs.RatingControl` (accent stars), each with a pure `toInput` mapping, a gallery tab and scene, reflection-free tests | Complete |
 | PR 17 | `metro/17-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
 | PR 18 | `metro/18-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
@@ -171,9 +175,9 @@ Stack `#5` was delivered as stacked pull requests. GitHub merged the 12 pull req
 | PR 26 | `metro/14-gallery-zoom-inputs-fix` | #13 | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
 | PR 27 | `main` | — | `goo-fsharp` and `goo-widgets-fsharp` corrected: the object expression is the form of a cell, a table states who rebuilds after a callback, callbacks are plain functions, and four API calls are corrected (`Window.Post`, the argument order of `Cell.Mount`, the typed mount, `FunGoo.Virtual.create`). The skills refer to no other skill. Commit `ee13321`. | Complete |
 
-Rules for the planned rows: each row is one unit of work on one theme, delivered as commits on `main`: one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the row starts. Split a row when it grows past the size of PR 3. Start no planned row before step R10 of the Code Shape Re-shape is complete.
+Rules for the planned rows: each row is one unit of work on one theme, delivered as commits on `main`: one new test file, one gallery scene. Verify the base `Goo.Widgets` API in the repository before the row starts. Split a row when it grows past the size of PR 3. The Code Shape Re-shape is complete (R10, 2026-11-23). Each new row keeps its code in the shape of the Code Shape Rules.
 
-**PR 7 is deferred and needs a decision.** The existing tests read style values (`Style.Entries`) and tick animations (`Window.UpdateTree`) through reflection. Hard facts 6 and 12 show that the public API cannot do either in a GPU-free test. Two options exist: (a) move the tree assertions to public view builders and keep the reflective calls for style values and animation ticks only; (b) verify visuals through `goo render` frames compared with `goo diff`. New controls use public view seams from the start, as `MetroFlipView` does.
+**PR 7 is deferred and needs a decision.** After the code shape re-shape, the gallery check uses the public API only. Some tests still read style values (`Style.Entries`), one retained node, and animation ticks (`Window.UpdateTree`) through reflection (Known Issues, item 1). Hard facts 6 and 12 show that the public API cannot do either in a GPU-free test. Two options exist: (a) move the tree assertions to public view builders and keep the reflective calls for style values and animation ticks only; (b) verify visuals through `goo render` frames compared with `goo diff`. New controls use public view seams from the start, as `MetroFlipView` does.
 
 Metrino controls with no planned port: `RichEditBox` (no rich editing base in Goo.Widgets 0.22.2), `MediaElement` (no media base), and `Canvas`, `StackPanel`, `Grid` (Goo `Container`, `Row`, `Column`, and `Goo.Widgets.Grid` already supply these layouts under the Metro theme). Confirm each decision in its own row before work starts.
 
@@ -181,7 +185,9 @@ Metrino controls with no planned port: `RichEditBox` (no rich editing base in Go
 
 Scope: `FunGoo.Metro/`, `tests/FunGoo.Metro.Tests/`, and `samples/MetroGallery/`. The target is the set of Code Shape Rules. The behavior of each control stays, with one intended change: each typed cell of the library gives the callbacks of its host to the host cell (rule 6), so a host does not rebuild itself from such a callback. Out of scope: `FunGoo`, `FunGoo.Widgets`, `FunGoo.Mvu` (a released package), `samples/RaznorGoo`, and `samples/MvuSpike`. `FunGoo.Metro` is not released and `CHANGELOG.md` names no class of it, thus a changed public name needs no changelog entry.
 
-### What is a named class today
+**Status: complete on 2026-11-23.** The subsection "Result of the re-shape" at the end of this section lists the commits, the deviations from the steps table, and the exceptions of gate 9.
+
+### What was a named class before the re-shape
 
 | Where | Named class | Public surface | Readers |
 | --- | --- | --- | --- |
@@ -229,14 +235,55 @@ Each step is one commit on `main`, and it passes the nine gates. A step that cha
 
 An object expression is a compiler-generated class, as a named class is. Gate 7 holds for each step. `Position` and `Velocity` of a simulation run for each animation frame, so R3 measures them.
 
+### Result of the re-shape (2026-11-23)
+
+Each commit is on `main`, and each passed the nine gates. The 16 rendered frames of each commit are identical to the frames of `0bae3dd`, the commit before the re-shape.
+
+| Step | Commit | Tests |
+| --- | --- | --- |
+| R1 | `3bb41ed` | 52 |
+| R2 | `a7c887d` | 52 |
+| R3 | `45e0b3d` | 53 |
+| R4 | `e018ffb` | 53 |
+| R5 | `e7a4d00` | 54 |
+| R6 | `d4ef494` | 54 |
+| R7 | `7edc83c` | 55 |
+| R8 | `5d3d09d` | 55 |
+| R9 | `5307fed` | 55 |
+| R9b | `4a9b420` | 55 |
+| R9c | `e9e5881` | 56 |
+| R10 | the commit of this plan change | 56 |
+
+The state after R10:
+
+- `as this` has no hit in `FunGoo.Metro`, `samples/MetroGallery`, and `tests/FunGoo.Metro.Tests`. Each `inherit Cell` in the three directories is an abstract cell type. No cell of `FunGoo.Metro` calls `Rebuild()`. No code of `FunGoo.Metro` and no code of the gallery reads a member through reflection. (`MetroShader` opens `System.Reflection` for `Assembly`, to load the embedded shader resource.)
+- The abstract cell types of the library and of the gallery are `MetroPivotCell`, `MetroHubCell`, `MetroFlipViewCell`, `MetroSemanticZoomCell`, `MetroLiveTileCell`, `MetroIndeterminateBarCell`, `MetroProgressRingCell`, `GalleryCell`, `ZoomTabCell`, and `InputsTabCell`. Each has a member that outside code drives, a member that a check reads, or a forwarding member.
+- `samples/MetroGallery` has one file module per tab (13 files). `Program.fs` holds the composition root and `main`: 75 lines, from 1429.
+- The gallery check has 10 steps (0 to 9) and uses the public API only.
+
+Deviations from the steps table, with the reason:
+
+- **R2** made the theme attachment a private interface with a `create` function. The table says a record with mutable fields and plain functions. The state record has four mutable fields and the plain functions do the work. The interface lets the dictionary of the attachments hold one object expression for each window, with the configuration and the two operations that the theme module calls.
+- **R7** made the two progress cells public abstract types with the test seams `TranslateAnims`, `OpacityAnims`, and `View`. `MetroProgressBar.buildWith` and `MetroProgressRing.mountWith` take the factory of the cell, so that a test keeps the cell. `build` and `mount` keep their signatures.
+- **R8** moved each helper of `ListInternals`, `ComboInternals`, and `GridInternals` into the module of its one user. A factory maps an item array or an option array one time. Before, each input mapped the array and then discarded the result when the cache had it. Two cache tests assert that an input with the same array allocates nothing.
+- **R9**: the new step of the gallery check is step 9. The table says "a tab with a widget input". The step drives the zoom cell of the zoom tab, and asserts that the tab builds one time with no `Rebuild()` in its handler. The step does not drive a Goo.Widgets control, because of two limits of Goo (hard fact 16): `InvokeInputCallback` is on `Cell<TInput>` only, and a Goo.Widgets control has no public member that starts the callback of its input. The three tabs with a widget input have no `Rebuild()` call. Four sites of `Rebuild()` stay in the gallery, and each has a comment that names the owner: the callbacks of the sections of the Hub (4 callbacks), the callbacks of the zoom cell (2 callbacks), the 5 members that the check calls, and the rebuild of the mounted hub. Step 1 of the check reads the tree of the Pivot through `View` inside a build, and asserts that the gallery builds one time after a click on a header.
+- **R9b** is not in the table. `createFactory` and `mount` of the Pivot, the Hub, and the live tile take and return a function, as those of the FlipView and the SemanticZoom do. The `Func` made the tests write nine constructors that the compiler does not need.
+- **R9c** is not in the table. The timer action of the live tile does not call `Rebuild()`. Goo rebuilds the cell after a timer action (hard fact 15). A new test with a probe cell measures it.
+
+Exceptions of gate 9 after the re-shape:
+
+- **Reflection in three test files.** See Known Issues, item 1. Each call reads a value that has no public read, or drives a control that has no public member for it. The controls were functions before the re-shape, or their tests changed to the public API in their step.
+- **Public functions with four or more parameters.** See Known Issues, item 7.
+
 ## Known Issues (Work in Progress)
 
-1. **Reflection in tests and in the gallery check.** `ThemeTests`, `MotionAndShaderTests`, `ControlsTests`, `NavigationAndOverlaysTests`, and `runChecks` in `samples/MetroGallery/Program.fs` read Goo internals by reflection: `Style.Entries`, `Window.node`, `Cell.directChild`, `UpdateTree`, and retained node fields. This is brittle. PR 7 replaces it through public view builders. New tests use the public API only.
+1. **Reflection in three test files.** The gallery check uses the public API only since R9. The tests of each cell that the re-shape changed use the public API only. Three kinds of reflection remain, and each has its reason. (a) Style values: `readEntries`, `requireEntry`, `tryLastEntry`, and `boxShadowCount` in `ControlsTests` and `NavigationAndOverlaysTests` read `Style.Entries`, because a style value is write-only (hard fact 6). (b) One retained node: `findNodeByKey` in `ControlsTests` reads the entry node of a mounted widget, two times in the test of the Metro inputs, because a Goo.Widgets control has no public node. (c) Animation ticks: `pumpMotionFrames` in `MotionAndShaderTests` calls `Window.UpdateTree`. This is brittle. PR 7 makes the decision. New tests use the public API only.
 2. **Tile text color.** Tile text is black on the Blue accent, because `MetroAccent.fromColor` selects the contrast-safe foreground. Metrino paints white text on its iconic, live, and cycle tiles. Decide with the Metro skill and apply to all tiles.
 3. **Toggle thumb color.** The `controls` scene frame shows a dark thumb on the accent track in light mode. Review against the Metro skill.
 4. **Pivot header overflow.** `MetroPivotCell` clips its header strip (`OverflowX = Hidden`). The headers do not pan when they do not fit. The gallery reached this limit on 2026-11-23 with nine tabs at 1200 px, and two headers were shortened. Plan one small PR that lets the header strip pan without a visible scrollbar, and keeps keyboard navigation.
-5. **Code shape.** `FunGoo.Metro`, `samples/MetroGallery`, and the tests use named classes with `as this`. The section "Code Shape Re-shape" replaces them in the steps R1 to R10. The gallery has 9 redundant calls of `Rebuild()` in the handlers of the widget inputs.
-6. **Live tile timer callback calls `Rebuild()`.** `MetroLiveTileCell.AdvanceFace` ends with `this.Rebuild()`. Hard fact 15 shows that Goo rebuilds the cell after the action, so the call looks redundant. No public API lets a test observe the rebuilt tile, so the call stays until the tile has a public view seam (PR 7).
+5. **Code shape: resolved.** R1 to R10 replaced each named class that held logic or state in `FunGoo.Metro`, `samples/MetroGallery`, and the tests. `as this` has no hit, each `inherit Cell` is an abstract cell type, and the 9 redundant calls of `Rebuild()` in the handlers of the widget inputs are gone.
+6. **Live tile timer callback: resolved.** R9c removed the `Rebuild()` call from the timer action of the live tile. Hard fact 15 has the measurement that permits it.
+7. **Public functions with four or more parameters.** `MetroMotion.cubicBezier` has 5, `Continuum.playEnter` and `Continuum.playExit` have 4, and `MetroContentDialog.build` has 5 (the properties and four callbacks). The re-shape did not change them, because they are the public API of controls that a planned row extends. `FunGoo.Metro` is not released. Move each into one contextual record when its row starts.
 
 ### Resuming on Another Machine
 
@@ -244,7 +291,7 @@ An object expression is a compiler-generated class, as a named class is. Gate 7 
    ```sh
    git fetch origin && git checkout main && git pull --ff-only
    ```
-2. Build and run all `52` headless tests plus the gallery smoke check:
+2. Build and run all `56` headless tests plus the gallery check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj
