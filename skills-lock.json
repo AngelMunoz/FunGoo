@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "skills": {
+    "fsharp-function-parameters": {
+      "source": "AngelMunoz/opinionated-fsharp-skills",
+      "commit": "6c6137f61038907455376d4e45f9faa88069e345",
+      "sourceType": "github",
+      "skillPath": "skills/fsharp-function-parameters/SKILL.md",
+      "computedHash": "ce470fd22e4dfdabea7762e62f63ac1db15775b8374dc9f09d14b41e6fc90c7f"
+    },
+    "fsharp-module-shape": {
+      "source": "AngelMunoz/opinionated-fsharp-skills",
+      "commit": "6c6137f61038907455376d4e45f9faa88069e345",
+      "sourceType": "github",
+      "skillPath": "skills/fsharp-module-shape/SKILL.md",
+      "computedHash": "1ced368be7730aa40f305b1028e2ca035df6b1207e610731dbe64e40db0b301c"
+    }
+  }
+}
