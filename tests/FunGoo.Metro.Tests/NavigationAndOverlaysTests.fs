@@ -316,6 +316,55 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   Assert.Equal(1.0, pivotCell.ContentOpacity.Value, 3)
 
 [<Fact>]
+let ``pivot tabs keep the focus outline inside the header strip``() =
+  let items = [|
+    { Id = "one"; Header = "one" }
+    { Id = "two"; Header = "two" }
+  |]
+
+  let mutable pivotRef: MetroPivotCell voption = ValueNone
+
+  let pivotFactory() =
+    let cell = MetroPivot.create((fun _ -> ()), fun id -> MetroText.body id)
+
+    pivotRef <- ValueSome cell
+    cell
+
+  use host = createHost(640, 480)
+
+  let rootCell =
+    CaptureCell.create(fun () ->
+      MetroPivot.mount(
+        "pivot-focus",
+        MetroPivot.defaults(items, "one"),
+        pivotFactory
+      ))
+
+  let window = Window(Root = rootCell)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  let pivotCell =
+    match pivotRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroPivotCell to mount."
+
+  let mutable builtBlob: Blob = null
+  rootCell.DuringBuild(host, fun () -> builtBlob <- pivotCell.View)
+
+  let built = builtBlob :?> Container
+  Assert.Equal(2, childCount built)
+  let headerStrip = childAt(built, 0) :?> Container
+  let tab0 = childAt(headerStrip, 0) :?> Button
+  let tab1 = childAt(headerStrip, 1) :?> Button
+
+  // The header strip clips vertically, so the focus ring stays inside
+  // the tab with a negative outline offset.
+  for tab in [| tab0; tab1 |] do
+    Assert.Equal(-2.0f, (requireEntry(tab.FocusStyle, "OutlineOffset")).A)
+
+[<Fact>]
 let ``A host of the Pivot rebuilds through the owner rule``() =
   let items = [|
     { Id = "one"; Header = "one" }

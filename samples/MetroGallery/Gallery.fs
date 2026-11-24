@@ -44,6 +44,9 @@ type GalleryCell() =
   /// The mounted semantic zoom tab, for the headless check.
   abstract ZoomTab: ZoomTab.ZoomTabCell voption
 
+  /// The mounted selection tab, for the headless check.
+  abstract SelectionTab: SelectionTab.SelectionTabCell voption
+
   /// The mounted inputs tab, for the headless check.
   abstract InputsTab: InputsTab.InputsTabCell voption
 
@@ -118,6 +121,7 @@ type GalleryFactories = {
   ControlsTab: unit -> Cell
   FlipViewTab: unit -> Cell
   ListsTab: unit -> Cell
+  SelectionTab: unit -> Cell
   ZoomTab: unit -> Cell
   InputsTab: unit -> Cell
   ContinuumDemo: unit -> Cell
@@ -152,6 +156,10 @@ let pivotItems = [|
     Header = "flip view"
   }
   { Id = "lists"; Header = "lists" }
+  {
+    Id = "selection"
+    Header = "selection"
+  }
   { Id = "zoom"; Header = "zoom" }
   { Id = "inputs"; Header = "inputs" }
   { Id = "motion"; Header = "motion" }
@@ -525,6 +533,7 @@ let tabContent
   | "controls" -> Cell.Mount<Cell>("controls-tab", ctx.Factories.ControlsTab)
   | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", ctx.Factories.FlipViewTab)
   | "lists" -> Cell.Mount<Cell>("lists-tab", ctx.Factories.ListsTab)
+  | "selection" -> Cell.Mount<Cell>("selection-tab", ctx.Factories.SelectionTab)
   | "zoom" -> Cell.Mount<Cell>("zoom-tab", ctx.Factories.ZoomTab)
   | "inputs" -> Cell.Mount<Cell>("inputs-tab", ctx.Factories.InputsTab)
   | "motion" ->
@@ -746,6 +755,7 @@ let create
 
   // The mounted cells, for the headless check of the gallery.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
+  let mutable selectionTabRef: SelectionTab.SelectionTabCell voption = ValueNone
   let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
   let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
@@ -818,6 +828,11 @@ let create
     ControlsTab = fun () -> ControlsTab.create state.Store
     FlipViewTab = FlipViewTab.create
     ListsTab = ListsTab.create
+    SelectionTab =
+      fun () ->
+        let tab = SelectionTab.create()
+        selectionTabRef <- ValueSome tab
+        tab :> Cell
     ZoomTab =
       fun () ->
         let tab = ZoomTab.create()
@@ -870,6 +885,7 @@ let create
       override _.SettingsOpen = state.SettingsOpen
       override _.DialogOpen = state.DialogOpen
       override _.Pivot = pivotRef
+      override _.SelectionTab = selectionTabRef
       override _.ZoomTab = zoomTabRef
       override _.InputsTab = inputsTabRef
       override _.SettingsFlyout = flyoutRef

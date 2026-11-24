@@ -9,6 +9,7 @@
 - **Metro:** Metro motion: cubic Bezier and exponential ease-out simulations, Continuum flights, stagger helpers, and optional 3D perspective shader support with 2D fallbacks.
 - **Metro:** Metro navigation and overlays: Pivot, parallax Hub, bin-packed Start tile grids with iconic and cycling live tiles, bottom AppBar, right-docked SettingsFlyout, and full-width ContentDialog.
 - **Metro:** Metro selection controls: FlipView (one item at a time with a slide that keeps its direction, edge buttons, indicator dots, swipe, and keys), a virtual ListView with sharp rows, an accent indicator on selected rows, and activation, single, or multiple selection, a bordered ListBox, a virtual GridView of square tiles that mounts only the tiles near the viewport, and SemanticZoom with a detail view, an overview view, and a zoom toggle button. See `samples/MetroGallery` for an interactive showcase with named `goo render` scenes for dark and light frames.
+- **Metro:** Metro Pivot header panning, LongListSelector, ListPicker, and TreeView: the Pivot header strip pans with the mouse wheel and keeps the selected tab in view without a visible scrollbar, LongListSelector shows a grouped virtual list with an A–Z jump grid that keeps the scroll position, ListPicker expands inline for short lists and opens a virtualized modal sheet for long lists, and TreeView shows sharp rows with a 3 px accent bar on the selected node. See `samples/MetroGallery` for the `selection` tab.
 
 ## [0.9.0] - 2026-11-16
 

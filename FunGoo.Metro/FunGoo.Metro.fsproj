@@ -49,6 +49,12 @@
     <Compile Include="MetroListView.fs" />
     <Compile Include="MetroCollections.fsi" />
     <Compile Include="MetroCollections.fs" />
+    <Compile Include="MetroLongListSelector.fsi" />
+    <Compile Include="MetroLongListSelector.fs" />
+    <Compile Include="MetroListPicker.fsi" />
+    <Compile Include="MetroListPicker.fs" />
+    <Compile Include="MetroTreeView.fsi" />
+    <Compile Include="MetroTreeView.fs" />
     <Compile Include="MetroSemanticZoom.fsi" />
     <Compile Include="MetroSemanticZoom.fs" />
     <Compile Include="MetroNumberRating.fsi" />

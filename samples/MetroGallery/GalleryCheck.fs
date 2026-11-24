@@ -204,6 +204,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "controls"
       "flip-view"
       "lists"
+      "selection"
       "zoom"
       "motion"
       "overview"
@@ -211,6 +212,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "controls"
       "flip-view"
       "lists"
+      "selection"
       "zoom"
       "typography"
       "motion"
@@ -416,6 +418,68 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if zoomTabAgain.Builds <> buildsBefore + 1 then
     failwith
       "Expected the owner rule to rebuild the zoom tab once after a zoom request."
+
+  // 10. Selection tab: LongListSelector jump grid, ListPicker, and TreeView
+  // rebuild the tab through InvokeInputCallback with no manual Rebuild().
+  gallery.SelectTab "selection"
+  pump 2
+
+  let selectionTab =
+    requireSome(
+      "Expected the selection tab to be mounted.",
+      gallery.SelectionTab
+    )
+
+  let longList =
+    requireSome(
+      "Expected the long list selector to be mounted.",
+      selectionTab.LongList
+    )
+
+  let selBuildsBefore = selectionTab.Builds
+  longList.Handle(MetroLongListEvent.JumpOpenChanged true)
+  pump 2
+
+  if not longList.IsJumpOpen || selectionTab.Builds <> selBuildsBefore + 1 then
+    failwith "Expected long list jump grid to open in one host build."
+
+  longList.Handle(MetroLongListEvent.GroupJumped "g")
+  pump 2
+
+  if longList.IsJumpOpen || selectionTab.LastAction <> "Jumped to group g" then
+    failwith
+      $"Expected jump to 'g' to close jump grid, got '{selectionTab.LastAction}'."
+
+  let inlinePicker =
+    requireSome(
+      "Expected the inline list picker to be mounted.",
+      selectionTab.InlinePicker
+    )
+
+  inlinePicker.Handle(MetroListPickerEvent.OpenChanged true)
+  pump 2
+
+  if not inlinePicker.IsOpen then
+    failwith "Expected inline list picker to open."
+
+  inlinePicker.Handle(MetroListPickerEvent.Selected "pulse")
+  inlinePicker.Handle(MetroListPickerEvent.OpenChanged false)
+  pump 2
+
+  if inlinePicker.IsOpen || selectionTab.LastAction <> "Ringtone: pulse" then
+    failwith
+      $"Expected 'Ringtone: pulse' and closed picker, got '{selectionTab.LastAction}'."
+
+  selectionTab.TreeInput.OnExpandedChange.Invoke("samples", true)
+  pump 2
+  selectionTab.TreeInput.OnSelectionChange.Invoke([| "gallery" |])
+  pump 2
+
+  if
+    selectionTab.SelectedTreeIds <> [| "gallery" |]
+    || not(selectionTab.ExpandedTreeIds |> Array.contains "samples")
+  then
+    failwith "Expected tree view expand and select to update tab state."
 
   printfn "MetroGallery checks passed."
   0

@@ -20,6 +20,8 @@ type MetroPivotInput = {
 type MetroPivotCell() =
   inherit Cell<MetroPivotInput>()
 
+  abstract HeaderScrollHandle: ElementHandle
+
   abstract ContentTranslate: Anim<Point>
 
   abstract ContentOpacity: Anim<float>
@@ -85,8 +87,12 @@ module MetroPivot =
     AccessibilityName = ValueNone
   }
 
-  /// State of a Pivot cell. One mutable field per concern.
+  // State of a Pivot cell. One mutable field per concern.
   type PivotState = {
+    HeaderScrollHandle: ElementHandle
+    ActiveTabHandle: ElementHandle
+    mutable Subscribed: bool
+    mutable PendingHeaderPan: bool
     mutable Input: MetroPivotInput
     mutable LastSelectedId: string voption
     mutable LastSelectedIndex: int
@@ -102,29 +108,35 @@ module MetroPivot =
     mutable Opacity: Anim<float>
   }
 
-  /// The delegates of a Pivot cell. `create` makes them once.
+  // The delegates of a Pivot cell. `create` makes them once.
   type PivotDelegates = {
     KeyLeft: Action
     KeyRight: Action
     KeyHome: Action
     KeyEnd: Action
     NavKeys: KeyBinding array
+    HeaderWheel: Action<WheelEvent>
+    HeaderMetrics: Action<ElementMetrics>
     PointerDown: Action<PointerEvent>
     PointerMove: Action<PointerEvent>
     PointerUp: Action<PointerEvent>
     PointerCancel: Action<PointerEvent>
   }
 
-  /// The values that the functions of a Pivot cell work on.
+  // The values that the functions of a Pivot cell work on.
   type PivotContext = {
     State: PivotState
-    /// Gives one selection to the host cell.
+    // Gives one selection to the host cell.
     Select: Action<string>
     RenderContent: string -> Blob
     Delegates: PivotDelegates
   }
 
   let initialState() : PivotState = {
+    HeaderScrollHandle = ElementHandle()
+    ActiveTabHandle = ElementHandle()
+    Subscribed = false
+    PendingHeaderPan = true
     Input = {
       Title = ValueNone
       Items = Array.empty
@@ -219,6 +231,44 @@ module MetroPivot =
     if state.SwipeActive && e.PointerId = state.SwipePointerId then
       state.SwipeActive <- false
 
+  let headerWheel(state: PivotState, e: WheelEvent) : unit =
+    let rangeX = state.HeaderScrollHandle.ScrollRange.X
+
+    if rangeX > 0.0 && abs e.Delta.Y > abs e.Delta.X then
+      let currentX = state.HeaderScrollHandle.ScrollOffset.X
+      let targetX = Math.Clamp(currentX - e.Delta.Y * 40.0, 0.0, rangeX)
+
+      // At either end the offset cannot move, so the wheel keeps scrolling
+      // the parent. `PreventDefault` blocks the default scroll of the whole
+      // hit chain.
+      if targetX <> currentX then
+        state.HeaderScrollHandle.JumpTo(x = Nullable targetX) |> ignore
+        e.PreventDefault()
+
+  let syncHeaderPan(state: PivotState) : unit =
+    let tabBox = state.ActiveTabHandle.BorderBox
+    let stripBox = state.HeaderScrollHandle.ContentBox
+
+    if state.PendingHeaderPan && tabBox.Width > 0.0 && stripBox.Width > 0.0 then
+      state.PendingHeaderPan <- false
+      let curScrollX = state.HeaderScrollHandle.ScrollOffset.X
+      let maxScrollX = state.HeaderScrollHandle.ScrollRange.X
+      let stripLeft = stripBox.X
+      let stripRight = stripBox.X + stripBox.Width
+
+      let nextScrollX =
+        if tabBox.X < stripLeft then
+          curScrollX + (tabBox.X - stripLeft)
+        elif tabBox.X + tabBox.Width > stripRight then
+          curScrollX + (tabBox.X + tabBox.Width - stripRight)
+        else
+          curScrollX
+
+      let clampedX = Math.Clamp(nextScrollX, 0.0, maxScrollX)
+
+      if abs(clampedX - curScrollX) > 0.5 then
+        state.HeaderScrollHandle.JumpTo(x = Nullable clampedX) |> ignore
+
   let delegatesOf(state: PivotState, select: Action<string>) : PivotDelegates =
     let keyLeft = Action(fun () -> navigateBy(state, select, -1))
     let keyRight = Action(fun () -> navigateBy(state, select, 1))
@@ -238,14 +288,26 @@ module MetroPivot =
       KeyHome = keyHome
       KeyEnd = keyEnd
       NavKeys = navKeys
+      HeaderWheel = Action<WheelEvent>(fun e -> headerWheel(state, e))
+      HeaderMetrics = Action<ElementMetrics>(fun _ -> syncHeaderPan state)
       PointerDown = Action<PointerEvent>(fun e -> pointerDown(state, e))
       PointerMove = Action<PointerEvent>(fun e -> pointerMove(state, e))
       PointerUp = Action<PointerEvent>(fun e -> pointerUp(state, select, e))
       PointerCancel = Action<PointerEvent>(fun e -> pointerCancel(state, e))
     }
 
-  /// Plays the entrance transition of the new selection, or snaps to rest
-  /// under reduced motion.
+  let mounted(ctx: PivotContext) : unit =
+    let state = ctx.State
+
+    if not state.Subscribed then
+      state.ActiveTabHandle.add_MetricsChanged ctx.Delegates.HeaderMetrics
+      state.HeaderScrollHandle.add_MetricsChanged ctx.Delegates.HeaderMetrics
+      state.Subscribed <- true
+
+    syncHeaderPan state
+
+  // Plays the entrance transition of the new selection, or snaps to rest
+  // under reduced motion.
   let inputChanged
     (ctx: PivotContext, input: MetroPivotInput, hostReduced: bool voption)
     : unit =
@@ -264,6 +326,8 @@ module MetroPivot =
       |> ValueOption.defaultValue false
 
     if selectionChanged && nextIdx >= 0 then
+      state.PendingHeaderPan <- true
+
       if reducedMotion then
         snapToRest state
       else
@@ -283,20 +347,29 @@ module MetroPivot =
 
         state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
     elif state.LastSelectedId.IsNone then
+      state.PendingHeaderPan <- true
       snapToRest state
 
     state.LastSelectedId <- ValueSome input.SelectedId
     state.LastSelectedIndex <- nextIdx
 
-  /// Resets the swipe, the selection tracking, and the animations.
-  let unmount(state: PivotState) : unit =
+  // Resets the swipe, the selection tracking, and the animations.
+  let unmount(ctx: PivotContext) : unit =
+    let state = ctx.State
+
+    if state.Subscribed then
+      state.ActiveTabHandle.remove_MetricsChanged ctx.Delegates.HeaderMetrics
+      state.HeaderScrollHandle.remove_MetricsChanged ctx.Delegates.HeaderMetrics
+      state.Subscribed <- false
+
+    state.PendingHeaderPan <- true
     state.SwipeActive <- false
     state.LastSelectedId <- ValueNone
     state.LastSelectedIndex <- -1
     state.ScopedReducedMotion <- false
     snapToRest state
 
-  /// Builds the title, the header strip, and the content panel.
+  // Builds the title, the header strip, and the content panel.
   let buildTree
     (ctx: PivotContext, input: MetroPivotInput, theme: MetroTheme)
     : Blob =
@@ -317,7 +390,7 @@ module MetroPivot =
       Style(
         OutlineWidth = Length.Pixels 2.0,
         OutlineColor = p.Foreground,
-        OutlineOffset = Length.Pixels 2.0
+        OutlineOffset = Length.Pixels -2.0
       )
 
     let hoverStyle = Style(Color = p.Foreground)
@@ -329,14 +402,17 @@ module MetroPivot =
 
     let headerStrip =
       Container(
+        Handle = state.HeaderScrollHandle,
         FlexDirection = FlexDirection.Row,
         FlexWrap = FlexWrap.NoWrap,
         AlignItems = AlignItems.Baseline,
         Gap = Length.Pixels 24.0,
-        OverflowX = Overflow.Hidden,
-        OverflowY = Overflow.Visible,
+        OverflowX = Overflow.Scroll,
+        OverflowY = Overflow.Hidden,
+        ScrollbarVisibilityX = ScrollbarVisibility.Hidden,
         FlexShrink = 0.0,
         Width = Length.Percent 100.0,
+        OnWheel = delegates.HeaderWheel,
         Accessibility =
           Accessibility(
             Role = AccessibilityRole.TabList,
@@ -404,6 +480,9 @@ module MetroPivot =
         )
           .Children(Text(Content = headerText, TextWrap = TextWrap.NoWrap))
 
+      if isSelected then
+        tabBtn.Handle <- state.ActiveTabHandle
+
       headerStrip.Add(tabBtn)
 
     let activeHeader =
@@ -452,8 +531,8 @@ module MetroPivot =
 
     root.Children(headerStrip, contentPanel)
 
-  /// Reads the theme, stops a running transition under reduced motion, then
-  /// builds the tree.
+  // Reads the theme, stops a running transition under reduced motion, then
+  // builds the tree.
   let build
     (ctx: PivotContext, input: MetroPivotInput, hostReduced: bool voption)
     : Blob =
@@ -471,8 +550,8 @@ module MetroPivot =
 
     buildTree(ctx, input, theme)
 
-  /// The reduced motion preference of the host window. <c>ValueNone</c> when
-  /// the cell has no window.
+  // The reduced motion preference of the host window. ValueNone when the cell
+  // has no window.
   let reducedMotionOf(host: Window) : bool voption =
     if isNull host then
       ValueNone
@@ -504,15 +583,18 @@ module MetroPivot =
 
     let cell = {
       new MetroPivotCell() with
+        override _.HeaderScrollHandle = state.HeaderScrollHandle
         override _.ContentTranslate = state.Translate
         override _.ContentOpacity = state.Opacity
 
-        override this.View = buildTree(context, state.Input, Metro.read())
+        override _.View = buildTree(context, state.Input, Metro.read())
+
+        override _.Mounted() = mounted context
 
         override this.InputChanged(input) =
           inputChanged(context, input, reducedMotionOf this.Host)
 
-        override _.Unmounting() = unmount state
+        override _.Unmounting() = unmount context
 
         override this.Build(input) : Blob =
           build(context, input, reducedMotionOf this.Host)

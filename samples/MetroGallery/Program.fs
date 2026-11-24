@@ -13,6 +13,7 @@ let sceneTabs = [|
   "lists"
   "motion"
   "overview"
+  "selection"
   "typography"
   "zoom"
 |]

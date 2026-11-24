@@ -20,6 +20,9 @@
     <Compile Include="NumberRatingTests.fs" />
     <Compile Include="ComboBoxTests.fs" />
     <Compile Include="TiltAndAnimatedOverlaysTests.fs" />
+    <Compile Include="ListPickerFixTests.fs" />
+    <Compile Include="SelectionControlsTests.fs" />
+    <Compile Include="LongListSelectorFixTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

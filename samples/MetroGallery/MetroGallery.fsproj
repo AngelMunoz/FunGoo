@@ -14,6 +14,7 @@
     <Compile Include="ControlsTab.fs" />
     <Compile Include="FlipViewTab.fs" />
     <Compile Include="ListsTab.fs" />
+    <Compile Include="SelectionTab.fs" />
     <Compile Include="ZoomTab.fs" />
     <Compile Include="InputsTab.fs" />
     <Compile Include="Gallery.fs" />
