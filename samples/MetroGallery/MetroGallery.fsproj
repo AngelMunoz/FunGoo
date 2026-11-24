@@ -20,6 +20,7 @@
     <Compile Include="DateTimeTab.fs" />
     <Compile Include="OverlaysTab.fs" />
     <Compile Include="NotificationsTab.fs" />
+    <Compile Include="NavigationTab.fs" />
     <Compile Include="Gallery.fs" />
     <Compile Include="GalleryCheck.fs" />
     <Compile Include="Program.fs" />

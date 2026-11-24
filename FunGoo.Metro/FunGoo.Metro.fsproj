@@ -39,6 +39,16 @@
     <Compile Include="MetroPivot.fs" />
     <Compile Include="MetroHub.fsi" />
     <Compile Include="MetroHub.fs" />
+    <Compile Include="MetroPanorama.fsi" />
+    <Compile Include="MetroPanorama.fs" />
+    <Compile Include="MetroSplitView.fsi" />
+    <Compile Include="MetroSplitView.fs" />
+    <Compile Include="MetroTabView.fsi" />
+    <Compile Include="MetroTabView.fs" />
+    <Compile Include="MetroBreadcrumbBar.fsi" />
+    <Compile Include="MetroBreadcrumbBar.fs" />
+    <Compile Include="MetroAppBarParts.fsi" />
+    <Compile Include="MetroAppBarParts.fs" />
     <Compile Include="MetroTiles.fsi" />
     <Compile Include="MetroTiles.fs" />
     <Compile Include="MetroOverlays.fsi" />

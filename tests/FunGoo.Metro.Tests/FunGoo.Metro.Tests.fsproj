@@ -27,6 +27,7 @@
     <Compile Include="CalendarTests.fs" />
     <Compile Include="DialogsAndMenusTests.fs" />
     <Compile Include="NotificationsTests.fs" />
+    <Compile Include="NavigationControlsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

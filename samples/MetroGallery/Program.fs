@@ -13,6 +13,7 @@ let sceneTabs = [|
   "inputs"
   "lists"
   "motion"
+  "navigation"
   "notifications"
   "overlays"
   "overview"

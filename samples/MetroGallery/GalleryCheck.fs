@@ -212,6 +212,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "datetime"
       "overlays"
       "notifications"
+      "navigation"
       "controls"
       "flip-view"
       "lists"
@@ -224,6 +225,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "datetime"
       "overlays"
       "notifications"
+      "navigation"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -628,6 +630,40 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   then
     failwith
       $"Expected closed tip with 'Teaching tip action: Got It', got '{notifTab.LastAction}'."
+
+  // 14. Navigation tab: SplitView, TabView, BreadcrumbBar, AppBar parts, and
+  // Panorama mount and deliver callbacks cleanly.
+  gallery.SelectTab "navigation"
+  pump 2
+
+  let navTab = requireSome("Expected navigation tab.", gallery.NavigationTab)
+
+  navTab.TabBarInput.OnAdd.Invoke()
+  pump 2
+
+  if navTab.TabCount <> 4 || navTab.ActiveSubTab <> "tab-4" then
+    failwith
+      $"Expected 4 tabs and active 'tab-4', got {navTab.TabCount} and '{navTab.ActiveSubTab}'."
+
+  navTab.TabBarInput.OnClose.Invoke "tab-4"
+  pump 2
+
+  if navTab.TabCount <> 3 then
+    failwith $"Expected 3 tabs after close, got {navTab.TabCount}."
+
+  navTab.BreadcrumbInput.OnSelect.Invoke "apps"
+  pump 2
+
+  if navTab.LastAction <> "Breadcrumb: apps" then
+    failwith $"Expected 'Breadcrumb: apps', got '{navTab.LastAction}'."
+
+  let pan = requireSome("Expected panorama cell.", navTab.Panorama)
+  pan.ScrollHandle.JumpTo(x = System.Nullable 100.0) |> ignore
+  pump 2
+
+  if abs(pan.TitleTranslate.Value.X - (-35.0)) > 0.5 then
+    failwith
+      $"Expected Panorama title parallax -35.0, got {pan.TitleTranslate.Value.X}."
 
   printfn "MetroGallery checks passed."
   0

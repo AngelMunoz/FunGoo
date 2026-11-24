@@ -14,6 +14,7 @@
 - **Metro:** Metro Calendar and CalendarDatePicker: a month-grid calendar with sharp cells, a solid accent highlight on the selected date, and an accent border on today, plus a compact date field that opens a dropdown calendar with one 2 px border.
 - **Metro:** Metro Flyout, MessageDialog, MenuFlyout, ContextMenu, and Tooltip: an anchored flyout with a slide and a fade, a full-window message dialog with up to three commands, a menu flyout with separators and submenus, a context menu for the secondary pointer button, and a tooltip that follows hover and focus. Escape and a press outside dismiss the flyout, the message dialog, and the menus. A press on the dimmed area also dismisses the message dialog.
 - **Metro:** Metro InfoBar, Toast, and TeachingTip: an inline severity banner with a start stripe, an action button, and a close button, stacked toast notifications with auto-dismiss timers and a close button, and a teaching tip callout that anchors to a target or centers in the window.
+- **Metro:** Metro SplitView, TabView, AppBar parts, Panorama, and BreadcrumbBar: a split view with Compact, Inline, and Overlay display modes, a tab bar with closable tabs and an add action, standalone AppBar buttons, toggle buttons, and separators, a horizontal Panorama with parallax layers, and a breadcrumb bar.
 
 ## [0.9.0] - 2026-11-16
 
