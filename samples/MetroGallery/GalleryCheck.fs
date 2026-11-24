@@ -211,6 +211,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "inputs"
       "datetime"
       "overlays"
+      "notifications"
       "controls"
       "flip-view"
       "lists"
@@ -222,6 +223,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "inputs"
       "datetime"
       "overlays"
+      "notifications"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -581,6 +583,51 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   then
     failwith
       $"Expected 'Message command: save' in one build, got '{ovTab.LastAction}'."
+
+  // 13. Notifications tab: InfoBar, ToastHost, and TeachingTip mount and
+  // deliver callbacks cleanly.
+  gallery.SelectTab "notifications"
+  pump 2
+
+  let notifTab =
+    requireSome("Expected notifications tab.", gallery.NotificationsTab)
+
+  if notifTab.InfoOpenMask <> 0b1111 then
+    failwith "Expected all four info bars open initially."
+
+  notifTab.PushSampleToast()
+  pump 2
+
+  let toastHost = requireSome("Expected toast host cell.", notifTab.ToastHost)
+
+  if toastHost.ActiveCount <> 1 || notifTab.ToastCount <> 1 then
+    failwith "Expected 1 active toast after PushSampleToast."
+
+  toastHost.Dismiss "toast-1"
+  pump 2
+
+  if
+    toastHost.ActiveCount <> 0 || notifTab.LastAction <> "Dismissed toast-1"
+  then
+    failwith
+      $"Expected 'Dismissed toast-1', got '{notifTab.LastAction}' (count={toastHost.ActiveCount})."
+
+  notifTab.SetTipOpen true
+  pump 2
+
+  let tipCell = requireSome("Expected teaching tip cell.", notifTab.TeachingTip)
+
+  if not tipCell.IsPresented then
+    failwith "Expected teaching tip to be presented."
+
+  tipCell.InvokeAction()
+  pump 2
+
+  if
+    notifTab.TipOpen || notifTab.LastAction <> "Teaching tip action: Got It"
+  then
+    failwith
+      $"Expected closed tip with 'Teaching tip action: Got It', got '{notifTab.LastAction}'."
 
   printfn "MetroGallery checks passed."
   0

@@ -51,6 +51,12 @@
     <Compile Include="MetroMenus.fs" />
     <Compile Include="MetroTooltip.fsi" />
     <Compile Include="MetroTooltip.fs" />
+    <Compile Include="MetroInfoBar.fsi" />
+    <Compile Include="MetroInfoBar.fs" />
+    <Compile Include="MetroToast.fsi" />
+    <Compile Include="MetroToast.fs" />
+    <Compile Include="MetroTeachingTip.fsi" />
+    <Compile Include="MetroTeachingTip.fs" />
     <Compile Include="MetroFlipView.fsi" />
     <Compile Include="MetroFlipView.fs" />
     <Compile Include="MetroListView.fsi" />

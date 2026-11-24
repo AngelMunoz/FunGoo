@@ -26,6 +26,7 @@
     <Compile Include="DateTimePickerTests.fs" />
     <Compile Include="CalendarTests.fs" />
     <Compile Include="DialogsAndMenusTests.fs" />
+    <Compile Include="NotificationsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

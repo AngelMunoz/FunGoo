@@ -56,6 +56,9 @@ type GalleryCell() =
   /// The mounted overlays tab, for the headless check.
   abstract OverlaysTab: OverlaysTab.OverlaysTabCell voption
 
+  /// The mounted notifications tab, for the headless check.
+  abstract NotificationsTab: NotificationsTab.NotificationsTabCell voption
+
   /// The mounted settings flyout, for the headless check.
   abstract SettingsFlyout: MetroSettingsFlyoutCell voption
 
@@ -132,6 +135,7 @@ type GalleryFactories = {
   InputsTab: unit -> Cell
   DateTimeTab: unit -> Cell
   OverlaysTab: unit -> Cell
+  NotificationsTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
@@ -175,6 +179,10 @@ let pivotItems = [|
     Header = "date & time"
   }
   { Id = "overlays"; Header = "overlays" }
+  {
+    Id = "notifications"
+    Header = "notifications"
+  }
   { Id = "motion"; Header = "motion" }
 |]
 
@@ -551,6 +559,8 @@ let tabContent
   | "inputs" -> Cell.Mount<Cell>("inputs-tab", ctx.Factories.InputsTab)
   | "datetime" -> Cell.Mount<Cell>("datetime-tab", ctx.Factories.DateTimeTab)
   | "overlays" -> Cell.Mount<Cell>("overlays-tab", ctx.Factories.OverlaysTab)
+  | "notifications" ->
+    Cell.Mount<Cell>("notifications-tab", ctx.Factories.NotificationsTab)
   | "motion" ->
     MotionTab.view(ctx.Factories.ContinuumDemo, ctx.Factories.StaggerDemo)
   | _ -> TypographyTab.view()
@@ -775,6 +785,10 @@ let create
   let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
   let mutable dateTimeTabRef: DateTimeTab.DateTimeTabCell voption = ValueNone
   let mutable overlaysTabRef: OverlaysTab.OverlaysTabCell voption = ValueNone
+
+  let mutable notificationsTabRef: NotificationsTab.NotificationsTabCell voption =
+    ValueNone
+
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
   let mutable dialogRef: MetroContentDialogCell voption = ValueNone
 
@@ -870,6 +884,11 @@ let create
         let tab = OverlaysTab.create()
         overlaysTabRef <- ValueSome tab
         tab :> Cell
+    NotificationsTab =
+      fun () ->
+        let tab = NotificationsTab.create()
+        notificationsTabRef <- ValueSome tab
+        tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
     LiveTile = MetroLiveTile.createFactory(fun () -> tapLiveTile state.Store)
@@ -917,6 +936,7 @@ let create
       override _.InputsTab = inputsTabRef
       override _.DateTimeTab = dateTimeTabRef
       override _.OverlaysTab = overlaysTabRef
+      override _.NotificationsTab = notificationsTabRef
       override _.SettingsFlyout = flyoutRef
       override _.ContentDialog = dialogRef
       override _.Builds = state.Builds
