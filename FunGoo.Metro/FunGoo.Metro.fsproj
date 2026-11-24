@@ -65,6 +65,8 @@
     <Compile Include="MetroLoopingSelector.fs" />
     <Compile Include="MetroDateTimePickers.fsi" />
     <Compile Include="MetroDateTimePickers.fs" />
+    <Compile Include="MetroCalendar.fsi" />
+    <Compile Include="MetroCalendar.fs" />
   </ItemGroup>
 
   <ItemGroup>

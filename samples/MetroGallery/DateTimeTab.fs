@@ -1,7 +1,9 @@
 module MetroGallery.DateTimeTab
 
 open System
+open System.Globalization
 open Goo
+open Goo.Widgets.Inputs
 open FunGoo.Children
 open FunGoo.Metro
 
@@ -13,10 +15,14 @@ type DateTimeTabCell() =
   abstract TimeRoller: MetroTimePickerRollerCell voption
   abstract DatePicker: MetroDatePickerCell voption
   abstract TimePicker: MetroTimePickerCell voption
+  abstract CalendarInput: CalendarInput
+  abstract CalendarDatePickerInput: DatePickerInput
   abstract RollerDate: DateOnly
   abstract RollerTime: TimeOnly
   abstract PickedDate: DateOnly voption
   abstract PickedTime: TimeOnly voption
+  abstract CalendarDate: DateOnly voption
+  abstract DropdownDate: DateOnly voption
   abstract LastAction: string
   abstract Builds: int
 
@@ -28,6 +34,11 @@ type DateTimeState = {
   mutable PickedTime: TimeOnly voption
   mutable TimeOpen: bool
   mutable UseTwelveHour: bool
+  mutable CalendarDate: DateOnly voption
+  mutable CalendarMonth: DateOnly voption
+  mutable DropdownDate: DateOnly voption
+  mutable LastCalendarInput: CalendarInput
+  mutable LastDropdownInput: DatePickerInput
   mutable LastAction: string
   mutable Builds: int
 }
@@ -37,6 +48,8 @@ type DateTimeFactories = {
   TimeRoller: unit -> MetroTimePickerRollerCell
   DatePicker: unit -> MetroDatePickerCell
   TimePicker: unit -> MetroTimePickerCell
+  Calendar: IMetroCalendarFactory
+  CalendarDatePicker: IMetroCalendarDatePickerFactory
 }
 
 let column(title: string, content: Blob) : Blob =
@@ -72,7 +85,7 @@ let view(state: DateTimeState, factories: DateTimeFactories) : Blob =
     MetroDatePicker.defaults state.PickedDate with
         Open = state.DateOpen
         FallbackDate = state.RollerDate
-        Label = ValueSome "COMPACT DATE PICKER"
+        Label = ValueSome "ROLLER DATE PICKER"
   }
 
   let timePickerInput = {
@@ -81,13 +94,35 @@ let view(state: DateTimeState, factories: DateTimeFactories) : Blob =
         FallbackTime = state.RollerTime
         Format = clockFormat
         MinuteIncrement = 5
-        Label = ValueSome "COMPACT TIME PICKER"
+        Label = ValueSome "ROLLER TIME PICKER"
   }
+
+  let calendarProps = {
+    MetroCalendar.defaults state.CalendarDate with
+        Month = state.CalendarMonth
+        Today = ValueSome(DateOnly(2026, 11, 24))
+        Width = ValueSome(Length.Pixels 288.0)
+        AccessibilityName = ValueSome "Project schedule calendar"
+  }
+
+  let dropdownProps = {
+    MetroCalendarDatePicker.defaults state.DropdownDate with
+        Today = ValueSome(DateOnly(2026, 11, 24))
+        Placeholder =
+          ValueSome(CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern)
+        Width = ValueSome(Length.Percent 100.0)
+        AccessibilityName = ValueSome "Calendar date picker"
+  }
+
+  state.LastCalendarInput <- factories.Calendar.CreateInput calendarProps
+
+  state.LastDropdownInput <-
+    factories.CalendarDatePicker.CreateInput dropdownProps
 
   let rollersCol =
     column(
       "looping rollers",
-      Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 20.0)
+      Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 18.0)
         .Children(
           MetroDatePickerRoller.mount(
             "gallery-date-roller",
@@ -105,7 +140,7 @@ let view(state: DateTimeState, factories: DateTimeFactories) : Blob =
   let fieldsCol =
     column(
       "popup pickers",
-      Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 16.0)
+      Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 14.0)
         .Children(
           MetroDatePicker.mount(
             "gallery-date-picker",
@@ -117,6 +152,17 @@ let view(state: DateTimeState, factories: DateTimeFactories) : Blob =
             timePickerInput,
             factories.TimePicker
           ),
+          Container(
+            FlexDirection = FlexDirection.Column,
+            Gap = Length.Pixels 6.0
+          )
+            .Children(
+              MetroText.caption "CALENDAR DATE PICKER",
+              factories.CalendarDatePicker.Mount(
+                "gallery-calendar-date-picker",
+                dropdownProps
+              )
+            ),
           MetroToggleSwitch.build(
             {
               MetroToggleSwitch.defaults state.UseTwelveHour with
@@ -133,6 +179,12 @@ let view(state: DateTimeState, factories: DateTimeFactories) : Blob =
         )
     )
 
+  let calendarCol =
+    column(
+      "month calendar",
+      factories.Calendar.Mount("gallery-calendar", calendarProps)
+    )
+
   Container(
     FlexDirection = FlexDirection.Column,
     FlexGrow = 1.0,
@@ -143,16 +195,16 @@ let view(state: DateTimeState, factories: DateTimeFactories) : Blob =
   )
     .Children(
       MetroText.secondary
-        "Looping selector columns respond to neighbor clicks, mouse wheel, \
-         vertical drag, and Up/Down/PageUp/PageDown/Home/End keys. Compact \
-         pickers stage a draft inside a modal sheet with Accept and Cancel.",
+        "Looping rollers, modal date and time pickers, an editable calendar \
+         date picker, and a month-grid calendar with sharp 0 px cells and a \
+         2 px accent border on today.",
       Container(
         FlexDirection = FlexDirection.Row,
         Width = Length.Percent 100.0,
         FlexShrink = 0.0,
-        Gap = Length.Pixels 32.0
+        Gap = Length.Pixels 24.0
       )
-        .Children(rollersCol, fieldsCol),
+        .Children(rollersCol, fieldsCol, calendarCol),
       MetroText.caption state.LastAction
     )
 
@@ -165,6 +217,11 @@ let create() : DateTimeTabCell =
     PickedTime = ValueSome(TimeOnly(14, 30))
     TimeOpen = false
     UseTwelveHour = false
+    CalendarDate = ValueSome(DateOnly(2026, 11, 18))
+    CalendarMonth = ValueSome(DateOnly(2026, 11, 1))
+    DropdownDate = ValueSome(DateOnly(2026, 11, 24))
+    LastCalendarInput = Unchecked.defaultof<CalendarInput>
+    LastDropdownInput = Unchecked.defaultof<DatePickerInput>
     LastAction = "Ready"
     Builds = 0
   }
@@ -237,6 +294,31 @@ let create() : DateTimeTabCell =
 
         timePickerRef <- ValueSome cell
         cell
+    Calendar =
+      MetroCalendar.createFactory(function
+        | MetroCalendarEvent.DateSelected date ->
+          state.CalendarDate <- ValueSome date
+
+          state.LastAction <- $"Calendar date: {MetroDatePicker.formatIso date}"
+        | MetroCalendarEvent.MonthChanged firstOfMonth ->
+          state.CalendarMonth <- ValueSome firstOfMonth
+
+          state.LastAction <-
+            $"Calendar month: {MetroDatePicker.formatIso firstOfMonth}")
+    CalendarDatePicker =
+      MetroCalendarDatePicker.createFactory(function
+        | MetroCalendarDatePickerEvent.ValueChanged maybeDate ->
+          state.DropdownDate <- maybeDate
+
+          let formatted =
+            maybeDate
+            |> ValueOption.map MetroDatePicker.formatIso
+            |> ValueOption.defaultValue "cleared"
+
+          state.LastAction <- $"Dropdown date: {formatted}"
+        | MetroCalendarDatePickerEvent.OpenChanged _ -> ()
+        | MetroCalendarDatePickerEvent.InvalidInput raw ->
+          state.LastAction <- $"Invalid date: {raw}")
   }
 
   {
@@ -245,10 +327,14 @@ let create() : DateTimeTabCell =
       override _.TimeRoller = timeRollerRef
       override _.DatePicker = datePickerRef
       override _.TimePicker = timePickerRef
+      override _.CalendarInput = state.LastCalendarInput
+      override _.CalendarDatePickerInput = state.LastDropdownInput
       override _.RollerDate = state.RollerDate
       override _.RollerTime = state.RollerTime
       override _.PickedDate = state.PickedDate
       override _.PickedTime = state.PickedTime
+      override _.CalendarDate = state.CalendarDate
+      override _.DropdownDate = state.DropdownDate
       override _.LastAction = state.LastAction
       override _.Builds = state.Builds
 

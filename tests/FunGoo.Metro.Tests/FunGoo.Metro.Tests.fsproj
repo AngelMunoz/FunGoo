@@ -24,6 +24,7 @@
     <Compile Include="SelectionControlsTests.fs" />
     <Compile Include="LongListSelectorFixTests.fs" />
     <Compile Include="DateTimePickerTests.fs" />
+    <Compile Include="CalendarTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

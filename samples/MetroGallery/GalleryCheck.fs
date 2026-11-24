@@ -524,5 +524,23 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   then
     failwith "Expected committed date 2027-03-15 and closed modal."
 
+  dtTab.CalendarInput.OnChange.Invoke(DateOnly(2026, 11, 30))
+  pump 2
+
+  if dtTab.CalendarDate <> ValueSome(DateOnly(2026, 11, 30)) then
+    failwith "Expected Calendar selection to update to 2026-11-30."
+
+  dtTab.CalendarDatePickerInput.OnChange.Invoke(Nullable())
+  pump 2
+
+  if dtTab.DropdownDate.IsSome then
+    failwith "Expected CalendarDatePicker clear to reset DropdownDate."
+
+  dtTab.CalendarDatePickerInput.OnChange.Invoke(Nullable(DateOnly(2026, 12, 1)))
+  pump 2
+
+  if dtTab.DropdownDate <> ValueSome(DateOnly(2026, 12, 1)) then
+    failwith "Expected CalendarDatePicker selection 2026-12-01."
+
   printfn "MetroGallery checks passed."
   0
