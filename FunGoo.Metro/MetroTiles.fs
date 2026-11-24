@@ -446,6 +446,10 @@ type MetroLiveTileCell() =
 
   abstract View: Blob
 
+  abstract TiltState: MetroTiltState
+
+  abstract Builds: int
+
   // Gives a click of the host to the host cell, as a Goo.Widgets control
   // does. The owner rule then rebuilds the host cell.
   member this.Raise(callback: Action) = this.InvokeInputCallback(callback)
@@ -481,6 +485,7 @@ module MetroLiveTile =
     mutable IsMounted: bool
     mutable LastReducedMotion: bool
     mutable ScopedReducedMotion: bool
+    mutable Builds: int
     // Slots for the two animation values. `create` fills them after the cell
     // exists.
     mutable Translate: Anim<Point>
@@ -490,6 +495,7 @@ module MetroLiveTile =
   /// The values that the functions of a live tile cell work on.
   type LiveTileContext = {
     State: LiveTileState
+    Tilt: TiltEngine
     /// Gives one click to the host cell.
     Click: Action
     /// The bindings of the Enter key and of the Space key. `create` makes
@@ -522,6 +528,7 @@ module MetroLiveTile =
     IsMounted = false
     LastReducedMotion = false
     ScopedReducedMotion = false
+    Builds = 0
     Translate = Unchecked.defaultof<Anim<Point>>
     Opacity = Unchecked.defaultof<Anim<float>>
   }
@@ -641,6 +648,7 @@ module MetroLiveTile =
     state.ScopedReducedMotion <- false
     stopTimer state
     snapToRest state
+    TiltEngine.snapToRest ctx.Tilt
 
   let view
     (ctx: LiveTileContext, input: MetroLiveTileInput, theme: MetroTheme)
@@ -668,9 +676,6 @@ module MetroLiveTile =
     let hoverBg = if theme.IsDark then accent.Light else accent.Dark
     let hoverStyle = Style(BackgroundColor = hoverBg)
     let activeStyle = Style(BackgroundColor = accent.Dark)
-
-    if not theme.ReducedMotion then
-      activeStyle.Transform <- TileInternals.pressScaleTransform
 
     let disabledStyle =
       Style(
@@ -803,6 +808,7 @@ module MetroLiveTile =
       tileBtn.OnClick <- ctx.Click
       tileBtn.KeyBindings <- ctx.Keys
 
+    TiltEngine.applyToBlob(ctx.Tilt, tileBtn)
     tileBtn.Children(faceContainer)
 
   /// Reads the theme, stops the cycle and the animations under reduced
@@ -812,6 +818,7 @@ module MetroLiveTile =
     : Blob =
     let state = ctx.State
     state.Input <- input
+    state.Builds <- state.Builds + 1
     let theme = Metro.read()
     let windowReduced = ValueOption.defaultValue false hostReduced
     state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
@@ -820,6 +827,15 @@ module MetroLiveTile =
     if theme.ReducedMotion then
       stopTimer state
       snapToRest state
+
+    TiltEngine.sync(
+      ctx.Tilt,
+      {
+        MetroTilt.defaultConfig with
+            Disabled = input.Disabled
+      },
+      theme.ReducedMotion
+    )
 
     view(ctx, input, theme)
 
@@ -839,8 +855,11 @@ module MetroLiveTile =
     Handler = handler
   }
 
-  let create(onClick: unit -> unit) : MetroLiveTileCell =
+  let createWithEffect
+    (effect: ShaderEffect voption, onClick: unit -> unit)
+    : MetroLiveTileCell =
     let state = initialState()
+    let tilt = TiltEngine.create effect
 
     // The slot of the cell: the click delegate is made before the cell exists.
     let mutable self: MetroLiveTileCell voption = ValueNone
@@ -859,6 +878,7 @@ module MetroLiveTile =
 
     let context: LiveTileContext = {
       State = state
+      Tilt = tilt
       Click = click
       Keys = keys
     }
@@ -876,6 +896,9 @@ module MetroLiveTile =
 
         override _.View = view(context, state.Input, Metro.read())
 
+        override _.TiltState = TiltEngine.snapshot tilt
+        override _.Builds = state.Builds
+
         override this.Mounted() =
           mounted(this, context, attachmentOf(this.Host, onPreferencesChanged))
 
@@ -890,8 +913,12 @@ module MetroLiveTile =
     // The cell exists now: Goo ties each animation to it.
     state.Translate <- cell.AnimateValue(TileInternals.zeroPoint)
     state.Opacity <- cell.AnimateValue(1.0)
+    TiltEngine.attach(tilt, cell)
     self <- ValueSome cell
     cell
+
+  let create(onClick: unit -> unit) : MetroLiveTileCell =
+    createWithEffect(MetroPerspective.tryCreateDefault(), onClick)
 
   let createFactory(onClick: unit -> unit) : unit -> MetroLiveTileCell =
     fun () -> create onClick

@@ -6,7 +6,6 @@ open FunGoo.Metro
 open MetroGallery.GalleryStore
 
 /// The buttons: four variants, one toggle button, and one disabled button.
-/// Each button is a Blob of this tab, so the owner rule rebuilds the tab.
 let buttons(store: GalleryStore) : Blob =
   Container(
     FlexDirection = FlexDirection.Row,
@@ -15,35 +14,55 @@ let buttons(store: GalleryStore) : Blob =
     AlignItems = AlignItems.Center
   )
     .Children(
-      MetroButton.standard(
-        "Standard",
-        fun () -> store.LastAction <- "Standard clicked"
+      MetroTilt.mount(
+        "ctrl-btn-standard",
+        MetroButton.standard(
+          "Standard",
+          fun () -> store.LastAction <- "Standard clicked"
+        )
       ),
-      MetroButton.accent(
-        "Accent",
-        fun () -> store.LastAction <- "Accent clicked"
+      MetroTilt.mount(
+        "ctrl-btn-accent",
+        MetroButton.accent(
+          "Accent",
+          fun () -> store.LastAction <- "Accent clicked"
+        )
       ),
-      MetroButton.hyperlink(
-        "Hyperlink",
-        fun () -> store.LastAction <- "Hyperlink clicked"
+      MetroTilt.mount(
+        "ctrl-btn-hyperlink",
+        MetroButton.hyperlink(
+          "Hyperlink",
+          fun () -> store.LastAction <- "Hyperlink clicked"
+        )
       ),
-      MetroButton.subtle(
-        "Subtle",
-        fun () -> store.LastAction <- "Subtle clicked"
+      MetroTilt.mount(
+        "ctrl-btn-subtle",
+        MetroButton.subtle(
+          "Subtle",
+          fun () -> store.LastAction <- "Subtle clicked"
+        )
       ),
-      MetroButton.build(
-        {
-          MetroButton.defaults(if store.TogglePressed then "Pinned" else "Pin") with
-              Pressed = ValueSome store.TogglePressed
-        },
-        fun () -> store.TogglePressed <- not store.TogglePressed
+      MetroTilt.mount(
+        "ctrl-btn-toggle",
+        MetroButton.build(
+          {
+            MetroButton.defaults(
+              if store.TogglePressed then "Pinned" else "Pin"
+            ) with
+                Pressed = ValueSome store.TogglePressed
+          },
+          fun () -> store.TogglePressed <- not store.TogglePressed
+        )
       ),
-      MetroButton.build(
-        {
-          MetroButton.defaults "Disabled" with
-              Disabled = true
-        },
-        ignore
+      MetroTilt.mount(
+        "ctrl-btn-disabled",
+        MetroButton.build(
+          {
+            MetroButton.defaults "Disabled" with
+                Disabled = true
+          },
+          ignore
+        )
       )
     )
 
@@ -218,9 +237,9 @@ let view(store: GalleryStore, onSliderChange: float -> unit) : Blob =
 
 /// Creates the controls tab. The tab reads its values in
 /// <paramref name="store"/>. A control writes its value into
-/// <paramref name="store"/>. The slider is a mounted widget: it gives each
-/// change to this tab, so the owner rule rebuilds the tab. Thus a handler
-/// writes the value, and no handler calls `Rebuild()`.
+/// <paramref name="store"/>. The owner rule rebuilds this tab after each
+/// control callback. Thus a handler writes the value, and no handler calls
+/// `Rebuild()`.
 let create(store: GalleryStore) : Cell =
   // Created once. F# converts the function to a delegate at each build. The
   // target of each delegate is this function value, so the slider input of

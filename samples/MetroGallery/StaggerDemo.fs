@@ -22,14 +22,9 @@ type DemoState = {
   mutable Opacities: Anim<float> array
 }
 
-/// The values that the functions of the demo work on.
-type DemoContext = { State: DemoState }
-
 /// Plays the entrance of each row again. The delay of a row grows with its
 /// index. Under reduced motion, each row snaps to its rest.
-let replay(ctx: DemoContext, theme: MetroTheme) : unit =
-  let state = ctx.State
-
+let replay(state: DemoState, theme: MetroTheme) : unit =
   for i = 0 to Content.labels.Length - 1 do
     if theme.ReducedMotion then
       state.Translates[i].Snap(Point(X = 0.0, Y = 0.0))
@@ -43,7 +38,7 @@ let replay(ctx: DemoContext, theme: MetroTheme) : unit =
       state.Opacities[i].Play(0.0, 1.0, spec)
 
 /// One row of the stagger: the label and its delay.
-let row(ctx: DemoContext, index: int) : Blob =
+let row(state: DemoState, index: int) : Blob =
   let delayMs = MetroMotion.staggerDelayMs index
   let theme = Metro.read()
 
@@ -62,46 +57,50 @@ let row(ctx: DemoContext, index: int) : Blob =
         Length.Pixels 4.0
       ),
     BorderColor = Edges<Color>(theme.Accent.Base),
-    TranslateAnim = ctx.State.Translates[index],
-    OpacityAnim = ctx.State.Opacities[index]
+    TranslateAnim = state.Translates[index],
+    OpacityAnim = state.Opacities[index]
   )
     .Children(
       MetroText.body Content.labels[index],
       MetroText.caption $"+{int delayMs} ms"
     )
 
-let view(ctx: DemoContext) : Blob =
+let view(state: DemoState) : Blob =
   let theme = Metro.read()
 
   let list =
     Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 8.0)
 
   for i = 0 to Content.labels.Length - 1 do
-    list.Add(row(ctx, i))
+    list.Add(row(state, i))
 
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 12.0)
     .Children(
       MetroText.header "staggered entrance",
       Container(FlexDirection = FlexDirection.Row)
         .Children(
-          MetroButton.standard("Replay Stagger", fun () -> replay(ctx, theme))
+          MetroTilt.mount(
+            "stagger-replay",
+            MetroButton.standard(
+              "Replay Stagger",
+              fun () -> replay(state, theme)
+            )
+          )
         ),
       list
     )
 
 /// Creates the demo. The demo owns one pair of animation values for each row.
-/// The button is a Blob of the demo, so the owner rule rebuilds it.
+/// The owner rule rebuilds the demo after each button click.
 let create() : Cell =
   let state: DemoState = {
     Translates = Array.empty
     Opacities = Array.empty
   }
 
-  let ctx: DemoContext = { State = state }
-
   let cell = {
     new Cell() with
-      override _.Build() : Blob = view ctx
+      override _.Build() : Blob = view state
   }
 
   // The cell exists now: Goo ties each animation to it.

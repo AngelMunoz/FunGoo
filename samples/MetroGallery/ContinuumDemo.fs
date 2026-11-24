@@ -13,12 +13,7 @@ type DemoState = {
   mutable Opacity: Anim<float>
 }
 
-/// The values that the functions of the demo work on.
-type DemoContext = { State: DemoState }
-
-let playEnter(ctx: DemoContext, theme: MetroTheme) : unit =
-  let state = ctx.State
-
+let playEnter(state: DemoState, theme: MetroTheme) : unit =
   Continuum.playEnter(
     theme,
     state.Translate,
@@ -28,9 +23,7 @@ let playEnter(ctx: DemoContext, theme: MetroTheme) : unit =
 
   state.Status <- "Entered (130 px, -70 px -> 0, 0)"
 
-let playExit(ctx: DemoContext, theme: MetroTheme) : unit =
-  let state = ctx.State
-
+let playExit(state: DemoState, theme: MetroTheme) : unit =
   Continuum.playExit(
     theme,
     state.Translate,
@@ -71,29 +64,38 @@ let flightTarget(state: DemoState, theme: MetroTheme) : Blob =
       }
     )
 
-let view(ctx: DemoContext) : Blob =
+let view(state: DemoState) : Blob =
   let theme = Metro.read()
 
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 12.0)
     .Children(
       MetroText.header "continuum flight",
-      MetroText.secondary ctx.State.Status,
+      MetroText.secondary state.Status,
       Container(FlexDirection = FlexDirection.Row, Gap = Length.Pixels 8.0)
         .Children(
-          MetroButton.accent("Play Enter", fun () -> playEnter(ctx, theme)),
-          MetroButton.standard("Play Exit", fun () -> playExit(ctx, theme)),
-          MetroButton.subtle("Reset", fun () -> reset ctx.State)
+          MetroTilt.mount(
+            "continuum-enter",
+            MetroButton.accent("Play Enter", fun () -> playEnter(state, theme))
+          ),
+          MetroTilt.mount(
+            "continuum-exit",
+            MetroButton.standard("Play Exit", fun () -> playExit(state, theme))
+          ),
+          MetroTilt.mount(
+            "continuum-reset",
+            MetroButton.subtle("Reset", fun () -> reset state)
+          )
         ),
       Container(
         Height = Length.Pixels 104.0,
         AlignItems = AlignItems.Center,
         Overflow = Overflow.Hidden
       )
-        .Children(flightTarget(ctx.State, theme))
+        .Children(flightTarget(state, theme))
     )
 
 /// Creates the demo. The demo owns its two animation values and its status
-/// text. Each button is a Blob of the demo, so the owner rule rebuilds it.
+/// text. The owner rule rebuilds the demo after each button click.
 let create() : Cell =
   let state: DemoState = {
     Status = "Ready"
@@ -101,11 +103,9 @@ let create() : Cell =
     Opacity = Unchecked.defaultof<Anim<float>>
   }
 
-  let ctx: DemoContext = { State = state }
-
   let cell = {
     new Cell() with
-      override _.Build() : Blob = view ctx
+      override _.Build() : Blob = view state
   }
 
   // The cell exists now: Goo ties each animation to it.

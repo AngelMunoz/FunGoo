@@ -25,6 +25,8 @@
     <Compile Include="MetroMotion.fs" />
     <Compile Include="MetroShader.fsi" />
     <Compile Include="MetroShader.fs" />
+    <Compile Include="MetroTilt.fsi" />
+    <Compile Include="MetroTilt.fs" />
     <Compile Include="MetroText.fsi" />
     <Compile Include="MetroText.fs" />
     <Compile Include="MetroButton.fsi" />

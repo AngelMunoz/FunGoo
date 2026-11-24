@@ -1,5 +1,6 @@
 namespace FunGoo.Metro
 
+open System
 open Goo
 
 /// Descriptor for a command button inside a <see cref="MetroAppBar"/>.
@@ -63,8 +64,39 @@ type MetroSettingsFlyoutProps = {
   AccessibilityName: string voption
 }
 
-/// Right-docked Metro settings flyout builder backed by <see cref="Portal"/>
-/// and a modal focus scope.
+/// Stateful right-docked Metro settings flyout cell that animates the panel
+/// slide and backdrop fade on open and close over 333 ms, honoring reduced
+/// motion. <c>MetroSettingsFlyout.create</c> makes the cell.
+[<AbstractClass>]
+type MetroSettingsFlyoutCell =
+  inherit Cell<MetroSettingsFlyoutProps>
+
+  /// <c>true</c> while the flyout portal is mounted (open or running its close
+  /// animation). A test reads it.
+  abstract IsVisible: bool
+
+  /// <c>true</c> while the open or close transition is running. A test reads
+  /// it.
+  abstract IsAnimating: bool
+
+  /// Paint-bound horizontal slide animation of the flyout panel. A test reads
+  /// it.
+  abstract PanelTranslate: Anim<Point>
+
+  /// Paint-bound opacity animation of the modal backdrop. A test reads it.
+  abstract BackdropOpacity: Anim<float>
+
+  /// The tree of the current state. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
+
+  /// Gives one dismiss request to the host cell, as a Goo.Widgets control
+  /// does. The owner rule then rebuilds the host cell, so a host does not call
+  /// <c>Rebuild</c> on itself in the dismiss callback.
+  member Raise: callback: Action -> unit
+
+/// Right-docked Metro settings flyout builders and stateful animated cell
+/// constructors backed by <see cref="Portal"/> and a modal focus scope.
 [<RequireQualifiedAccess>]
 module MetroSettingsFlyout =
 
@@ -72,13 +104,47 @@ module MetroSettingsFlyout =
   /// width.
   val defaults: title: string * isOpen: bool -> MetroSettingsFlyoutProps
 
-  /// Builds a right-docked Metro settings flyout <see cref="Blob"/>, returning
-  /// a hidden container when closed.
+  /// Builds a stateless right-docked Metro settings flyout <see cref="Blob"/>,
+  /// returning a hidden container when closed.
   val build:
     props: MetroSettingsFlyoutProps *
     onDismiss: (unit -> unit) *
     renderContent: (unit -> Blob) ->
       Blob
+
+  /// Creates a stateful animated <see cref="MetroSettingsFlyoutCell"/>. The
+  /// cell delivers <paramref name="onDismiss"/> through
+  /// <c>InvokeInputCallback</c>, so the owner rule rebuilds the host cell.
+  /// Callbacks inside <paramref name="renderContent"/> belong to this cell;
+  /// when they mutate host state, the host must rebuild itself.
+  val create:
+    onDismiss: (unit -> unit) * renderContent: (unit -> Blob) ->
+      MetroSettingsFlyoutCell
+
+  /// Creates a reusable cell factory for <see cref="MetroSettingsFlyoutCell"/>.
+  /// Cache the returned factory outside <c>Build</c>.
+  val createFactory:
+    onDismiss: (unit -> unit) * renderContent: (unit -> Blob) ->
+      unit ->
+        MetroSettingsFlyoutCell
+
+  /// Mounts a <see cref="MetroSettingsFlyoutCell"/> under stable
+  /// <paramref name="key"/> using the cached <paramref name="factory"/>.
+  val mount:
+    key: string *
+    input: MetroSettingsFlyoutProps *
+    factory: (unit -> MetroSettingsFlyoutCell) ->
+      Blob
+
+/// User action emitted by <see cref="MetroContentDialogCell"/>.
+[<Struct; NoComparison>]
+type MetroContentDialogAction =
+  /// The user activated the primary action button.
+  | Primary
+  /// The user activated the secondary action button.
+  | Secondary
+  /// The user dismissed the dialog via Escape or backdrop click.
+  | Dismiss
 
 /// Data-only properties for a full-width Metro modal band dialog.
 [<Struct; NoComparison>]
@@ -97,8 +163,56 @@ type MetroContentDialogProps = {
   AccessibilityName: string voption
 }
 
-/// Full-width Metro content dialog builder backed by <see cref="Portal"/> and a
-/// modal focus scope.
+/// Stateful full-width Metro content dialog cell that animates open and close
+/// transitions over 280 ms using the compiled 3D perspective swivel shader
+/// when embedded, or a 2D scale, slide, and fade fallback automatically.
+/// <c>MetroContentDialog.create</c> makes the cell.
+[<AbstractClass>]
+type MetroContentDialogCell =
+  inherit Cell<MetroContentDialogProps>
+
+  /// <c>true</c> while the dialog portal is mounted (open or running its close
+  /// animation). A test reads it.
+  abstract IsVisible: bool
+
+  /// <c>true</c> while the open or close transition is running. A test reads
+  /// it.
+  abstract IsAnimating: bool
+
+  /// Active transition rendering path (<see cref="MetroTiltMode.Perspective3D"/>
+  /// when the perspective shader is available; otherwise
+  /// <see cref="MetroTiltMode.Fallback2D"/>).
+  abstract Mode: MetroTiltMode
+
+  /// <c>true</c> while a 3D <see cref="ShaderEffect"/> is currently attached
+  /// to the dialog band. A test reads it.
+  abstract IsShaderAttached: bool
+
+  /// Normalized transition progress animation (<c>0.0</c> to <c>1.0</c>). A
+  /// test reads it.
+  abstract ProgressAnim: Anim<float>
+
+  /// Paint-bound opacity animation of the modal backdrop. A test reads it.
+  abstract BackdropOpacity: Anim<float>
+
+  /// The tree of the current state. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
+
+  /// Runs one dialog action through the same callback path as the buttons and
+  /// backdrop. A test calls it to verify host rebuilds without reflection.
+  abstract Handle: action: MetroContentDialogAction -> unit
+
+  /// Gives one dialog action to the host cell, as a Goo.Widgets control does.
+  /// The owner rule then rebuilds the host cell, so a host does not call
+  /// <c>Rebuild</c> on itself in the action callback.
+  member Raise:
+    callback: Action<MetroContentDialogAction> *
+    action: MetroContentDialogAction ->
+      unit
+
+/// Full-width Metro content dialog builders and stateful animated cell
+/// constructors backed by <see cref="Portal"/> and a modal focus scope.
 [<RequireQualifiedAccess>]
 module MetroContentDialog =
 
@@ -106,12 +220,49 @@ module MetroContentDialog =
   /// primary button and dismissal enabled.
   val defaults: title: string * isOpen: bool -> MetroContentDialogProps
 
-  /// Builds a full-width Metro modal dialog <see cref="Blob"/>, returning a
-  /// hidden container when closed.
+  /// Pre-cached 280 ms Metro decelerate simulation factory for dialog swivel
+  /// open and close transitions.
+  val transitionSpec: Func<float, float, float, Simulation>
+
+  /// Builds a stateless full-width Metro modal dialog <see cref="Blob"/>,
+  /// returning a hidden container when closed.
   val build:
     props: MetroContentDialogProps *
     onPrimary: (unit -> unit) *
     onSecondary: (unit -> unit) *
     onDismiss: (unit -> unit) *
     renderContent: (unit -> Blob) ->
+      Blob
+
+  /// Creates a stateful animated <see cref="MetroContentDialogCell"/> that
+  /// uses the embedded 3D perspective shader when available, or falls back to
+  /// 2D motion automatically. The cell delivers <paramref name="onAction"/>
+  /// through <c>InvokeInputCallback</c>, so the owner rule rebuilds the host
+  /// cell.
+  val create:
+    onAction: (MetroContentDialogAction -> unit) * renderContent: (unit -> Blob) ->
+      MetroContentDialogCell
+
+  /// Creates a <see cref="MetroContentDialogCell"/> with an explicit optional
+  /// <see cref="ShaderEffect"/>. Tests use this to exercise both 3D and 2D
+  /// transition paths.
+  val createWithEffect:
+    effect: ShaderEffect voption *
+    onAction: (MetroContentDialogAction -> unit) *
+    renderContent: (unit -> Blob) ->
+      MetroContentDialogCell
+
+  /// Creates a reusable cell factory for <see cref="MetroContentDialogCell"/>.
+  /// Cache the returned factory outside <c>Build</c>.
+  val createFactory:
+    onAction: (MetroContentDialogAction -> unit) * renderContent: (unit -> Blob) ->
+      unit ->
+        MetroContentDialogCell
+
+  /// Mounts a <see cref="MetroContentDialogCell"/> under stable
+  /// <paramref name="key"/> using the cached <paramref name="factory"/>.
+  val mount:
+    key: string *
+    input: MetroContentDialogProps *
+    factory: (unit -> MetroContentDialogCell) ->
       Blob

@@ -5,6 +5,8 @@ module MetroGallery.GalleryStore
 type GalleryStore = {
   /// Number of taps on a tile of the hub.
   mutable TileTapCount: int
+  /// Unread count displayed on the Mail tile.
+  mutable MailCount: int
   /// Text of the last action.
   mutable LastAction: string
   /// Value of the slider of the controls tab. The hub shows it as a

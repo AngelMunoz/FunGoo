@@ -248,25 +248,55 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     if actual <> expected then
       failwith $"Accent mismatch for {kind}."
 
-  // 5. Open and dismiss SettingsFlyout.
+  // 5. Open and dismiss SettingsFlyout (stateful animated cell).
+  let flyout =
+    requireSome(
+      "Expected the SettingsFlyout to be mounted.",
+      gallery.SettingsFlyout
+    )
+
   gallery.SetSettingsOpen true
   pump 2
 
-  if not gallery.SettingsOpen then
-    failwith "Expected SettingsFlyout to be open."
+  if not gallery.SettingsOpen || not flyout.IsVisible then
+    failwith "Expected SettingsFlyout to be open and visible."
+
+  if not flyout.IsAnimating then
+    failwith "Expected SettingsFlyout open transition to animate."
 
   gallery.SetSettingsOpen false
   pump 2
 
-  // 6. Open and dismiss ContentDialog.
+  if gallery.SettingsOpen then
+    failwith "Expected SettingsFlyout open state to be false."
+
+  if not flyout.IsAnimating then
+    failwith "Expected SettingsFlyout close transition to animate."
+
+  // 6. Open and dismiss ContentDialog (stateful animated cell).
+  let dialog =
+    requireSome(
+      "Expected the ContentDialog to be mounted.",
+      gallery.ContentDialog
+    )
+
   gallery.SetDialogOpen true
   pump 2
 
-  if not gallery.DialogOpen then
-    failwith "Expected ContentDialog to be open."
+  if not gallery.DialogOpen || not dialog.IsVisible then
+    failwith "Expected ContentDialog to be open and visible."
+
+  if not dialog.IsAnimating then
+    failwith "Expected ContentDialog open transition to animate."
 
   gallery.SetDialogOpen false
   pump 2
+
+  if gallery.DialogOpen then
+    failwith "Expected ContentDialog open state to be false."
+
+  if not dialog.IsAnimating then
+    failwith "Expected ContentDialog close transition to animate."
 
   // 7. Semantic zoom: the toggle zooms out, and a group tile zooms back in.
   gallery.SelectTab "zoom"

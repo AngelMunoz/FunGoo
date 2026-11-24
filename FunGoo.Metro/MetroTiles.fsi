@@ -159,6 +159,12 @@ type MetroLiveTileCell =
   /// where the Metro theme is readable.
   abstract View: Blob
 
+  /// Current press-tilt state and animation handles. A test reads it.
+  abstract TiltState: MetroTiltState
+
+  /// The number of builds of this live tile cell. A test reads it.
+  abstract Builds: int
+
   /// Gives one click of this cell to the host cell, as a Goo.Widgets control
   /// does. The owner rule then rebuilds the host cell, so a host does not
   /// call <c>Rebuild</c> on itself in the click callback.
@@ -177,6 +183,12 @@ module MetroLiveTile =
   /// <paramref name="onClick"/>, and the owner rule then rebuilds the host
   /// cell.
   val create: onClick: (unit -> unit) -> MetroLiveTileCell
+
+  /// Creates a live tile cell with an explicit optional
+  /// <see cref="ShaderEffect"/> for press tilt. Tests use this to exercise
+  /// both 3D and 2D tilt paths.
+  val createWithEffect:
+    effect: ShaderEffect voption * onClick: (unit -> unit) -> MetroLiveTileCell
 
   /// Creates a reusable cell factory for <see cref="MetroLiveTileCell"/>. Cache
   /// the returned factory outside <c>Build</c>.

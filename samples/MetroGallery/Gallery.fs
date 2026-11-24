@@ -47,6 +47,12 @@ type GalleryCell() =
   /// The mounted inputs tab, for the headless check.
   abstract InputsTab: InputsTab.InputsTabCell voption
 
+  /// The mounted settings flyout, for the headless check.
+  abstract SettingsFlyout: MetroSettingsFlyoutCell voption
+
+  /// The mounted content dialog, for the headless check.
+  abstract ContentDialog: MetroContentDialogCell voption
+
   /// The number of builds, for the headless check.
   abstract Builds: int
 
@@ -117,6 +123,8 @@ type GalleryFactories = {
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
+  SettingsFlyout: unit -> MetroSettingsFlyoutCell
+  ContentDialog: unit -> MetroContentDialogCell
 }
 
 /// The values that the functions of the gallery work on.
@@ -244,6 +252,7 @@ let secondaryCommands = [|
 /// A store with the first values of the gallery.
 let initialStore() : GalleryStore = {
   TileTapCount = 0
+  MailCount = 12
   LastAction = "Ready"
   SliderValue = 65.0
   TextValue = "Modern UI"
@@ -258,6 +267,7 @@ let initialStore() : GalleryStore = {
 /// becomes "State reset".
 let resetStore(store: GalleryStore) : unit =
   store.TileTapCount <- 0
+  store.MailCount <- 12
   store.LastAction <- "State reset"
   store.SliderValue <- 65.0
   store.TextValue <- "Modern UI"
@@ -335,6 +345,11 @@ let openTile(store: GalleryStore, tile: string) : unit =
   store.TileTapCount <- store.TileTapCount + 1
   store.LastAction <- $"Opened {tile}"
 
+/// Increments the Mail tile count and total tile taps.
+let openMailTile(store: GalleryStore) : unit =
+  store.MailCount <- store.MailCount + 1
+  openTile(store, "Mail tile")
+
 /// Writes the action of the live tile. The live tile gives each click to the
 /// Hub cell through `InvokeInputCallback`, so the owner rule rebuilds the
 /// Hub cell.
@@ -348,67 +363,84 @@ let startTiles(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
 
   Container(Layout = tileGrid)
     .Children(
-      Container()
-        .Children(
-          MetroLiveTile.mount(
-            "gallery-live-tile",
-            MetroLiveTile.defaults liveFaces,
-            ctx.Factories.LiveTile
-          )
-        ),
-      MetroIconicTile.build(
-        {
-          MetroIconicTile.defaults("Mail", "mail") with
-              Count = ValueSome(12 + store.TileTapCount)
-              Size = MetroTileSize.Medium
-        },
-        fun () -> openTile(store, "Mail tile")
+      MetroLiveTile.mount(
+        "gallery-live-tile",
+        MetroLiveTile.defaults liveFaces,
+        ctx.Factories.LiveTile
       ),
-      MetroIconicTile.build(
-        {
-          MetroIconicTile.defaults("Calendar", "calendar_today") with
-              Size = MetroTileSize.Small
-              AccentOverride = ValueSome(Color.Rgb(0, 163, 0))
-        },
-        fun () -> openTile(store, "Calendar")
+      MetroTilt.mount(
+        "tile-mail",
+        MetroIconicTile.build(
+          {
+            MetroIconicTile.defaults("Mail", "mail") with
+                Count = ValueSome store.MailCount
+                Size = MetroTileSize.Medium
+          },
+          fun () -> openMailTile store
+        )
       ),
-      MetroIconicTile.build(
-        {
-          MetroIconicTile.defaults("Music", "music_note") with
-              Size = MetroTileSize.Small
-              AccentOverride = ValueSome(Color.Rgb(250, 104, 0))
-        },
-        fun () -> openTile(store, "Music")
+      MetroTilt.mount(
+        "tile-calendar",
+        MetroIconicTile.build(
+          {
+            MetroIconicTile.defaults("Calendar", "calendar_today") with
+                Size = MetroTileSize.Small
+                AccentOverride = ValueSome(Color.Rgb(0, 163, 0))
+          },
+          fun () -> openTile(store, "Calendar")
+        )
       ),
-      MetroIconicTile.build(
-        {
-          MetroIconicTile.defaults("Photos", "photo") with
-              Size = MetroTileSize.Small
-              AccentOverride = ValueSome(Color.Rgb(162, 0, 255))
-        },
-        fun () -> openTile(store, "Photos")
+      MetroTilt.mount(
+        "tile-music",
+        MetroIconicTile.build(
+          {
+            MetroIconicTile.defaults("Music", "music_note") with
+                Size = MetroTileSize.Small
+                AccentOverride = ValueSome(Color.Rgb(250, 104, 0))
+          },
+          fun () -> openTile(store, "Music")
+        )
       ),
-      MetroIconicTile.build(
-        {
-          MetroIconicTile.defaults("Settings", "settings") with
-              Size = MetroTileSize.Small
-              AccentOverride = ValueSome(Color.Rgb(100, 118, 135))
-        },
-        fun () -> onEvent(SettingsOpenChanged true)
+      MetroTilt.mount(
+        "tile-photos",
+        MetroIconicTile.build(
+          {
+            MetroIconicTile.defaults("Photos", "photo") with
+                Size = MetroTileSize.Small
+                AccentOverride = ValueSome(Color.Rgb(162, 0, 255))
+          },
+          fun () -> openTile(store, "Photos")
+        )
       ),
-      MetroIconicTile.build(
-        {
-          MetroIconicTile.defaults("Explore Controls", "tune") with
-              Size = MetroTileSize.Wide
-              AccentOverride = ValueSome(Color.Rgb(0, 80, 239))
-        },
-        fun () -> onEvent(TabSelected "controls")
+      MetroTilt.mount(
+        "tile-settings",
+        MetroIconicTile.build(
+          {
+            MetroIconicTile.defaults("Settings", "settings") with
+                Size = MetroTileSize.Small
+                AccentOverride = ValueSome(Color.Rgb(100, 118, 135))
+          },
+          fun () -> onEvent(SettingsOpenChanged true)
+        )
+      ),
+      MetroTilt.mount(
+        "tile-controls",
+        MetroIconicTile.build(
+          {
+            MetroIconicTile.defaults("Explore Controls", "tune") with
+                Size = MetroTileSize.Wide
+                AccentOverride = ValueSome(Color.Rgb(0, 80, 239))
+          },
+          fun () -> onEvent(TabSelected "controls")
+        )
       )
     )
 
 /// The status section of the hub: the last action, the slider value as a
 /// progress bar, and two buttons.
-let statusSection(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
+let statusSection(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
+  let state = ctx.State
+
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 16.0)
     .Children(
       MetroText.subtitle "Glance and go",
@@ -428,13 +460,19 @@ let statusSection(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
         AlignItems = AlignItems.Center
       )
         .Children(
-          MetroButton.accent(
-            "Customize Theme",
-            fun () -> onEvent(SettingsOpenChanged true)
+          MetroTilt.mount(
+            "hub-customize-theme",
+            MetroButton.accent(
+              "Customize Theme",
+              fun () -> onEvent(SettingsOpenChanged true)
+            )
           ),
-          MetroButton.standard(
-            "Show Dialog",
-            fun () -> onEvent(DialogOpenChanged true)
+          MetroTilt.mount(
+            "hub-show-dialog",
+            MetroButton.standard(
+              "Show Dialog",
+              fun () -> onEvent(DialogOpenChanged true)
+            )
           )
         )
     )
@@ -462,7 +500,7 @@ let hubSection
   : Blob =
   match sectionId with
   | "start" -> startTiles(ctx, onEvent)
-  | "status" -> statusSection(ctx.State, onEvent)
+  | "status" -> statusSection(ctx, onEvent)
   | _ -> principlesSection()
 
 /// The input of the Pivot.
@@ -552,26 +590,35 @@ let settingsContent(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
           MetroText.caption "APPEARANCE",
           Container(FlexDirection = FlexDirection.Row, Gap = Length.Pixels 8.0)
             .Children(
-              MetroButton.build(
-                {
-                  MetroButton.defaults "Dark" with
-                      Pressed = ValueSome(state.Mode = MetroMode.Dark)
-                },
-                fun () -> onEvent(ModeChanged MetroMode.Dark)
+              MetroTilt.mount(
+                "settings-mode-dark",
+                MetroButton.build(
+                  {
+                    MetroButton.defaults "Dark" with
+                        Pressed = ValueSome(state.Mode = MetroMode.Dark)
+                  },
+                  fun () -> onEvent(ModeChanged MetroMode.Dark)
+                )
               ),
-              MetroButton.build(
-                {
-                  MetroButton.defaults "Light" with
-                      Pressed = ValueSome(state.Mode = MetroMode.Light)
-                },
-                fun () -> onEvent(ModeChanged MetroMode.Light)
+              MetroTilt.mount(
+                "settings-mode-light",
+                MetroButton.build(
+                  {
+                    MetroButton.defaults "Light" with
+                        Pressed = ValueSome(state.Mode = MetroMode.Light)
+                  },
+                  fun () -> onEvent(ModeChanged MetroMode.Light)
+                )
               ),
-              MetroButton.build(
-                {
-                  MetroButton.defaults "System" with
-                      Pressed = ValueSome(state.Mode = MetroMode.System)
-                },
-                fun () -> onEvent(ModeChanged MetroMode.System)
+              MetroTilt.mount(
+                "settings-mode-system",
+                MetroButton.build(
+                  {
+                    MetroButton.defaults "System" with
+                        Pressed = ValueSome(state.Mode = MetroMode.System)
+                  },
+                  fun () -> onEvent(ModeChanged MetroMode.System)
+                )
               )
             )
         ),
@@ -583,11 +630,11 @@ let settingsContent(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
     )
 
 /// The settings flyout of the gallery.
-let settingsFlyout(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
-  MetroSettingsFlyout.build(
-    MetroSettingsFlyout.defaults("Settings", state.SettingsOpen),
-    (fun () -> onEvent(SettingsOpenChanged false)),
-    fun () -> settingsContent(state, onEvent)
+let settingsFlyout(ctx: GalleryContext) : Blob =
+  MetroSettingsFlyout.mount(
+    "gallery-settings-flyout",
+    MetroSettingsFlyout.defaults("Settings", ctx.State.SettingsOpen),
+    ctx.Factories.SettingsFlyout
   )
 
 /// The app bar of the gallery.
@@ -603,21 +650,15 @@ let appBar(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   )
 
 /// The content dialog of the gallery.
-let contentDialog(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
-  MetroContentDialog.build(
+let contentDialog(ctx: GalleryContext) : Blob =
+  MetroContentDialog.mount(
+    "gallery-content-dialog",
     {
-      MetroContentDialog.defaults("Metro Content Dialog", state.DialogOpen) with
+      MetroContentDialog.defaults("Metro Content Dialog", ctx.State.DialogOpen) with
           PrimaryText = ValueSome "Confirm"
           SecondaryText = ValueSome "Cancel"
     },
-    (fun () -> onEvent(DialogResolved true)),
-    (fun () -> onEvent(DialogResolved false)),
-    (fun () -> onEvent(DialogOpenChanged false)),
-    fun () ->
-      MetroText.body(
-        "Full-width Metro band dialog presented via Goo.Portal with "
-        + "modal focus trapping, 2 px accent borders, and zero radius."
-      )
+    ctx.Factories.ContentDialog
   )
 
 /// The gallery page: the workspace with the Pivot, then the app bar, the
@@ -633,6 +674,7 @@ let page
 
   let workspace =
     Container(
+      Key = "gallery-workspace",
       FlexDirection = FlexDirection.Column,
       FlexGrow = 1.0,
       Width = Length.Percent 100.0,
@@ -649,9 +691,12 @@ let page
         MetroPivot.mount("gallery-pivot", pivotInput state, pivotFactory)
       )
 
-  let bar = appBar(state, onEvent)
-  let flyout = settingsFlyout(state, onEvent)
-  let dialog = contentDialog(state, onEvent)
+  let bar =
+    Container(Key = "gallery-bar", FlexShrink = 0.0)
+      .Children(appBar(state, onEvent))
+
+  let flyout = settingsFlyout ctx
+  let dialog = contentDialog ctx
 
   Container(
     BasedOn = Metro.canvasStyle theme,
@@ -703,12 +748,14 @@ let create
   let mutable pivotRef: MetroPivotCell voption = ValueNone
   let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
   let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
+  let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
+  let mutable dialogRef: MetroContentDialogCell voption = ValueNone
 
   // The mounted hub, for a rebuild of its sections.
   let mutable hubRef: MetroHubCell voption = ValueNone
 
-  // The slot of the cell: the callbacks of the sections of the hub are made
-  // before the cell exists.
+  // The slot of the cell: the callbacks of the sections of the hub and of the
+  // settings flyout content are made before the cell exists.
   let mutable self: GalleryCell voption = ValueNone
 
   let applyMode(mode: MetroMode) =
@@ -720,12 +767,52 @@ let create
 
   // The sections of the hub read the store and the state of the gallery, but
   // an equal input does not rebuild the hub. The callbacks that change these
-  // values are on the app bar and on the content dialog: Blobs of the gallery
-  // cell. The owner rule rebuilds the gallery cell, thus the gallery cell
-  // rebuilds the hub also, when the overview tab shows it.
+  // values are on the app bar and on the content dialog: Blobs or typed cells
+  // of the gallery cell. The owner rule rebuilds the gallery cell, thus the
+  // gallery cell rebuilds the hub also, when the overview tab shows it.
   let rebuildHub() =
     if state.ActiveTab = "overview" then
       hubRef |> ValueOption.iter(fun hub -> hub.Rebuild())
+
+  let mutable ctxSlot: GalleryContext voption = ValueNone
+
+  let onEvent(event: GalleryEvent) =
+    ctxSlot |> ValueOption.iter(fun ctx -> applyEvent(ctx, event))
+
+  // The Hub cell and the SettingsFlyout cell call their render callbacks
+  // inside their own Build, so they own those child callbacks: the owner rule
+  // rebuilds the child cell and not this cell. Any callback that changes the
+  // state of this cell gives its event here, which also rebuilds this cell.
+  let onChildEvent(event: GalleryEvent) =
+    onEvent event
+    self |> ValueOption.iter(fun cell -> cell.Rebuild())
+
+  let flyoutFactory() : MetroSettingsFlyoutCell =
+    let cell =
+      MetroSettingsFlyout.create(
+        (fun () -> onEvent(SettingsOpenChanged false)),
+        fun () -> settingsContent(state, onChildEvent)
+      )
+
+    flyoutRef <- ValueSome cell
+    cell
+
+  let dialogFactory() : MetroContentDialogCell =
+    let cell =
+      MetroContentDialog.create(
+        (function
+        | MetroContentDialogAction.Primary -> onEvent(DialogResolved true)
+        | MetroContentDialogAction.Secondary -> onEvent(DialogResolved false)
+        | MetroContentDialogAction.Dismiss -> onEvent(DialogOpenChanged false)),
+        fun () ->
+          MetroText.body(
+            "Full-width Metro band dialog presented via Goo.Portal with "
+            + "modal focus trapping, 2 px accent borders, and zero radius."
+          )
+      )
+
+    dialogRef <- ValueSome cell
+    cell
 
   let factories: GalleryFactories = {
     ControlsTab = fun () -> ControlsTab.create state.Store
@@ -744,6 +831,8 @@ let create
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
     LiveTile = MetroLiveTile.createFactory(fun () -> tapLiveTile state.Store)
+    SettingsFlyout = flyoutFactory
+    ContentDialog = dialogFactory
   }
 
   let ctx: GalleryContext = {
@@ -754,22 +843,11 @@ let create
     RebuildHub = rebuildHub
   }
 
-  // The Pivot, the app bar, the settings flyout, and the content dialog are
-  // mounted cells of this cell or Blobs of this cell. Thus the owner rule
-  // rebuilds this cell after each of their callbacks.
-  let onEvent(event: GalleryEvent) = applyEvent(ctx, event)
-
-  // The Hub cell builds the tiles and the buttons of its sections, so it
-  // owns their callbacks: the owner rule rebuilds the Hub cell and not this
-  // cell. A callback of a section that changes the state of this cell gives
-  // its event here, which also rebuilds this cell.
-  let onHubEvent(event: GalleryEvent) =
-    onEvent event
-    self |> ValueOption.iter(fun cell -> cell.Rebuild())
+  ctxSlot <- ValueSome ctx
 
   let hubFactory() : MetroHubCell =
     let cell =
-      MetroHub.create(fun sectionId -> hubSection(ctx, onHubEvent, sectionId))
+      MetroHub.create(fun sectionId -> hubSection(ctx, onChildEvent, sectionId))
 
     hubRef <- ValueSome cell
     cell
@@ -794,6 +872,8 @@ let create
       override _.Pivot = pivotRef
       override _.ZoomTab = zoomTabRef
       override _.InputsTab = inputsTabRef
+      override _.SettingsFlyout = flyoutRef
+      override _.ContentDialog = dialogRef
       override _.Builds = state.Builds
 
       override this.SelectTab(id) =
