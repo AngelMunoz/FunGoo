@@ -51,6 +51,22 @@ type MetroComboBoxEvent =
   /// The user requested the open state of the popup.
   | OpenChanged of isOpen: bool
 
+/// Factory for Metro combo boxes and auto-suggest boxes. The host owns the
+/// selection and the query: update the props after each event and rebuild the
+/// owner cell. Create one factory for each control, outside <c>Build</c>. The
+/// events do not name the control, so two controls that share one factory send
+/// their events to one handler. One factory gives every input the same
+/// callback instances.
+type IMetroComboBoxFactory =
+
+  /// Returns the widget input for <paramref name="props"/>, with the callbacks
+  /// of this factory. While <c>Options</c> is the same array instance, the
+  /// mapped options are also the same instance.
+  abstract CreateInput: props: MetroComboBoxProps -> ComboBoxInput
+
+  /// Mounts the combo box under the stable <paramref name="key"/>.
+  abstract Mount: key: string * props: MetroComboBoxProps -> Blob
+
 /// Property mapping for the Metro combo box and the Metro auto-suggest box on
 /// <see cref="Goo.Widgets.Inputs.ComboBox"/>, under the Metro widget theme.
 [<RequireQualifiedAccess>]
@@ -71,22 +87,7 @@ module MetroComboBox =
   /// Maps <paramref name="props"/> to the widget data, without callbacks.
   val toData: props: MetroComboBoxProps -> ComboBoxInput
 
-/// Factory for Metro combo boxes and auto-suggest boxes. The host owns the
-/// selection and the query: update the props after each event and rebuild the
-/// owner cell. Create one factory for each control, outside <c>Build</c>. The
-/// events do not name the control, so two controls that share one factory send
-/// their events to one handler. One factory gives every input the same
-/// callback instances.
-[<Sealed>]
-type MetroComboBoxFactory =
-
-  /// Creates a factory that raises <paramref name="onEvent"/>.
-  new: onEvent: (MetroComboBoxEvent -> unit) -> MetroComboBoxFactory
-
-  /// Returns the widget input for <paramref name="props"/>, with the callbacks
-  /// of this factory. While <c>Options</c> is the same array instance, the
-  /// mapped options are also the same instance.
-  member CreateInput: props: MetroComboBoxProps -> ComboBoxInput
-
-  /// Mounts the combo box under the stable <paramref name="key"/>.
-  member Mount: key: string * props: MetroComboBoxProps -> Blob
+  /// Creates a factory that raises <paramref name="onEvent"/>. One factory
+  /// gives every input the same callback instances.
+  val createFactory:
+    onEvent: (MetroComboBoxEvent -> unit) -> IMetroComboBoxFactory

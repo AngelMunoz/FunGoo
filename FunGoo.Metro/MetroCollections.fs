@@ -12,7 +12,7 @@ module MetroListBox =
   let borderWidthPx: float = 2.0
 
   let build
-    (key: string, props: MetroListViewProps, factory: MetroListViewFactory)
+    (key: string, props: MetroListViewProps, factory: IMetroListViewFactory)
     : Blob =
     let theme = Metro.read()
     let p = theme.Palette
@@ -49,6 +49,24 @@ type MetroGridViewProps = {
   AccessibilityName: string voption
 }
 
+/// Factory for Metro grid views: a virtual wrapped grid of square tiles. Each
+/// tile is a sharp button. A selected tile shows a 2 px accent border and an
+/// accent tint. The host owns the selection. Create one factory per owner cell,
+/// outside <c>Build</c>, so that the virtual collection keeps its key and
+/// builder delegates.
+type IMetroGridViewFactory =
+
+  /// Builds one tile of edge length <paramref name="tileSize"/>. The latest
+  /// <see cref="Build"/> of this factory supplies the selection behavior for
+  /// the activation of the tile.
+  abstract BuildItem:
+    item: MetroGridViewItem * selected: bool * tileSize: float -> Blob
+
+  /// Builds the grid for <paramref name="props"/>. The grid scrolls vertically
+  /// and mounts only the tiles near the viewport. Call it inside a
+  /// <c>Cell.Build</c>, because it reads the active Metro theme.
+  abstract Build: props: MetroGridViewProps -> Blob
+
 [<RequireQualifiedAccess>]
 module MetroGridView =
 
@@ -64,27 +82,45 @@ module MetroGridView =
     AccessibilityName = ValueNone
   }
 
-// The value of one tile for the virtual collection. The collection does not
-// build a tile again when its value is equal, so only a tile whose selection
-// changed is built again.
-[<Struct; NoComparison>]
-type private GridTile = {
-  Item: MetroGridViewItem
-  Selected: bool
-}
+  // The value of one tile for the virtual collection. The collection does not
+  // build a tile again when its value is equal, so only a tile whose selection
+  // changed is built again.
+  [<Struct; NoComparison>]
+  type private GridTile = {
+    Item: MetroGridViewItem
+    Selected: bool
+  }
 
-module private GridInternals =
+  /// State of a grid view factory. One mutable field per concern.
+  type private GridState = {
+    mutable SelectedIds: string array
+    mutable Mode: MetroListSelectionMode
+    mutable TileSize: float
+  }
 
-  let tileBorder = Edges(Length.Pixels 2.0)
-  let zeroRadius = Length.Pixels 0.0
+  /// The values that the functions of a grid view factory work on.
+  type private GridContext = {
+    State: GridState
+    /// Raises the events of the grid.
+    Raise: MetroListEvent -> unit
+  }
 
-  let resolveTileSize(tileSize: float) : float =
+  /// The key and the builder delegates of the virtual collection.
+  type private GridDelegates = {
+    ItemKey: Func<GridTile, string>
+    ItemBuilder: Func<GridTile, Blob>
+  }
+
+  let private tileBorder = Edges(Length.Pixels 2.0)
+  let private zeroRadius = Length.Pixels 0.0
+
+  let private resolveTileSize(tileSize: float) : float =
     if Double.IsFinite tileSize && tileSize > 0.0 then
       tileSize
     else
-      MetroGridView.defaultTilePx
+      defaultTilePx
 
-  let isSelected(selectedIds: string array, id: string) : bool =
+  let private isSelected(selectedIds: string array, id: string) : bool =
     if isNull selectedIds || isNull id then
       false
     else
@@ -97,7 +133,7 @@ module private GridInternals =
 
       found
 
-  let tilesOf(props: MetroGridViewProps) : GridTile array =
+  let private tilesOf(props: MetroGridViewProps) : GridTile array =
     if isNull props.Items then
       Array.empty
     else
@@ -107,63 +143,46 @@ module private GridInternals =
         Selected = isSelected(props.SelectedIds, item.Id)
       })
 
+  // The latest Build of the factory supplies the selection behavior of the
+  // activation of a tile.
+  let private request(ctx: GridContext, id: string) : unit =
+    let selectedIds = ctx.State.SelectedIds
 
-[<Sealed>]
-type MetroGridViewFactory(onEvent: MetroListEvent -> unit) as this =
-
-  // The latest Build supplies the selection behavior of a tile activation.
-  let mutable currentSelected: string array = Array.empty
-
-  let mutable currentMode: MetroListSelectionMode =
-    MetroListSelectionMode.Single
-
-  let mutable currentTileSize: float = MetroGridView.defaultTilePx
-
-  let request(id: string) : unit =
-    match currentMode with
-    | MetroListSelectionMode.Activate -> onEvent(MetroListEvent.ItemClick id)
+    match ctx.State.Mode with
+    | MetroListSelectionMode.Activate -> ctx.Raise(MetroListEvent.ItemClick id)
     | MetroListSelectionMode.Single ->
-      if
-        not(isNull currentSelected)
-        && currentSelected.Length = 1
-        && currentSelected[0] = id
-      then
-        ()
-      else
-        onEvent(MetroListEvent.SelectionChanged [| id |])
+      // A selected tile stays selected: the request raises nothing.
+      let alreadySelected =
+        not(isNull selectedIds) && selectedIds.Length = 1 && selectedIds[0] = id
+
+      if not alreadySelected then
+        ctx.Raise(MetroListEvent.SelectionChanged [| id |])
     | MetroListSelectionMode.Multiple ->
-      let selected =
-        not(isNull currentSelected)
-        && GridInternals.isSelected(currentSelected, id)
+      let selected = not(isNull selectedIds) && isSelected(selectedIds, id)
 
       let next =
         if selected then
-          if isNull currentSelected then
+          if isNull selectedIds then
             Array.empty
           else
-            currentSelected |> Array.filter(fun existing -> existing <> id)
-        elif isNull currentSelected then
+            selectedIds |> Array.filter(fun existing -> existing <> id)
+        elif isNull selectedIds then
           [| id |]
         else
-          Array.append currentSelected [| id |]
+          Array.append selectedIds [| id |]
 
-      onEvent(MetroListEvent.SelectionChanged next)
+      ctx.Raise(MetroListEvent.SelectionChanged next)
 
-  // One instance each: every Build of this factory gives the virtual
-  // collection the same key and builder delegates.
-  let itemKey = Func<GridTile, string>(fun tile -> tile.Item.Id)
-
-  let itemBuilder =
-    Func<GridTile, Blob>(fun tile ->
-      this.BuildItem(tile.Item, tile.Selected, currentTileSize))
-
-  member _.BuildItem
-    (item: MetroGridViewItem, selected: bool, tileSize: float)
+  /// Builds one tile: a sharp button with the icon and the label.
+  let private buildTile
+    (ctx: GridContext, tile: GridTile, tileSize: float)
     : Blob =
+    let item = tile.Item
+    let selected = tile.Selected
     let theme = Metro.read()
     let p = theme.Palette
     let accent = theme.Accent.Base
-    let size = GridInternals.resolveTileSize tileSize
+    let size = resolveTileSize tileSize
     let label = if isNull item.Label then "" else item.Label
 
     let focusStyle =
@@ -186,8 +205,8 @@ type MetroGridViewFactory(onEvent: MetroListEvent -> unit) as this =
         Padding = Edges(Length.Pixels 8.0),
         FlexShrink = 0.0,
         Overflow = Overflow.Hidden,
-        BorderRadius = GridInternals.zeroRadius,
-        BorderWidth = GridInternals.tileBorder,
+        BorderRadius = zeroRadius,
+        BorderWidth = tileBorder,
         BorderColor =
           Edges<Color>(
             if not selected then Color.Transparent
@@ -208,7 +227,7 @@ type MetroGridViewFactory(onEvent: MetroListEvent -> unit) as this =
         Cursor = Cursor.Pointer,
         Focusable = true,
         TabStop = true,
-        OnClick = (fun () -> request item.Id),
+        OnClick = (fun () -> request(ctx, item.Id)),
         Accessibility =
           Accessibility(
             Role = AccessibilityRole.GridCell,
@@ -237,33 +256,35 @@ type MetroGridViewFactory(onEvent: MetroListEvent -> unit) as this =
 
     tile
 
-  member _.Build(props: MetroGridViewProps) : Blob =
-    currentMode <- props.Mode
+  /// Builds the grid. The Virtual element is its own scroll viewport, so it
+  /// carries the wrap layout, the size, and the accessibility role.
+  let private buildGrid
+    (ctx: GridContext, props: MetroGridViewProps, delegates: GridDelegates)
+    : Blob =
+    ctx.State.Mode <- props.Mode
 
-    currentSelected <-
+    ctx.State.SelectedIds <-
       (if isNull props.SelectedIds then
          Array.empty
        else
          props.SelectedIds)
 
-    let size = GridInternals.resolveTileSize props.TileSize
-    currentTileSize <- size
+    let size = resolveTileSize props.TileSize
+    ctx.State.TileSize <- size
 
-    // The Virtual element is its own scroll viewport, so it carries the wrap
-    // layout, the size, and the accessibility role.
     let grid =
       ``<Program>``.VirtualItems<GridTile>(
-        GridInternals.tilesOf props,
+        tilesOf props,
         size,
         size,
-        itemKey,
-        itemBuilder
+        delegates.ItemKey,
+        delegates.ItemBuilder
       )
 
     grid.FlexDirection <- FlexDirection.Row
     grid.FlexWrap <- FlexWrap.Wrap
     grid.AlignContent <- AlignContent.FlexStart
-    grid.Gap <- Length.Pixels MetroGridView.gapPx
+    grid.Gap <- Length.Pixels gapPx
     grid.Width <- Length.Percent 100.0
 
     props.Height |> ValueOption.iter(fun height -> grid.Height <- height)
@@ -275,3 +296,31 @@ type MetroGridViewFactory(onEvent: MetroListEvent -> unit) as this =
       )
 
     grid
+
+  let createFactory(onEvent: MetroListEvent -> unit) : IMetroGridViewFactory =
+    let ctx: GridContext = {
+      State = {
+        SelectedIds = Array.empty
+        Mode = MetroListSelectionMode.Single
+        TileSize = defaultTilePx
+      }
+      Raise = onEvent
+    }
+
+    // One instance each: every Build of this factory gives the virtual
+    // collection the same key and builder delegates.
+    let delegates: GridDelegates = {
+      ItemKey = Func<GridTile, string>(fun tile -> tile.Item.Id)
+
+      ItemBuilder =
+        Func<GridTile, Blob>(fun tile ->
+          buildTile(ctx, tile, ctx.State.TileSize))
+    }
+
+    {
+      new IMetroGridViewFactory with
+        member _.BuildItem(item, selected, tileSize) =
+          buildTile(ctx, { Item = item; Selected = selected }, tileSize)
+
+        member _.Build(props) = buildGrid(ctx, props, delegates)
+    }

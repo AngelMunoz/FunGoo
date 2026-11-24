@@ -76,9 +76,11 @@ let ``MetroComboBox maps props for a combo box and for an auto-suggest box``() =
   Assert.Equal("", empty.Query)
 
 [<Fact>]
-let ``MetroComboBoxFactory routes callbacks and keeps one callback set``() =
+let ``MetroComboBox.createFactory routes callbacks and keeps one callback set``
+  ()
+  =
   let events = ResizeArray<MetroComboBoxEvent>()
-  let factory = MetroComboBoxFactory(events.Add)
+  let factory = MetroComboBox.createFactory events.Add
 
   let comboProps = MetroComboBox.defaults(options, "small")
 
@@ -110,6 +112,14 @@ let ``MetroComboBoxFactory routes callbacks and keeps one callback set``() =
   // The mapped options are the same instance while the option array is the
   // same instance.
   Assert.True(obj.ReferenceEquals(combo.Items, again.Items))
+
+  // A factory maps an option array once: an input with the same option array
+  // allocates nothing.
+  let before = GC.GetAllocatedBytesForCurrentThread()
+  let cached = factory.CreateInput comboProps
+  let allocated = GC.GetAllocatedBytesForCurrentThread() - before
+  Assert.Equal(0L, allocated)
+  Assert.True(obj.ReferenceEquals(combo.Items, cached.Items))
 
   let changed =
     factory.CreateInput {
@@ -196,8 +206,8 @@ let ``Two combo boxes with one factory each keep separate values``() =
 
     hostRef |> ValueOption.iter(fun host -> host.Rebuild())
 
-  let sizeFactory = MetroComboBoxFactory(onSize)
-  let cityFactory = MetroComboBoxFactory(onCity)
+  let sizeFactory = MetroComboBox.createFactory onSize
+  let cityFactory = MetroComboBox.createFactory onCity
 
   let sizeProps() = MetroComboBox.defaults(sizes, size)
 
@@ -251,7 +261,7 @@ let ``One factory for two combo boxes does not name the control in its events``
   ()
   =
   let events = ResizeArray<MetroComboBoxEvent>()
-  let shared = MetroComboBoxFactory(events.Add)
+  let shared = MetroComboBox.createFactory events.Add
 
   let sizeProps = MetroComboBox.defaults([| options[0] |], "")
   let cityProps = MetroComboBox.autoSuggest([| options[1] |], "")

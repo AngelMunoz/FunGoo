@@ -57,6 +57,21 @@ type MetroListEvent =
   /// The user activated a row.
   | ItemClick of id: string
 
+/// Factory for Metro list views. The host owns the selection: update the props
+/// after each event and rebuild the owner cell. Create one factory for each
+/// list view, outside <c>Build</c>. The events do not name the list view, so
+/// two list views that share one factory send their events to one handler.
+type IMetroListViewFactory =
+
+  /// Returns the widget input for <paramref name="props"/>, with the callbacks
+  /// and the Metro row style of this factory. While <c>Items</c> is the same
+  /// array instance, the mapped rows are also the same instance, so an
+  /// unchanged input does not rebuild the list.
+  abstract CreateInput: props: MetroListViewProps -> ListViewInput
+
+  /// Mounts a Metro list view under the stable <paramref name="key"/>.
+  abstract Mount: key: string * props: MetroListViewProps -> Blob
+
 /// Property mapping for the Metro list view, a virtual list with sharp rows,
 /// a 3 px accent indicator on the start edge of each selected row, and an
 /// accent tint on selected rows.
@@ -74,27 +89,11 @@ module MetroListView =
   val defaults: items: MetroListItem array -> MetroListViewProps
 
   /// Maps <paramref name="props"/> to the <see cref="ListViewInput"/> data,
-  /// without callbacks. <see cref="MetroListViewFactory.CreateInput"/> adds the
+  /// without callbacks. <see cref="IMetroListViewFactory.CreateInput"/> adds the
   /// callbacks.
   val toInput: props: MetroListViewProps -> ListViewInput
 
-/// Factory for Metro list views. The host owns the selection: update the props
-/// after each event and rebuild the owner cell. Create one factory for each
-/// list view, outside <c>Build</c>. The events do not name the list view, so
-/// two list views that share one factory send their events to one handler. One
-/// factory gives every input the same callback instances, so an unchanged
-/// input does not rebuild the list.
-[<Sealed>]
-type MetroListViewFactory =
-
   /// Creates a factory that raises <paramref name="onEvent"/> for selection
-  /// changes and row activation.
-  new: onEvent: (MetroListEvent -> unit) -> MetroListViewFactory
-
-  /// Returns the widget input for <paramref name="props"/>, with the callbacks
-  /// and the Metro row style of this factory. While <c>Items</c> is the same
-  /// array instance, the mapped rows are also the same instance.
-  member CreateInput: props: MetroListViewProps -> ListViewInput
-
-  /// Mounts a Metro list view under the stable <paramref name="key"/>.
-  member Mount: key: string * props: MetroListViewProps -> Blob
+  /// changes and row activation. One factory gives every input the same
+  /// callback instances, so an unchanged input does not rebuild the list.
+  val createFactory: onEvent: (MetroListEvent -> unit) -> IMetroListViewFactory

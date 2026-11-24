@@ -148,8 +148,8 @@ type ListsTabCell() as this =
   // Created once: every Build reuses the same factories, so each list
   // receives the same callback instances and an unchanged input does not
   // rebuild it.
-  let singleFactory = MetroListViewFactory(onSingle)
-  let multipleFactory = MetroListViewFactory(onMultiple)
+  let singleFactory = MetroListView.createFactory onSingle
+  let multipleFactory = MetroListView.createFactory onMultiple
 
   let onBox(event: MetroListEvent) =
     match event with
@@ -165,8 +165,8 @@ type ListsTabCell() as this =
 
     this.Rebuild()
 
-  let boxFactory = MetroListViewFactory(onBox)
-  let gridFactory = MetroGridViewFactory(onGrid)
+  let boxFactory = MetroListView.createFactory onBox
+  let gridFactory = MetroGridView.createFactory onGrid
 
   let listColumn(title: string, mount: unit -> Blob) : Blob =
     Container(

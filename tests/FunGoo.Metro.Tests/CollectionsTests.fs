@@ -53,7 +53,7 @@ let private tiles = [|
 [<Fact>]
 let ``MetroListBox builds one box that holds the Metro list``() =
   let events = ResizeArray<MetroListEvent>()
-  let factory = MetroListViewFactory(events.Add)
+  let factory = MetroListView.createFactory events.Add
 
   let props = {
     MetroListView.defaults choices with
@@ -83,11 +83,11 @@ let ``MetroListBox builds one box that holds the Metro list``() =
   )
 
 [<Fact>]
-let ``MetroGridViewFactory builds tiles and routes selection by the latest build``
+let ``MetroGridView.createFactory builds tiles and routes selection by the latest build``
   ()
   =
   let events = ResizeArray<MetroListEvent>()
-  let factory = MetroGridViewFactory(events.Add)
+  let factory = MetroGridView.createFactory events.Add
 
   let mutable gridProps = MetroGridView.defaults tiles
 

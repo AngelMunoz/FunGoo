@@ -91,11 +91,11 @@ let ``MetroListView maps props to widget data without callbacks``() =
   )
 
 [<Fact>]
-let ``MetroListViewFactory routes widget callbacks and keeps one callback set``
+let ``MetroListView.createFactory routes widget callbacks and keeps one callback set``
   ()
   =
   let events = ResizeArray<MetroListEvent>()
-  let factory = MetroListViewFactory(events.Add)
+  let factory = MetroListView.createFactory events.Add
 
   let props = {
     MetroListView.defaults items with
@@ -120,6 +120,14 @@ let ``MetroListViewFactory routes widget callbacks and keeps one callback set``
     }
 
   Assert.True(obj.ReferenceEquals(input.Items, sameItems.Items))
+
+  // A factory maps an item array once: an input with the same item array
+  // allocates nothing.
+  let before = GC.GetAllocatedBytesForCurrentThread()
+  let cached = factory.CreateInput props
+  let allocated = GC.GetAllocatedBytesForCurrentThread() - before
+  Assert.Equal(0L, allocated)
+  Assert.True(obj.ReferenceEquals(input.Items, cached.Items))
 
   let changedItems = factory.CreateInput { props with Items = [| items[0] |] }
 
@@ -166,7 +174,7 @@ let ``MetroListViewFactory routes widget callbacks and keeps one callback set``
 [<Fact>]
 let ``MetroListView mounts and runs the row style hook inside a build``() =
   let events = ResizeArray<MetroListEvent>()
-  let factory = MetroListViewFactory(events.Add)
+  let factory = MetroListView.createFactory events.Add
 
   let props = {
     MetroListView.defaults items with

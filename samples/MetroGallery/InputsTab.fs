@@ -95,8 +95,8 @@ type InputsTabCell() as this =
     this.Rebuild()
 
   // One factory per control: each factory holds its own callback set.
-  let sizeFactory = MetroComboBoxFactory(onSize)
-  let cityFactory = MetroComboBoxFactory(onCity)
+  let sizeFactory = MetroComboBox.createFactory onSize
+  let cityFactory = MetroComboBox.createFactory onCity
 
   let sizeProps() : MetroComboBoxProps = {
     MetroComboBox.defaults(Content.sizes, sizeSelected) with
