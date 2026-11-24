@@ -116,7 +116,7 @@ type private GalleryFactories = {
   InputsTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
-  LiveTile: Func<MetroLiveTileCell>
+  LiveTile: unit -> MetroLiveTileCell
 }
 
 /// The values that the functions of the gallery work on.

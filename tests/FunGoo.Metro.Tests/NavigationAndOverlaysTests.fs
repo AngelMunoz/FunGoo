@@ -142,20 +142,19 @@ let ``MetroPivot handles selection keyboard loop clamp swipe and reduced motion`
   // The test keeps the mounted cell: no search of the retained tree.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
 
-  let pivotFactory =
-    Func<MetroPivotCell>(fun () ->
-      // The handler writes the state only. The Pivot gives each selection to
-      // the host cell, so the owner rule rebuilds the host.
-      let cell =
-        MetroPivot.create(
-          (fun nextId -> selected <- nextId),
-          fun id ->
-            lastRenderedId <- id
-            MetroText.body $"Panel-{id}"
-        )
+  let pivotFactory() =
+    // The handler writes the state only. The Pivot gives each selection to
+    // the host cell, so the owner rule rebuilds the host.
+    let cell =
+      MetroPivot.create(
+        (fun nextId -> selected <- nextId),
+        fun id ->
+          lastRenderedId <- id
+          MetroText.body $"Panel-{id}"
+      )
 
-      pivotRef <- ValueSome cell
-      cell)
+    pivotRef <- ValueSome cell
+    cell
 
   use host = createHost(800, 600)
 
@@ -326,17 +325,16 @@ let ``A host of the Pivot rebuilds through the owner rule``() =
   let mutable selected = "one"
   let mutable pivotRef: MetroPivotCell voption = ValueNone
 
-  let pivotFactory =
-    Func<MetroPivotCell>(fun () ->
-      // The handler writes the state only. It has no Rebuild call.
-      let cell =
-        MetroPivot.create(
-          (fun nextId -> selected <- nextId),
-          fun id -> MetroText.body id
-        )
+  let pivotFactory() =
+    // The handler writes the state only. It has no Rebuild call.
+    let cell =
+      MetroPivot.create(
+        (fun nextId -> selected <- nextId),
+        fun id -> MetroText.body id
+      )
 
-      pivotRef <- ValueSome cell
-      cell)
+    pivotRef <- ValueSome cell
+    cell
 
   use host = createHost(640, 480)
 
@@ -402,15 +400,14 @@ let ``MetroHub drives header parallax without cell rebuilds and honors reduced m
   // The test keeps the mounted cell: no search of the retained tree.
   let mutable hubRef: MetroHubCell voption = ValueNone
 
-  let hubFactory =
-    Func<MetroHubCell>(fun () ->
-      let cell =
-        MetroHub.create(fun id ->
-          renderCalls <- renderCalls + 1
-          MetroText.body $"Section {id}")
+  let hubFactory() =
+    let cell =
+      MetroHub.create(fun id ->
+        renderCalls <- renderCalls + 1
+        MetroText.body $"Section {id}")
 
-      hubRef <- ValueSome cell
-      cell)
+    hubRef <- ValueSome cell
+    cell
 
   use host = createHost(600, 480)
 
@@ -602,11 +599,10 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
   // The test keeps the mounted cell: no search of the retained tree.
   let mutable liveRef: MetroLiveTileCell voption = ValueNone
 
-  let liveFactory =
-    Func<MetroLiveTileCell>(fun () ->
-      let cell = MetroLiveTile.create(fun () -> liveClicks <- liveClicks + 1)
-      liveRef <- ValueSome cell
-      cell)
+  let liveFactory() =
+    let cell = MetroLiveTile.create(fun () -> liveClicks <- liveClicks + 1)
+    liveRef <- ValueSome cell
+    cell
 
   use host = createHost(800, 600)
 
@@ -934,16 +930,15 @@ let ``MetroPivot Unmounting snaps animations and resets selection state``() =
   // The test keeps the mounted cell: no search of the retained tree.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
 
-  let factory =
-    Func<MetroPivotCell>(fun () ->
-      let cell =
-        MetroPivot.create(
-          (fun nextId -> selected <- nextId),
-          fun id -> MetroText.body id
-        )
+  let factory() =
+    let cell =
+      MetroPivot.create(
+        (fun nextId -> selected <- nextId),
+        fun id -> MetroText.body id
+      )
 
-      pivotRef <- ValueSome cell
-      cell)
+    pivotRef <- ValueSome cell
+    cell
 
   use host = createHost(640, 480)
 
@@ -1180,19 +1175,17 @@ let ``MetroHub and MetroLiveTile respect scoped ReducedMotion``() =
   // The test keeps the mounted hub cell: no search of the retained tree.
   let mutable hubRef: MetroHubCell voption = ValueNone
 
-  let hubFactory =
-    Func<MetroHubCell>(fun () ->
-      let cell = MetroHub.create(fun id -> MetroText.body id)
-      hubRef <- ValueSome cell
-      cell)
+  let hubFactory() =
+    let cell = MetroHub.create(fun id -> MetroText.body id)
+    hubRef <- ValueSome cell
+    cell
 
   let mutable liveRef: MetroLiveTileCell voption = ValueNone
 
-  let liveFactory =
-    Func<MetroLiveTileCell>(fun () ->
-      let cell = MetroLiveTile.create ignore
-      liveRef <- ValueSome cell
-      cell)
+  let liveFactory() =
+    let cell = MetroLiveTile.create ignore
+    liveRef <- ValueSome cell
+    cell
 
   use host = createHost(600, 480)
 
@@ -1270,12 +1263,11 @@ let ``A host of the live tile rebuilds through the owner rule``() =
   let mutable clicks = 0
   let mutable liveRef: MetroLiveTileCell voption = ValueNone
 
-  let liveFactory =
-    Func<MetroLiveTileCell>(fun () ->
-      // The handler writes the state only. It has no Rebuild call.
-      let cell = MetroLiveTile.create(fun () -> clicks <- clicks + 1)
-      liveRef <- ValueSome cell
-      cell)
+  let liveFactory() =
+    // The handler writes the state only. It has no Rebuild call.
+    let cell = MetroLiveTile.create(fun () -> clicks <- clicks + 1)
+    liveRef <- ValueSome cell
+    cell
 
   use host = createHost(400, 300)
 
@@ -1332,19 +1324,18 @@ let ``MetroPivot remounts child cells cleanly across repeated tab visits``() =
   // The test keeps the mounted cell: no search of the retained tree.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
 
-  let pivotFactory =
-    Func<MetroPivotCell>(fun () ->
-      let cell =
-        MetroPivot.create(
-          (fun id -> selectedId <- id),
-          fun id ->
-            match id with
-            | "first" -> Cell.Mount<Cell>("first-child", childFactory)
-            | _ -> MetroText.body "Second tab"
-        )
+  let pivotFactory() =
+    let cell =
+      MetroPivot.create(
+        (fun id -> selectedId <- id),
+        fun id ->
+          match id with
+          | "first" -> Cell.Mount<Cell>("first-child", childFactory)
+          | _ -> MetroText.body "Second tab"
+      )
 
-      pivotRef <- ValueSome cell
-      cell)
+    pivotRef <- ValueSome cell
+    cell
 
   let rootCell =
     CaptureCell.create(fun () ->

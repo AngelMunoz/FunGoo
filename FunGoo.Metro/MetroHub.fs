@@ -277,10 +277,10 @@ module MetroHub =
     state.HeaderTranslate <- cell.AnimateValue(HubInternals.zeroPoint)
     cell
 
-  let createFactory(renderSection: string -> Blob) : Func<MetroHubCell> =
-    Func<MetroHubCell>(fun () -> create renderSection)
+  let createFactory(renderSection: string -> Blob) : unit -> MetroHubCell =
+    fun () -> create renderSection
 
   let mount
-    (key: string, input: MetroHubInput, factory: Func<MetroHubCell>)
+    (key: string, input: MetroHubInput, factory: unit -> MetroHubCell)
     : Blob =
     Cell.Mount<MetroHubInput, MetroHubCell>(key, input, factory)

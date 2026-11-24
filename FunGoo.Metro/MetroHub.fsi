@@ -67,9 +67,9 @@ module MetroHub =
 
   /// Creates a reusable cell factory for <see cref="MetroHubCell"/>. Cache the
   /// returned factory outside <c>Build</c>.
-  val createFactory: renderSection: (string -> Blob) -> Func<MetroHubCell>
+  val createFactory: renderSection: (string -> Blob) -> unit -> MetroHubCell
 
   /// Mounts a <see cref="MetroHubCell"/> under stable <paramref name="key"/>
   /// using the cached <paramref name="factory"/>.
   val mount:
-    key: string * input: MetroHubInput * factory: Func<MetroHubCell> -> Blob
+    key: string * input: MetroHubInput * factory: (unit -> MetroHubCell) -> Blob

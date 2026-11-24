@@ -894,10 +894,10 @@ module MetroLiveTile =
     self <- ValueSome cell
     cell
 
-  let createFactory(onClick: unit -> unit) : Func<MetroLiveTileCell> =
-    Func<MetroLiveTileCell>(fun () -> create onClick)
+  let createFactory(onClick: unit -> unit) : unit -> MetroLiveTileCell =
+    fun () -> create onClick
 
   let mount
-    (key: string, input: MetroLiveTileInput, factory: Func<MetroLiveTileCell>)
+    (key: string, input: MetroLiveTileInput, factory: unit -> MetroLiveTileCell)
     : Blob =
     Cell.Mount<MetroLiveTileInput, MetroLiveTileCell>(key, input, factory)

@@ -80,9 +80,11 @@ module MetroPivot =
   /// the returned factory outside <c>Build</c>.
   val createFactory:
     onSelect: (string -> unit) * renderContent: (string -> Blob) ->
-      Func<MetroPivotCell>
+      unit ->
+        MetroPivotCell
 
   /// Mounts a <see cref="MetroPivotCell"/> under stable <paramref name="key"/>
   /// using the cached <paramref name="factory"/>.
   val mount:
-    key: string * input: MetroPivotInput * factory: Func<MetroPivotCell> -> Blob
+    key: string * input: MetroPivotInput * factory: (unit -> MetroPivotCell) ->
+      Blob

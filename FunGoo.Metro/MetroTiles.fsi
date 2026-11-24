@@ -180,10 +180,12 @@ module MetroLiveTile =
 
   /// Creates a reusable cell factory for <see cref="MetroLiveTileCell"/>. Cache
   /// the returned factory outside <c>Build</c>.
-  val createFactory: onClick: (unit -> unit) -> Func<MetroLiveTileCell>
+  val createFactory: onClick: (unit -> unit) -> unit -> MetroLiveTileCell
 
   /// Mounts a <see cref="MetroLiveTileCell"/> under stable
   /// <paramref name="key"/> using the cached <paramref name="factory"/>.
   val mount:
-    key: string * input: MetroLiveTileInput * factory: Func<MetroLiveTileCell> ->
+    key: string *
+    input: MetroLiveTileInput *
+    factory: (unit -> MetroLiveTileCell) ->
       Blob

@@ -530,10 +530,10 @@ module MetroPivot =
 
   let createFactory
     (onSelect: string -> unit, renderContent: string -> Blob)
-    : Func<MetroPivotCell> =
-    Func<MetroPivotCell>(fun () -> create(onSelect, renderContent))
+    : unit -> MetroPivotCell =
+    fun () -> create(onSelect, renderContent)
 
   let mount
-    (key: string, input: MetroPivotInput, factory: Func<MetroPivotCell>)
+    (key: string, input: MetroPivotInput, factory: unit -> MetroPivotCell)
     : Blob =
     Cell.Mount<MetroPivotInput, MetroPivotCell>(key, input, factory)
