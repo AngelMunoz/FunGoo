@@ -94,7 +94,7 @@ type MetroTypeSpec = {
 [<RequireQualifiedAccess>]
 module MetroTypography =
 
-  let private heroSpec = {
+  let heroSpec = {
     FontSize = 56.0
     FontWeight = 300
     LetterSpacing = -0.02 * 56.0
@@ -102,7 +102,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private titleSpec = {
+  let titleSpec = {
     FontSize = 42.0
     FontWeight = 300
     LetterSpacing = -0.02 * 42.0
@@ -110,7 +110,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private headerSpec = {
+  let headerSpec = {
     FontSize = 28.0
     FontWeight = 300
     LetterSpacing = 0.02 * 28.0
@@ -118,7 +118,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private subheaderSpec = {
+  let subheaderSpec = {
     FontSize = 26.0
     FontWeight = 300
     LetterSpacing = 0.02 * 26.0
@@ -126,7 +126,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private header2Spec = {
+  let header2Spec = {
     FontSize = 26.0
     FontWeight = 400
     LetterSpacing = 0.0
@@ -134,7 +134,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private subtitleSpec = {
+  let subtitleSpec = {
     FontSize = 20.0
     FontWeight = 300
     LetterSpacing = 0.02 * 20.0
@@ -142,7 +142,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private mediumSpec = {
+  let mediumSpec = {
     FontSize = 16.0
     FontWeight = 400
     LetterSpacing = 0.02 * 16.0
@@ -150,7 +150,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private bodySpec = {
+  let bodySpec = {
     FontSize = 14.0
     FontWeight = 400
     LetterSpacing = 0.02 * 14.0
@@ -158,7 +158,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private captionSpec = {
+  let captionSpec = {
     FontSize = 12.0
     FontWeight = 400
     LetterSpacing = 0.02 * 12.0
@@ -166,7 +166,7 @@ module MetroTypography =
     Uppercase = false
   }
 
-  let private badgeSpec = {
+  let badgeSpec = {
     FontSize = 11.0
     FontWeight = 700
     LetterSpacing = 0.05 * 11.0

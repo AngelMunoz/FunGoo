@@ -4,7 +4,7 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
-module private Content =
+module Content =
 
   let items = [|
     {
@@ -34,10 +34,10 @@ module private Content =
       "Light, typography, and motion. No borders, no shadows, no chrome."
 
 /// State of the tab. One mutable field per concern.
-type private FlipState = { mutable SelectedId: string }
+type FlipState = { mutable SelectedId: string }
 
 /// The content of one item of the flip view.
-let private itemOf(id: string) : Blob =
+let itemOf(id: string) : Blob =
   let theme = Metro.read()
   let title, caption = Content.textOf id
 
@@ -67,9 +67,7 @@ let private itemOf(id: string) : Blob =
       MetroText.secondary caption
     )
 
-let private view
-  (state: FlipState, flipFactory: unit -> MetroFlipViewCell)
-  : Blob =
+let view(state: FlipState, flipFactory: unit -> MetroFlipViewCell) : Blob =
   Container(
     FlexDirection = FlexDirection.Column,
     FlexGrow = 1.0,

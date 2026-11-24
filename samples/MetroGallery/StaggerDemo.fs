@@ -4,7 +4,7 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
-module private Content =
+module Content =
 
   let labels = [|
     "01  Typography-first hierarchy"
@@ -15,7 +15,7 @@ module private Content =
   |]
 
 /// State of the demo. One mutable field per concern.
-type private DemoState = {
+type DemoState = {
   // Slots for the animation values, one pair for each label. `create` fills
   // them after the cell exists.
   mutable Translates: Anim<Point> array
@@ -23,11 +23,11 @@ type private DemoState = {
 }
 
 /// The values that the functions of the demo work on.
-type private DemoContext = { State: DemoState }
+type DemoContext = { State: DemoState }
 
 /// Plays the entrance of each row again. The delay of a row grows with its
 /// index. Under reduced motion, each row snaps to its rest.
-let private replay(ctx: DemoContext, theme: MetroTheme) : unit =
+let replay(ctx: DemoContext, theme: MetroTheme) : unit =
   let state = ctx.State
 
   for i = 0 to Content.labels.Length - 1 do
@@ -43,7 +43,7 @@ let private replay(ctx: DemoContext, theme: MetroTheme) : unit =
       state.Opacities[i].Play(0.0, 1.0, spec)
 
 /// One row of the stagger: the label and its delay.
-let private row(ctx: DemoContext, index: int) : Blob =
+let row(ctx: DemoContext, index: int) : Blob =
   let delayMs = MetroMotion.staggerDelayMs index
   let theme = Metro.read()
 
@@ -70,7 +70,7 @@ let private row(ctx: DemoContext, index: int) : Blob =
       MetroText.caption $"+{int delayMs} ms"
     )
 
-let private view(ctx: DemoContext) : Blob =
+let view(ctx: DemoContext) : Blob =
   let theme = Metro.read()
 
   let list =

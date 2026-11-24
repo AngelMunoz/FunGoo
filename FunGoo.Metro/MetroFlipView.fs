@@ -65,7 +65,7 @@ type MetroFlipViewCell() =
   member internal this.Schedule(delayMs: float, action: Action) : WindowTimer =
     this.After(delayMs, action)
 
-module private FlipInternals =
+module FlipInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
   let zeroRadius = Length.Pixels 0.0
@@ -431,7 +431,7 @@ module MetroFlipView =
     FlipInternals.buildView(state, renderItem, onEvent)
 
   /// State of a flip view cell. One mutable field per concern.
-  type private FlipState = {
+  type FlipState = {
     ViewportHandle: ElementHandle
     mutable Input: MetroFlipViewInput
     mutable LastSelectedId: string voption
@@ -449,7 +449,7 @@ module MetroFlipView =
   }
 
   /// The values that the functions of a flip view cell work on.
-  type private FlipContext = {
+  type FlipContext = {
     State: FlipState
     /// Gives one navigation request to the host cell.
     Select: Action<string>
@@ -457,22 +457,22 @@ module MetroFlipView =
   }
 
   /// What the host window tells a change of the input.
-  type private HostFacts = {
+  type HostFacts = {
     Open: bool
     /// <c>ValueNone</c> when the cell has no window.
     ReducedMotion: bool voption
   }
 
   /// A change of the input with the facts of the host window.
-  type private FlipInputChange = {
+  type FlipInputChange = {
     Input: MetroFlipViewInput
     Host: HostFacts
   }
 
   /// The wait for the end of a slide.
-  type private SlideWait = { DelayMs: float; RemainingMs: float }
+  type SlideWait = { DelayMs: float; RemainingMs: float }
 
-  let private emptyInput: MetroFlipViewInput = {
+  let emptyInput: MetroFlipViewInput = {
     Items = Array.empty
     SelectedId = ""
     ShowNavigation = true
@@ -480,7 +480,7 @@ module MetroFlipView =
     AccessibilityName = ValueNone
   }
 
-  let private initialState() : FlipState = {
+  let initialState() : FlipState = {
     ViewportHandle = ElementHandle()
     Input = emptyInput
     LastSelectedId = ValueNone
@@ -498,7 +498,7 @@ module MetroFlipView =
 
   /// The facts of the host window. A cell without a window has no open
   /// window and no preference.
-  let private hostFacts(host: Window) : HostFacts = {
+  let hostFacts(host: Window) : HostFacts = {
     Open = not(isNull host) && host.IsOpen
     ReducedMotion =
       (if isNull host then
@@ -508,7 +508,7 @@ module MetroFlipView =
   }
 
   /// The explicit state of the tree, for <c>buildView</c>.
-  let private currentState(ctx: FlipContext) : MetroFlipViewState = {
+  let currentState(ctx: FlipContext) : MetroFlipViewState = {
     Input = ctx.State.Input
     ActiveIndex =
       FlipInternals.indexOf(
@@ -521,29 +521,27 @@ module MetroFlipView =
     ViewportHandle = ctx.State.ViewportHandle
   }
 
-  let private isReducedMotion
-    (state: FlipState, hostReduced: bool voption)
-    : bool =
+  let isReducedMotion(state: FlipState, hostReduced: bool voption) : bool =
     state.ScopedReducedMotion
     || ValueOption.defaultValue state.LastReducedMotion hostReduced
 
-  let private cancelSlideTimer(state: FlipState) : unit =
+  let cancelSlideTimer(state: FlipState) : unit =
     state.SlideTimer |> ValueOption.iter(fun timer -> timer.Dispose())
     state.SlideTimer <- ValueNone
 
   // Drops the outgoing panel and restores the resting track position in the
   // same turn, so the active panel never shifts between the two trees.
-  let private finishSlide(state: FlipState) : unit =
+  let finishSlide(state: FlipState) : unit =
     state.SlideTimer <- ValueNone
     state.OutgoingId <- ValueNone
     state.SlideDirection <- 1.0
     state.TrackTranslate.Snap(FlipInternals.zeroPoint)
 
-  let private endSlide(state: FlipState) : unit =
+  let endSlide(state: FlipState) : unit =
     cancelSlideTimer state
     finishSlide state
 
-  let private navigateTo(ctx: FlipContext, targetIdx: int) : unit =
+  let navigateTo(ctx: FlipContext, targetIdx: int) : unit =
     let input = ctx.State.Input
     let items = FlipInternals.itemsOf input
 
@@ -553,7 +551,7 @@ module MetroFlipView =
       if targetIdx <> currentIdx then
         ctx.Select.Invoke(items[targetIdx].Id)
 
-  let private navigateBy(ctx: FlipContext, delta: int) : unit =
+  let navigateBy(ctx: FlipContext, delta: int) : unit =
     let input = ctx.State.Input
     let items = FlipInternals.itemsOf input
 
@@ -561,7 +559,7 @@ module MetroFlipView =
 
   /// Handles one event of the tree: a navigation request or a pointer
   /// gesture on the content area.
-  let private handle(ctx: FlipContext, event: MetroFlipViewEvent) : unit =
+  let handle(ctx: FlipContext, event: MetroFlipViewEvent) : unit =
     let state = ctx.State
 
     match event with
@@ -594,7 +592,7 @@ module MetroFlipView =
       if state.SwipeActive && e.PointerId = state.SwipePointerId then
         state.SwipeActive <- false
 
-  let private view(ctx: FlipContext) : Blob =
+  let view(ctx: FlipContext) : Blob =
     FlipInternals.buildView(
       currentState ctx,
       ctx.RenderItem,
@@ -605,7 +603,7 @@ module MetroFlipView =
   // wall clock and the animation follows simulated time, so a stalled frame can
   // leave the track running when the first timer fires. The wait is bounded by
   // one more slide duration, so a window that stops rendering still settles.
-  let rec private scheduleSlideEnd
+  let rec scheduleSlideEnd
     (cell: MetroFlipViewCell, ctx: FlipContext, wait: SlideWait)
     : unit =
     let timer =
@@ -630,7 +628,7 @@ module MetroFlipView =
     ctx.State.SlideTimer <- ValueSome timer
 
   // Starts the slide from the previous item to the next item.
-  let private startSlide
+  let startSlide
     (cell: MetroFlipViewCell, ctx: FlipContext, indices: struct (int * int))
     : unit =
     let state = ctx.State
@@ -664,7 +662,7 @@ module MetroFlipView =
       }
     )
 
-  let private inputChanged
+  let inputChanged
     (cell: MetroFlipViewCell, ctx: FlipContext, change: FlipInputChange)
     : unit =
     let state = ctx.State
@@ -705,7 +703,7 @@ module MetroFlipView =
 
   /// Cancels the slide timer and the pointer gesture, then puts the track
   /// at rest.
-  let private unmount(state: FlipState) : unit =
+  let unmount(state: FlipState) : unit =
     cancelSlideTimer state
     state.SwipeActive <- false
     state.OutgoingId <- ValueNone
@@ -716,7 +714,7 @@ module MetroFlipView =
 
   /// Reads the theme, ends a slide under reduced motion, then builds the
   /// tree.
-  let private build
+  let build
     (ctx: FlipContext, input: MetroFlipViewInput, hostReduced: bool voption)
     : Blob =
     let state = ctx.State

@@ -5,7 +5,7 @@ open FunGoo.Children
 open FunGoo.Metro
 
 /// State of the demo. One mutable field per concern.
-type private DemoState = {
+type DemoState = {
   mutable Status: string
   // Slots for the two animation values. `create` fills them after the cell
   // exists.
@@ -14,9 +14,9 @@ type private DemoState = {
 }
 
 /// The values that the functions of the demo work on.
-type private DemoContext = { State: DemoState }
+type DemoContext = { State: DemoState }
 
-let private playEnter(ctx: DemoContext, theme: MetroTheme) : unit =
+let playEnter(ctx: DemoContext, theme: MetroTheme) : unit =
   let state = ctx.State
 
   Continuum.playEnter(
@@ -28,7 +28,7 @@ let private playEnter(ctx: DemoContext, theme: MetroTheme) : unit =
 
   state.Status <- "Entered (130 px, -70 px -> 0, 0)"
 
-let private playExit(ctx: DemoContext, theme: MetroTheme) : unit =
+let playExit(ctx: DemoContext, theme: MetroTheme) : unit =
   let state = ctx.State
 
   Continuum.playExit(
@@ -40,13 +40,13 @@ let private playExit(ctx: DemoContext, theme: MetroTheme) : unit =
 
   state.Status <- "Exited (0, 0 -> 225 px, 73 px)"
 
-let private reset(state: DemoState) : unit =
+let reset(state: DemoState) : unit =
   state.Translate.Snap(Point(X = 0.0, Y = 0.0))
   state.Opacity.Snap(1.0)
   state.Status <- "Reset"
 
 /// The target of the flight. The two animation values move and fade it.
-let private flightTarget(state: DemoState, theme: MetroTheme) : Blob =
+let flightTarget(state: DemoState, theme: MetroTheme) : Blob =
   Container(
     Width = Length.Pixels 260.0,
     Padding = Edges(Length.Pixels 16.0),
@@ -71,7 +71,7 @@ let private flightTarget(state: DemoState, theme: MetroTheme) : Blob =
       }
     )
 
-let private view(ctx: DemoContext) : Blob =
+let view(ctx: DemoContext) : Blob =
   let theme = Metro.read()
 
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 12.0)

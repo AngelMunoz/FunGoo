@@ -6,7 +6,7 @@ open Goo
 open FunGoo.Metro
 
 /// Gallery tabs that also register as named `goo render` scenes, in name order.
-let private sceneTabs = [|
+let sceneTabs = [|
   "controls"
   "flip-view"
   "inputs"
@@ -18,7 +18,7 @@ let private sceneTabs = [|
 |]
 
 /// Maps the window theme preference onto a Metro appearance mode.
-let private sceneMode(window: Window) : MetroMode =
+let sceneMode(window: Window) : MetroMode =
   if window.Preferences.Theme = SystemTheme.Dark then
     MetroMode.Dark
   else
@@ -27,7 +27,7 @@ let private sceneMode(window: Window) : MetroMode =
 /// Named gallery states for `goo render --scene <name>`. A scene starts on its
 /// tab and follows the `--theme` preference in the Metro palette and the
 /// gallery mode state.
-let private galleryScenes: Gallery.ScenesFactory =
+let galleryScenes: Gallery.ScenesFactory =
   fun getWindow ->
     let scenes = Dictionary<string, Func<Cell>>()
 

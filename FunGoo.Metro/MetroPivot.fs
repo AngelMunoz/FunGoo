@@ -31,7 +31,7 @@ type MetroPivotCell() =
   member this.Raise(callback: Action<string>, value: string) =
     this.InvokeInputCallback(callback, value)
 
-module private PivotInternals =
+module PivotInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
   let zeroRadius = Length.Pixels 0.0
@@ -86,7 +86,7 @@ module MetroPivot =
   }
 
   /// State of a Pivot cell. One mutable field per concern.
-  type private PivotState = {
+  type PivotState = {
     mutable Input: MetroPivotInput
     mutable LastSelectedId: string voption
     mutable LastSelectedIndex: int
@@ -103,7 +103,7 @@ module MetroPivot =
   }
 
   /// The delegates of a Pivot cell. `create` makes them once.
-  type private PivotDelegates = {
+  type PivotDelegates = {
     KeyLeft: Action
     KeyRight: Action
     KeyHome: Action
@@ -116,7 +116,7 @@ module MetroPivot =
   }
 
   /// The values that the functions of a Pivot cell work on.
-  type private PivotContext = {
+  type PivotContext = {
     State: PivotState
     /// Gives one selection to the host cell.
     Select: Action<string>
@@ -124,7 +124,7 @@ module MetroPivot =
     Delegates: PivotDelegates
   }
 
-  let private initialState() : PivotState = {
+  let initialState() : PivotState = {
     Input = {
       Title = ValueNone
       Items = Array.empty
@@ -144,15 +144,15 @@ module MetroPivot =
     Opacity = Unchecked.defaultof<Anim<float>>
   }
 
-  let private itemsOf(input: MetroPivotInput) : MetroPivotItem array =
+  let itemsOf(input: MetroPivotInput) : MetroPivotItem array =
     if isNull input.Items then Array.empty else input.Items
 
   /// Puts the content at rest: no translation and fully opaque.
-  let private snapToRest(state: PivotState) : unit =
+  let snapToRest(state: PivotState) : unit =
     state.Translate.Snap(PivotInternals.zeroPoint)
     state.Opacity.Snap(1.0)
 
-  let private selectIndex
+  let selectIndex
     (state: PivotState, select: Action<string>, targetIdx: int)
     : unit =
     let input = state.Input
@@ -164,15 +164,13 @@ module MetroPivot =
       if targetIdx <> curIdx then
         select.Invoke(items[targetIdx].Id)
 
-  let private selectLast(state: PivotState, select: Action<string>) : unit =
+  let selectLast(state: PivotState, select: Action<string>) : unit =
     let items = state.Input.Items
 
     if not(isNull items) && items.Length > 0 then
       selectIndex(state, select, items.Length - 1)
 
-  let private navigateBy
-    (state: PivotState, select: Action<string>, delta: int)
-    : unit =
+  let navigateBy(state: PivotState, select: Action<string>, delta: int) : unit =
     let input = state.Input
     let items = itemsOf input
 
@@ -185,14 +183,14 @@ module MetroPivot =
       if nextIdx >= 0 && nextIdx <> curIdx then
         select.Invoke(items[nextIdx].Id)
 
-  let private pointerDown(state: PivotState, e: PointerEvent) : unit =
+  let pointerDown(state: PivotState, e: PointerEvent) : unit =
     if e.IsPrimary then
       state.SwipeActive <- true
       state.SwipePointerId <- e.PointerId
       state.SwipeStartX <- e.Position.X
       state.SwipeStartY <- e.Position.Y
 
-  let private pointerMove(state: PivotState, e: PointerEvent) : unit =
+  let pointerMove(state: PivotState, e: PointerEvent) : unit =
     if state.SwipeActive && e.PointerId = state.SwipePointerId then
       let dx = e.Position.X - state.SwipeStartX
       let dy = e.Position.Y - state.SwipeStartY
@@ -201,7 +199,7 @@ module MetroPivot =
       if abs dy > abs dx && abs dy > PivotInternals.swipeThresholdPx then
         state.SwipeActive <- false
 
-  let private pointerUp
+  let pointerUp
     (state: PivotState, select: Action<string>, e: PointerEvent)
     : unit =
     if state.SwipeActive && e.PointerId = state.SwipePointerId then
@@ -217,13 +215,11 @@ module MetroPivot =
         else
           navigateBy(state, select, -1)
 
-  let private pointerCancel(state: PivotState, e: PointerEvent) : unit =
+  let pointerCancel(state: PivotState, e: PointerEvent) : unit =
     if state.SwipeActive && e.PointerId = state.SwipePointerId then
       state.SwipeActive <- false
 
-  let private delegatesOf
-    (state: PivotState, select: Action<string>)
-    : PivotDelegates =
+  let delegatesOf(state: PivotState, select: Action<string>) : PivotDelegates =
     let keyLeft = Action(fun () -> navigateBy(state, select, -1))
     let keyRight = Action(fun () -> navigateBy(state, select, 1))
     let keyHome = Action(fun () -> selectIndex(state, select, 0))
@@ -250,7 +246,7 @@ module MetroPivot =
 
   /// Plays the entrance transition of the new selection, or snaps to rest
   /// under reduced motion.
-  let private inputChanged
+  let inputChanged
     (ctx: PivotContext, input: MetroPivotInput, hostReduced: bool voption)
     : unit =
     let state = ctx.State
@@ -293,7 +289,7 @@ module MetroPivot =
     state.LastSelectedIndex <- nextIdx
 
   /// Resets the swipe, the selection tracking, and the animations.
-  let private unmount(state: PivotState) : unit =
+  let unmount(state: PivotState) : unit =
     state.SwipeActive <- false
     state.LastSelectedId <- ValueNone
     state.LastSelectedIndex <- -1
@@ -301,7 +297,7 @@ module MetroPivot =
     snapToRest state
 
   /// Builds the title, the header strip, and the content panel.
-  let private buildTree
+  let buildTree
     (ctx: PivotContext, input: MetroPivotInput, theme: MetroTheme)
     : Blob =
     let state = ctx.State
@@ -458,7 +454,7 @@ module MetroPivot =
 
   /// Reads the theme, stops a running transition under reduced motion, then
   /// builds the tree.
-  let private build
+  let build
     (ctx: PivotContext, input: MetroPivotInput, hostReduced: bool voption)
     : Blob =
     let state = ctx.State
@@ -477,7 +473,7 @@ module MetroPivot =
 
   /// The reduced motion preference of the host window. <c>ValueNone</c> when
   /// the cell has no window.
-  let private reducedMotionOf(host: Window) : bool voption =
+  let reducedMotionOf(host: Window) : bool voption =
     if isNull host then
       ValueNone
     else

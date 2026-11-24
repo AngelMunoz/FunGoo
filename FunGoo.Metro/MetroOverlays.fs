@@ -39,7 +39,7 @@ type MetroContentDialogProps = {
   AccessibilityName: string voption
 }
 
-module private OverlayInternals =
+module OverlayInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
   let zeroRadius = Length.Pixels 0.0

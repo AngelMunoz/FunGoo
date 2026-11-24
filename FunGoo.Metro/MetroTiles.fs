@@ -58,7 +58,7 @@ module MetroTileMetrics =
     let h = float rowSpan * c + float(rowSpan - 1) * g
     struct (w, h)
 
-module private TileInternals =
+module TileInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
   let zeroRadius = Length.Pixels 0.0
@@ -216,7 +216,7 @@ module TileGridLayout =
         Array.copy args.Sizes
   }
 
-  let private measure(spec: TileGridSpec, context: LayoutContext) : LayoutSize =
+  let measure(spec: TileGridSpec, context: LayoutContext) : LayoutSize =
     let struct (rects, totalW, totalH) =
       TileInternals.packTiles(spec, context.ChildCount)
 
@@ -226,7 +226,7 @@ module TileGridLayout =
 
     LayoutSize(totalW, totalH)
 
-  let private arrange(spec: TileGridSpec, context: LayoutContext) : unit =
+  let arrange(spec: TileGridSpec, context: LayoutContext) : unit =
     let struct (rects, _, _) = TileInternals.packTiles(spec, context.ChildCount)
 
     for i = 0 to rects.Length - 1 do
@@ -472,7 +472,7 @@ module MetroLiveTile =
   }
 
   /// State of a live tile cell. One mutable field per concern.
-  type private LiveTileState = {
+  type LiveTileState = {
     mutable Input: MetroLiveTileInput
     mutable AttachedHost: Window voption
     mutable FaceIndex: int
@@ -488,7 +488,7 @@ module MetroLiveTile =
   }
 
   /// The values that the functions of a live tile cell work on.
-  type private LiveTileContext = {
+  type LiveTileContext = {
     State: LiveTileState
     /// Gives one click to the host cell.
     Click: Action
@@ -498,12 +498,12 @@ module MetroLiveTile =
   }
 
   /// The host window with the handler of its preferences.
-  type private HostAttachment = {
+  type HostAttachment = {
     Host: Window voption
     Handler: Action<PlatformPreferences>
   }
 
-  let private emptyInput: MetroLiveTileInput = {
+  let emptyInput: MetroLiveTileInput = {
     Faces = Array.empty
     Size = MetroTileSize.Wide
     CellSize = 72.0
@@ -513,7 +513,7 @@ module MetroLiveTile =
     AccessibilityName = ValueNone
   }
 
-  let private initialState() : LiveTileState = {
+  let initialState() : LiveTileState = {
     Input = emptyInput
     AttachedHost = ValueNone
     FaceIndex = 0
@@ -526,25 +526,25 @@ module MetroLiveTile =
     Opacity = Unchecked.defaultof<Anim<float>>
   }
 
-  let private stopTimer(state: LiveTileState) : unit =
+  let stopTimer(state: LiveTileState) : unit =
     state.Timer |> ValueOption.iter(fun timer -> timer.Dispose())
     state.Timer <- ValueNone
     state.ActiveIntervalMs <- 0.0
 
   /// <c>true</c> when a scope or the host window asks for reduced motion.
-  let private isReducedMotion(state: LiveTileState) : bool =
+  let isReducedMotion(state: LiveTileState) : bool =
     state.ScopedReducedMotion
     || (state.AttachedHost
         |> ValueOption.map(fun w -> Metro.readWindow(w).ReducedMotion)
         |> ValueOption.defaultValue state.LastReducedMotion)
 
-  let private isTimerActive(state: LiveTileState) : bool =
+  let isTimerActive(state: LiveTileState) : bool =
     state.Timer
     |> ValueOption.map(fun timer -> timer.IsActive)
     |> ValueOption.defaultValue false
 
   /// Puts the face at rest: no translation and fully opaque.
-  let private snapToRest(state: LiveTileState) : unit =
+  let snapToRest(state: LiveTileState) : unit =
     state.Translate.Snap(TileInternals.zeroPoint)
     state.Opacity.Snap(1.0)
 
@@ -552,7 +552,7 @@ module MetroLiveTile =
   /// one face or reduced motion. The timer action of the cell runs this
   /// function. Goo rebuilds the cell after a timer action, so the function
   /// does not call `Rebuild()`.
-  let private advanceFace(ctx: LiveTileContext) : unit =
+  let advanceFace(ctx: LiveTileContext) : unit =
     let state = ctx.State
     let faces = state.Input.Faces
 
@@ -571,7 +571,7 @@ module MetroLiveTile =
       state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
 
   /// Starts, keeps, or stops the cycle timer for the input.
-  let private syncTimer
+  let syncTimer
     (cell: MetroLiveTileCell, ctx: LiveTileContext, input: MetroLiveTileInput)
     : unit =
     let state = ctx.State
@@ -598,7 +598,7 @@ module MetroLiveTile =
       state.Timer <- ValueSome(cell.ScheduleEvery(interval, advance))
 
   /// Keeps the index of the face inside the new faces, then syncs the timer.
-  let private inputChanged
+  let inputChanged
     (cell: MetroLiveTileCell, ctx: LiveTileContext, input: MetroLiveTileInput)
     : unit =
     let state = ctx.State
@@ -615,7 +615,7 @@ module MetroLiveTile =
 
   /// Subscribes the handler to the preferences of the host window, then
   /// syncs the timer.
-  let private mounted
+  let mounted
     (cell: MetroLiveTileCell, ctx: LiveTileContext, attachment: HostAttachment)
     : unit =
     let state = ctx.State
@@ -628,7 +628,7 @@ module MetroLiveTile =
     syncTimer(cell, ctx, state.Input)
 
   /// Unsubscribes the handler, stops the timer, and puts the face at rest.
-  let private unmount
+  let unmount
     (ctx: LiveTileContext, handler: Action<PlatformPreferences>)
     : unit =
     let state = ctx.State
@@ -642,7 +642,7 @@ module MetroLiveTile =
     stopTimer state
     snapToRest state
 
-  let private view
+  let view
     (ctx: LiveTileContext, input: MetroLiveTileInput, theme: MetroTheme)
     : Blob =
     let state = ctx.State
@@ -807,7 +807,7 @@ module MetroLiveTile =
 
   /// Reads the theme, stops the cycle and the animations under reduced
   /// motion, then builds the tree.
-  let private build
+  let build
     (ctx: LiveTileContext, input: MetroLiveTileInput, hostReduced: bool voption)
     : Blob =
     let state = ctx.State
@@ -825,14 +825,14 @@ module MetroLiveTile =
 
   /// The reduced motion preference of the host window. <c>ValueNone</c> when
   /// the cell has no window.
-  let private reducedMotionOf(host: Window) : bool voption =
+  let reducedMotionOf(host: Window) : bool voption =
     if isNull host then
       ValueNone
     else
       ValueSome(Metro.readWindow(host).ReducedMotion)
 
   /// The window of a cell with the handler of its preferences.
-  let private attachmentOf
+  let attachmentOf
     (host: Window, handler: Action<PlatformPreferences>)
     : HostAttachment = {
     Host = (if isNull host then ValueNone else ValueSome host)

@@ -51,10 +51,10 @@ module MetroTheme =
 
   // Cache Ink and Bone once so toWidgetTheme reuses immutable palette arrays
   // instead of allocating fresh arrays per call.
-  let private darkBase = Theme.Ink
-  let private lightBase = Theme.Bone
-  let private emptyShadows: BoxShadow array = Array.empty
-  let private zeroRadius = Nullable 0.0
+  let darkBase = Theme.Ink
+  let lightBase = Theme.Bone
+  let emptyShadows: BoxShadow array = Array.empty
+  let zeroRadius = Nullable 0.0
 
   let accentTextHover(theme: MetroTheme) : Color =
     if theme.IsDark then
@@ -213,20 +213,20 @@ module MetroTheme =
 [<RequireQualifiedAccess>]
 module Metro =
 
-  let private toThemeMode(mode: MetroMode) : ThemeMode =
+  let toThemeMode(mode: MetroMode) : ThemeMode =
     match mode with
     | MetroMode.System -> ThemeMode.System
     | MetroMode.Light -> ThemeMode.Light
     | MetroMode.Dark -> ThemeMode.Dark
 
-  let private stripAccessibility(theme: MetroTheme) : MetroTheme = {
+  let stripAccessibility(theme: MetroTheme) : MetroTheme = {
     theme with
         ReducedMotion = false
         HighContrast = false
         TextScaleFactor = 1.0
   }
 
-  let private resolveTheme
+  let resolveTheme
     (config: MetroConfig, prefs: PlatformPreferences, dark: bool voption)
     : MetroTheme =
     let isDark =
@@ -266,11 +266,11 @@ module Metro =
       TextScaleFactor = textScale
     }
 
-  let private metroContext = Context<MetroTheme>()
+  let metroContext = Context<MetroTheme>()
 
   /// The Metro attachment of one window. The module <c>Metro</c> holds one
   /// attachment for each window. <c>MetroAttachment.create</c> makes it.
-  type private IMetroAttachment =
+  type IMetroAttachment =
 
     /// The configuration of the attachment.
     abstract Config: MetroConfig with get, set
@@ -283,7 +283,7 @@ module Metro =
     abstract OnPreferencesChanged: prefs: PlatformPreferences -> unit
 
   /// State of the attachment of one window. One mutable field per concern.
-  type private AttachmentState = {
+  type AttachmentState = {
     mutable Config: MetroConfig
     mutable WidgetAttached: bool
     mutable LastMode: MetroMode
@@ -291,7 +291,7 @@ module Metro =
   }
 
   /// The values that the functions of an attachment work on.
-  type private Attachment = {
+  type Attachment = {
     Window: Window
     State: AttachmentState
     /// Resolves the widget theme for one mode with the current configuration.
@@ -301,7 +301,7 @@ module Metro =
   }
 
   [<RequireQualifiedAccess>]
-  module private MetroAttachment =
+  module MetroAttachment =
 
     /// Resolves the widget theme for <c>dark</c>, with the current
     /// configuration and no accessibility setting.
@@ -396,9 +396,9 @@ module Metro =
             onPreferencesChanged(attachment, prefs)
       }
 
-  let private attachments = ConditionalWeakTable<Window, IMetroAttachment>()
+  let attachments = ConditionalWeakTable<Window, IMetroAttachment>()
 
-  let private getOrCreateAttachment
+  let getOrCreateAttachment
     (window: Window, initialConfig: MetroConfig)
     : IMetroAttachment =
     let mutable state = Unchecked.defaultof<IMetroAttachment>

@@ -16,7 +16,7 @@ type MetroNumberBoxProps = {
   Width: Length voption
 }
 
-module private NumberRatingInternals =
+module NumberRatingInternals =
 
   let toNullable(value: float voption) : Nullable<float> =
     match value with

@@ -64,7 +64,7 @@ module MetroListView =
     AccessibilityName = ValueNone
   }
 
-  let private rowsOf(props: MetroListViewProps) : ListViewItem array =
+  let rowsOf(props: MetroListViewProps) : ListViewItem array =
     let items = if isNull props.Items then Array.empty else props.Items
 
     items
@@ -84,7 +84,7 @@ module MetroListView =
         Disabled = item.Disabled
       ))
 
-  let private dataOf
+  let dataOf
     (props: MetroListViewProps, rows: ListViewItem array)
     : ListViewInput =
     let rowHeight =
@@ -119,9 +119,9 @@ module MetroListView =
   let toInput(props: MetroListViewProps) : ListViewInput =
     dataOf(props, rowsOf props)
 
-  let private zeroRadius = Length.Pixels 0.0
+  let zeroRadius = Length.Pixels 0.0
 
-  let private isSelected(selectedIds: string array, itemId: string) : bool =
+  let isSelected(selectedIds: string array, itemId: string) : bool =
     if isNull selectedIds || isNull itemId then
       false
     else
@@ -137,7 +137,7 @@ module MetroListView =
   /// The delegates of a list view factory. `createFactory` makes them once:
   /// every input carries the same callback instances, so an unchanged input
   /// does not rebuild the list.
-  type private ListViewHandlers = {
+  type ListViewHandlers = {
     OnSelectionChange: Action<string array>
     OnClick: Action<string>
     ConfigureRow: Action<ListViewInput, ListViewItem, Container>
@@ -146,7 +146,7 @@ module MetroListView =
 
   /// The values that the functions of a list view factory work on. The mapped
   /// rows stay the same instance while the item array does.
-  type private FactoryState = {
+  type FactoryState = {
     Handlers: ListViewHandlers
     mutable Mapped: (MetroListItem array * ListViewItem array) voption
   }
@@ -155,7 +155,7 @@ module MetroListView =
   // the start border, the radius, and the background are set here. The
   // start border keeps its width on every row, so selection does not move
   // the row content.
-  let private styleRow
+  let styleRow
     (input: ListViewInput, item: ListViewItem, root: Container)
     : unit =
     let theme = Metro.read()
@@ -178,12 +178,12 @@ module MetroListView =
     else
       root.BorderStartColor <- Color.Transparent
 
-  let private styleRoot(_input: ListViewInput, root: Container) : unit =
+  let styleRoot(_input: ListViewInput, root: Container) : unit =
     root.BorderRadius <- zeroRadius
 
   // The compiler requires the constructors here: a lambda does not convert to
   // a delegate in a record field (FS0002).
-  let private handlersOf(onEvent: MetroListEvent -> unit) : ListViewHandlers = {
+  let handlersOf(onEvent: MetroListEvent -> unit) : ListViewHandlers = {
     OnSelectionChange =
       Action<string array>(fun ids ->
         onEvent(MetroListEvent.SelectionChanged ids))
@@ -200,7 +200,7 @@ module MetroListView =
   // A factory maps an item array once. The mapped rows stay the same
   // instance while the item array does, so an unchanged input does not
   // rebuild the list.
-  let private rowsFor
+  let rowsFor
     (state: FactoryState, props: MetroListViewProps)
     : ListViewItem array =
     let items = props.Items
@@ -215,7 +215,7 @@ module MetroListView =
       state.Mapped <- ValueSome(items, rows)
       rows
 
-  let private createInput
+  let createInput
     (state: FactoryState, props: MetroListViewProps)
     : ListViewInput =
     let data = dataOf(props, rowsFor(state, props))
@@ -237,7 +237,7 @@ module MetroListView =
       ConfigureRoot = state.Handlers.ConfigureRoot
     )
 
-  let private mount
+  let mount
     (state: FactoryState, key: string, props: MetroListViewProps)
     : Blob =
     Cell.Mount<ListViewInput, ListView>(key, createInput(state, props))

@@ -5,7 +5,7 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
-module private Content =
+module Content =
 
   let groups = [| "photos"; "maps"; "music" |]
 
@@ -41,7 +41,7 @@ type ZoomTabCell() =
   abstract Builds: int
 
 /// State of the tab. One mutable field per concern.
-type private ZoomState = {
+type ZoomState = {
   mutable ZoomedOut: bool
   mutable LastAction: string
   // The latest trees and the zoom cell, for the headless check of the gallery.
@@ -53,7 +53,7 @@ type private ZoomState = {
 }
 
 /// The values that the functions of the tab work on.
-type private ZoomContext = {
+type ZoomContext = {
   State: ZoomState
   /// Rebuilds this tab.
   RebuildTab: unit -> unit
@@ -61,7 +61,7 @@ type private ZoomContext = {
 
 /// The data of one tile button of the tab.
 [<Struct; NoComparison>]
-type private TileLabel = {
+type TileLabel = {
   Key: string
   Label: string
   FontSize: float
@@ -69,7 +69,7 @@ type private TileLabel = {
 
 /// Applies one zoom request. The zoom cell gives each request to this tab
 /// through `InvokeInputCallback`, so the owner rule rebuilds this tab.
-let private applyEvent(state: ZoomState, event: MetroSemanticZoomEvent) : unit =
+let applyEvent(state: ZoomState, event: MetroSemanticZoomEvent) : unit =
   state.ZoomedOut <- (event = MetroSemanticZoomEvent.ZoomOut)
 
   state.LastAction <- (if state.ZoomedOut then "Zoomed out" else "Zoomed in")
@@ -78,17 +78,17 @@ let private applyEvent(state: ZoomState, event: MetroSemanticZoomEvent) : unit =
 // Build, so it owns the callbacks of their tiles. The owner rule then
 // rebuilds the zoom cell and not this tab. For that reason a tile callback
 // that changes the state of this tab also rebuilds this tab.
-let private selectTile(ctx: ZoomContext, group: string, name: string) : unit =
+let selectTile(ctx: ZoomContext, group: string, name: string) : unit =
   ctx.State.LastAction <- $"Selected {name} in {group}"
   ctx.RebuildTab()
 
-let private selectGroup(ctx: ZoomContext, group: string) : unit =
+let selectGroup(ctx: ZoomContext, group: string) : unit =
   ctx.State.ZoomedOut <- false
   ctx.State.LastAction <- $"Zoomed in on {group}"
   ctx.RebuildTab()
 
 /// One tile button of the tab: a sharp rectangle with one label.
-let private tileButton(label: TileLabel, onClick: unit -> unit) : Blob =
+let tileButton(label: TileLabel, onClick: unit -> unit) : Blob =
   let theme = Metro.read()
   let p = theme.Palette
 
@@ -139,7 +139,7 @@ let private tileButton(label: TileLabel, onClick: unit -> unit) : Blob =
     )
 
 /// The detail level: one column of tiles for each group.
-let private detailView(ctx: ZoomContext) : Blob =
+let detailView(ctx: ZoomContext) : Blob =
   let groupsRow =
     Container(
       FlexDirection = FlexDirection.Row,
@@ -179,7 +179,7 @@ let private detailView(ctx: ZoomContext) : Blob =
   groupsRow
 
 /// The overview level: one tile for each group.
-let private overviewView(ctx: ZoomContext) : Blob =
+let overviewView(ctx: ZoomContext) : Blob =
   let overview =
     Container(
       FlexDirection = FlexDirection.Row,
@@ -202,12 +202,10 @@ let private overviewView(ctx: ZoomContext) : Blob =
   ctx.State.LastOverview <- overview
   overview
 
-let private render(ctx: ZoomContext, isZoomedOut: bool) : Blob =
+let render(ctx: ZoomContext, isZoomedOut: bool) : Blob =
   if isZoomedOut then overviewView ctx else detailView ctx
 
-let private view
-  (state: ZoomState, zoomFactory: unit -> MetroSemanticZoomCell)
-  : Blob =
+let view(state: ZoomState, zoomFactory: unit -> MetroSemanticZoomCell) : Blob =
   state.Builds <- state.Builds + 1
 
   Container(

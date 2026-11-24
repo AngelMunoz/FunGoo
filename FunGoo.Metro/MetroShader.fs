@@ -21,22 +21,22 @@ type MetroPerspectiveParams = {
 [<RequireQualifiedAccess>]
 module MetroPerspective =
 
-  let private degToRad = float32(Math.PI / 180.0)
-  let private resourceAssetName = "FunGoo.Metro.Shaders.metro_perspective"
+  let degToRad = float32(Math.PI / 180.0)
+  let resourceAssetName = "FunGoo.Metro.Shaders.metro_perspective"
   let resourceName = resourceAssetName + ".goo-effect"
 
-  let private clamp01(value: float) : float =
+  let clamp01(value: float) : float =
     if not(Double.IsFinite value) || value <= 0.0 then 0.0
     elif value >= 1.0 then 1.0
     else value
 
-  let private clampRange (minVal: float) (maxVal: float) (value: float) =
+  let clampRange (minVal: float) (maxVal: float) (value: float) =
     if not(Double.IsFinite value) then 0.0
     elif value <= minVal then minVal
     elif value >= maxVal then maxVal
     else value
 
-  let private clampSingle
+  let clampSingle
     (fallback: float32)
     (minVal: float32)
     (maxVal: float32)
@@ -199,7 +199,7 @@ module MetroPerspective =
   let tryCreate(program: ShaderEffectProgram voption) : ShaderEffect voption =
     program |> ValueOption.map(fun p -> ShaderEffect(p))
 
-  let private embeddedProgram: ShaderEffectProgram voption =
+  let embeddedProgram: ShaderEffectProgram voption =
     tryLoadProgramFromAssembly typeof<MetroPerspectiveParams>.Assembly
 
   let isEmbeddedShaderAvailable: bool = embeddedProgram.IsSome

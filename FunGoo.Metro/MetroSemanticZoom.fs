@@ -47,7 +47,7 @@ type MetroSemanticZoomCell() =
     =
     this.InvokeInputCallback(callback, value)
 
-module private ZoomInternals =
+module ZoomInternals =
 
   let emptyShadows: BoxShadow array = Array.empty
   let zeroRadius = Length.Pixels 0.0
@@ -189,7 +189,7 @@ module MetroSemanticZoom =
     ZoomInternals.buildView(state, render, onEvent)
 
   /// State of a semantic zoom cell. One mutable field per concern.
-  type private ZoomState = {
+  type ZoomState = {
     mutable Input: MetroSemanticZoomInput
     mutable LastZoomedOut: bool voption
     mutable LastReducedMotion: bool
@@ -201,20 +201,20 @@ module MetroSemanticZoom =
   }
 
   /// The values that the functions of a semantic zoom cell work on.
-  type private ZoomContext = {
+  type ZoomContext = {
     State: ZoomState
     /// Gives one zoom request to the host cell.
     Raise: Action<MetroSemanticZoomEvent>
     Render: bool -> Blob
   }
 
-  let private emptyInput: MetroSemanticZoomInput = {
+  let emptyInput: MetroSemanticZoomInput = {
     IsZoomedOut = false
     ShowToggleButton = true
     AccessibilityName = ValueNone
   }
 
-  let private initialState() : ZoomState = {
+  let initialState() : ZoomState = {
     Input = emptyInput
     LastZoomedOut = ValueNone
     LastReducedMotion = false
@@ -224,20 +224,20 @@ module MetroSemanticZoom =
   }
 
   /// The explicit state of the tree, for <c>buildView</c>.
-  let private currentState(ctx: ZoomContext) : MetroSemanticZoomState = {
+  let currentState(ctx: ZoomContext) : MetroSemanticZoomState = {
     Input = ctx.State.Input
     ScaleAnim = ctx.State.Scale
     OpacityAnim = ctx.State.Opacity
   }
 
   /// Restores the resting scale and opacity of the active view.
-  let private endZoom(state: ZoomState) : unit =
+  let endZoom(state: ZoomState) : unit =
     state.Scale.Snap(1.0)
     state.Opacity.Snap(1.0)
 
   /// Handles one event of the tree. A request for the view that is already
   /// active raises nothing.
-  let private handle(ctx: ZoomContext, event: MetroSemanticZoomEvent) : unit =
+  let handle(ctx: ZoomContext, event: MetroSemanticZoomEvent) : unit =
     match event with
     | MetroSemanticZoomEvent.ZoomOut ->
       if not ctx.State.Input.IsZoomedOut then
@@ -246,7 +246,7 @@ module MetroSemanticZoom =
       if ctx.State.Input.IsZoomedOut then
         ctx.Raise.Invoke(MetroSemanticZoomEvent.ZoomIn)
 
-  let private view(ctx: ZoomContext) : Blob =
+  let view(ctx: ZoomContext) : Blob =
     ZoomInternals.buildView(
       currentState ctx,
       ctx.Render,
@@ -255,7 +255,7 @@ module MetroSemanticZoom =
 
   /// Plays the zoom transition when the view changes, or snaps into place
   /// under reduced motion.
-  let private inputChanged
+  let inputChanged
     (ctx: ZoomContext, input: MetroSemanticZoomInput, hostReduced: bool voption)
     : unit =
     let state = ctx.State
@@ -282,14 +282,14 @@ module MetroSemanticZoom =
     state.LastZoomedOut <- ValueSome input.IsZoomedOut
 
   /// Resets the transition on unmount.
-  let private unmount(state: ZoomState) : unit =
+  let unmount(state: ZoomState) : unit =
     state.LastZoomedOut <- ValueNone
     state.ScopedReducedMotion <- false
     endZoom state
 
   /// Reads the theme, snaps into place under reduced motion, then builds the
   /// tree.
-  let private build
+  let build
     (ctx: ZoomContext, input: MetroSemanticZoomInput, hostReduced: bool voption)
     : Blob =
     let state = ctx.State
@@ -306,7 +306,7 @@ module MetroSemanticZoom =
 
   /// The reduced motion preference of the host window. <c>ValueNone</c> when
   /// the cell has no window.
-  let private reducedMotionOf(host: Window) : bool voption =
+  let reducedMotionOf(host: Window) : bool voption =
     if isNull host then
       ValueNone
     else

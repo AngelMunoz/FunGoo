@@ -33,7 +33,7 @@ type MetroProgressRingProps = {
   AccessibilityName: string voption
 }
 
-module private ProgressInternals =
+module ProgressInternals =
 
   [<Literal>]
   let dotCount = 5
@@ -235,7 +235,7 @@ type MetroIndeterminateBarCell() =
 module MetroIndeterminateBar =
 
   /// State of an indeterminate bar cell. One mutable field per concern.
-  type private BarState = {
+  type BarState = {
     TrackHandle: ElementHandle
     Periodic: Simulation
     mutable Input: MetroIndeterminateBarInput
@@ -249,19 +249,19 @@ module MetroIndeterminateBar =
   }
 
   /// The values that the functions of an indeterminate bar cell work on.
-  type private BarContext = {
+  type BarContext = {
     State: BarState
     XFactories: Func<float, float, float, Simulation> array
     OpacityFactories: Func<float, float, float, Simulation> array
   }
 
-  let private emptyInput: MetroIndeterminateBarInput = {
+  let emptyInput: MetroIndeterminateBarInput = {
     Height = 4.0
     Width = Length.Percent 100.0
     AccessibilityName = ValueNone
   }
 
-  let private initialState() : BarState = {
+  let initialState() : BarState = {
     TrackHandle = ElementHandle()
     Periodic = PeriodicSimulation.create ProgressInternals.barPeriodSeconds
     Input = emptyInput
@@ -275,7 +275,7 @@ module MetroIndeterminateBar =
   /// The track width and the dot size of the horizontal travel. The width
   /// comes from the measured track, else from the input, else from the
   /// default of 240 px.
-  let private geometry(state: BarState) : struct (float * float) =
+  let geometry(state: BarState) : struct (float * float) =
     let boxWidth = state.TrackHandle.BorderBox.Width
 
     let measured =
@@ -285,7 +285,7 @@ module MetroIndeterminateBar =
 
     struct (measured, state.DotSize)
 
-  let private xFactoriesOf
+  let xFactoriesOf
     (state: BarState)
     : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
@@ -298,7 +298,7 @@ module MetroIndeterminateBar =
           fun () -> geometry state
         )))
 
-  let private opacityFactoriesOf
+  let opacityFactoriesOf
     (state: BarState)
     : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
@@ -307,7 +307,7 @@ module MetroIndeterminateBar =
       Func<float, float, float, Simulation>(fun _ _ _ ->
         ProgressInternals.barDotOpacitySimulation(state.Periodic, offset)))
 
-  let private stopDots(state: BarState) : unit =
+  let stopDots(state: BarState) : unit =
     if state.Running then
       for i = 0 to ProgressInternals.dotCount - 1 do
         state.Translate[i].Snap(Point(X = -state.DotSize, Y = 0.0))
@@ -315,7 +315,7 @@ module MetroIndeterminateBar =
 
       state.Running <- false
 
-  let private startDots(ctx: BarContext) : unit =
+  let startDots(ctx: BarContext) : unit =
     let state = ctx.State
 
     if not state.Running then
@@ -332,7 +332,7 @@ module MetroIndeterminateBar =
 
       state.Running <- true
 
-  let private view
+  let view
     (ctx: BarContext, input: MetroIndeterminateBarInput, theme: MetroTheme)
     : Blob =
     let state = ctx.State
@@ -399,7 +399,7 @@ module MetroIndeterminateBar =
 
   /// Reads the theme and the geometry of the input, starts or stops the
   /// dots, then builds the tree.
-  let private build(ctx: BarContext, input: MetroIndeterminateBarInput) : Blob =
+  let build(ctx: BarContext, input: MetroIndeterminateBarInput) : Blob =
     let state = ctx.State
     state.Input <- input
     let theme = Metro.read()
@@ -567,7 +567,7 @@ module MetroProgressRing =
   }
 
   /// State of a progress ring cell. One mutable field per concern.
-  type private RingState = {
+  type RingState = {
     Periodic: Simulation
     mutable Input: MetroProgressRingProps
     mutable BoxSize: float
@@ -581,21 +581,21 @@ module MetroProgressRing =
   }
 
   /// The values that the functions of a progress ring cell work on.
-  type private RingContext = {
+  type RingContext = {
     State: RingState
     XFactories: Func<float, float, float, Simulation> array
     YFactories: Func<float, float, float, Simulation> array
     OpacityFactories: Func<float, float, float, Simulation> array
   }
 
-  let private initialInput: MetroProgressRingProps = {
+  let initialInput: MetroProgressRingProps = {
     Active = false
     Size = MetroProgressRingSize.Normal
     Color = ValueNone
     AccessibilityName = ValueNone
   }
 
-  let private initialState() : RingState = {
+  let initialState() : RingState = {
     Periodic = PeriodicSimulation.create ProgressInternals.ringPeriodSeconds
     Input = initialInput
     BoxSize = 36.0
@@ -607,10 +607,10 @@ module MetroProgressRing =
   }
 
   /// The box size, the orbit radius, and the dot size of the travel.
-  let private geometry(state: RingState) : struct (float * float * float) =
+  let geometry(state: RingState) : struct (float * float * float) =
     struct (state.BoxSize, state.Radius, state.DotSize)
 
-  let private axisFactoriesOf
+  let axisFactoriesOf
     (state: RingState, isX: bool)
     : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
@@ -624,7 +624,7 @@ module MetroProgressRing =
           Geometry = fun () -> geometry state
         }))
 
-  let private opacityFactoriesOf
+  let opacityFactoriesOf
     (state: RingState)
     : Func<float, float, float, Simulation> array =
     Array.init ProgressInternals.dotCount (fun i ->
@@ -633,7 +633,7 @@ module MetroProgressRing =
       Func<float, float, float, Simulation>(fun _ _ _ ->
         ProgressInternals.ringDotOpacitySimulation(state.Periodic, offset)))
 
-  let private startOrbit(ctx: RingContext) : unit =
+  let startOrbit(ctx: RingContext) : unit =
     let state = ctx.State
 
     if not state.Running then
@@ -651,7 +651,7 @@ module MetroProgressRing =
       state.Running <- true
 
   /// Puts the dots on the orbit at rest. The opacity fades from dot to dot.
-  let private snapStaticRing(state: RingState) : unit =
+  let snapStaticRing(state: RingState) : unit =
     let center = (state.BoxSize - state.DotSize) * 0.5
     let step = 2.0 * Math.PI / float ProgressInternals.dotCount
 
@@ -665,7 +665,7 @@ module MetroProgressRing =
     state.Running <- false
 
   /// Puts all the dots in the center, fully transparent.
-  let private snapHidden(state: RingState) : unit =
+  let snapHidden(state: RingState) : unit =
     let center = (state.BoxSize - state.DotSize) * 0.5
     let centerPt = Point(X = center, Y = center)
 
@@ -675,7 +675,7 @@ module MetroProgressRing =
 
     state.Running <- false
 
-  let private view
+  let view
     (ctx: RingContext, input: MetroProgressRingProps, theme: MetroTheme)
     : Blob =
     let state = ctx.State
@@ -724,7 +724,7 @@ module MetroProgressRing =
 
   /// Reads the theme and the metrics of the size, starts, freezes, or hides
   /// the dots, then builds the tree.
-  let private build(ctx: RingContext, input: MetroProgressRingProps) : Blob =
+  let build(ctx: RingContext, input: MetroProgressRingProps) : Blob =
     let state = ctx.State
     state.Input <- input
     let theme = Metro.read()

@@ -42,7 +42,7 @@ type MetroAccentKind =
   CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module MetroAccent =
 
-  let inline private linearSrgb(channel: float32) : float =
+  let inline linearSrgb(channel: float32) : float =
     let c = float channel
 
     if c <= 0.04045 then
@@ -50,17 +50,17 @@ module MetroAccent =
     else
       Math.Pow((c + 0.055) / 1.055, 2.4)
 
-  let inline private relativeLuminance(color: Color) : float =
+  let inline relativeLuminance(color: Color) : float =
     0.2126 * linearSrgb color.R
     + 0.7152 * linearSrgb color.G
     + 0.0722 * linearSrgb color.B
 
-  let inline private contrastRatio(first: Color, second: Color) : float =
+  let inline contrastRatio(first: Color, second: Color) : float =
     let l1 = relativeLuminance first + 0.05
     let l2 = relativeLuminance second + 0.05
     if l1 >= l2 then l1 / l2 else l2 / l1
 
-  let inline private onAccentFor(color: Color) : Color =
+  let inline onAccentFor(color: Color) : Color =
     if
       contrastRatio(Color.White, color) >= contrastRatio(Color.Black, color)
     then
@@ -68,9 +68,7 @@ module MetroAccent =
     else
       Color.Black
 
-  let inline private blend
-    (source: Color, target: Color, amount: float32)
-    : Color =
+  let inline blend(source: Color, target: Color, amount: float32) : Color =
     Color.FromNormalized(
       source.R + (target.R - source.R) * amount,
       source.G + (target.G - source.G) * amount,
@@ -78,7 +76,7 @@ module MetroAccent =
       source.A
     )
 
-  let private makeNamed
+  let makeNamed
     (baseHex: string, lightHex: string, darkHex: string)
     : MetroAccent =
     let baseColor = Color.Parse baseHex
@@ -90,27 +88,27 @@ module MetroAccent =
       OnAccent = onAccentFor baseColor
     }
 
-  let private blue = makeNamed("#0078d4", "#429ce3", "#005a9e")
-  let private red = makeNamed("#e51400", "#ff4438", "#b40000")
-  let private orange = makeNamed("#fa6800", "#ff9a3c", "#c64900")
-  let private green = makeNamed("#00a300", "#00d500", "#007200")
-  let private teal = makeNamed("#00aba9", "#00ddda", "#007a78")
-  let private purple = makeNamed("#a200ff", "#d04aff", "#7200ca")
-  let private magenta = makeNamed("#d80073", "#ff2d9b", "#a60052")
-  let private lime = makeNamed("#a4c400", "#d5f200", "#749200")
-  let private brown = makeNamed("#825a2c", "#b1834f", "#533a1c")
-  let private pink = makeNamed("#f472d6", "#fba0eb", "#cf4ab0")
-  let private mango = makeNamed("#f09609", "#ffc04a", "#be7200")
-  let private cobalt = makeNamed("#0050ef", "#4a8aff", "#0035a8")
-  let private indigo = makeNamed("#6a00ff", "#9c4aff", "#4a00c8")
-  let private violet = makeNamed("#aa00ff", "#c94aff", "#8200c8")
-  let private crimson = makeNamed("#a20025", "#d44a4a", "#720018")
-  let private emerald = makeNamed("#008a00", "#00c400", "#005a00")
-  let private mauve = makeNamed("#765f89", "#a090b0", "#543f65")
-  let private sienna = makeNamed("#a0522d", "#c8805c", "#783a1f")
-  let private olive = makeNamed("#6d8764", "#96b08a", "#4d6344")
-  let private steel = makeNamed("#647687", "#8a9dad", "#455a6b")
-  let private taupe = makeNamed("#87794e", "#b0a070", "#5f5530")
+  let blue = makeNamed("#0078d4", "#429ce3", "#005a9e")
+  let red = makeNamed("#e51400", "#ff4438", "#b40000")
+  let orange = makeNamed("#fa6800", "#ff9a3c", "#c64900")
+  let green = makeNamed("#00a300", "#00d500", "#007200")
+  let teal = makeNamed("#00aba9", "#00ddda", "#007a78")
+  let purple = makeNamed("#a200ff", "#d04aff", "#7200ca")
+  let magenta = makeNamed("#d80073", "#ff2d9b", "#a60052")
+  let lime = makeNamed("#a4c400", "#d5f200", "#749200")
+  let brown = makeNamed("#825a2c", "#b1834f", "#533a1c")
+  let pink = makeNamed("#f472d6", "#fba0eb", "#cf4ab0")
+  let mango = makeNamed("#f09609", "#ffc04a", "#be7200")
+  let cobalt = makeNamed("#0050ef", "#4a8aff", "#0035a8")
+  let indigo = makeNamed("#6a00ff", "#9c4aff", "#4a00c8")
+  let violet = makeNamed("#aa00ff", "#c94aff", "#8200c8")
+  let crimson = makeNamed("#a20025", "#d44a4a", "#720018")
+  let emerald = makeNamed("#008a00", "#00c400", "#005a00")
+  let mauve = makeNamed("#765f89", "#a090b0", "#543f65")
+  let sienna = makeNamed("#a0522d", "#c8805c", "#783a1f")
+  let olive = makeNamed("#6d8764", "#96b08a", "#4d6344")
+  let steel = makeNamed("#647687", "#8a9dad", "#455a6b")
+  let taupe = makeNamed("#87794e", "#b0a070", "#5f5530")
 
   let fromColor(color: Color) : MetroAccent = {
     Base = color

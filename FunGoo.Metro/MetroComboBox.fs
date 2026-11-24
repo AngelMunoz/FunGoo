@@ -50,7 +50,7 @@ type IMetroComboBoxFactory =
 [<RequireQualifiedAccess>]
 module MetroComboBox =
 
-  let private baseProps(options: MetroComboOption array) : MetroComboBoxProps = {
+  let baseProps(options: MetroComboOption array) : MetroComboBoxProps = {
     Options = options
     SelectedId = ""
     Searchable = false
@@ -78,7 +78,7 @@ module MetroComboBox =
         Query = (if isNull query then "" else query)
   }
 
-  let private optionsOf(props: MetroComboBoxProps) : ComboBoxOption array =
+  let optionsOf(props: MetroComboBoxProps) : ComboBoxOption array =
     if isNull props.Options then
       Array.empty
     else
@@ -94,7 +94,7 @@ module MetroComboBox =
           Disabled = option.Disabled
         ))
 
-  let private dataOf
+  let dataOf
     (props: MetroComboBoxProps, items: ComboBoxOption array)
     : ComboBoxInput =
     ComboBoxInput(
@@ -124,7 +124,7 @@ module MetroComboBox =
   /// The delegates of a combo box factory. `createFactory` makes them once:
   /// every input carries the same callback instances, so an unchanged input
   /// does not rebuild the control.
-  type private ComboHandlers = {
+  type ComboHandlers = {
     OnSelect: Action<string>
     OnQueryChange: Action<string>
     OnOpenChange: Action<bool>
@@ -132,14 +132,14 @@ module MetroComboBox =
 
   /// The values that the functions of a combo box factory work on. The mapped
   /// options stay the same instance while the option array does.
-  type private FactoryState = {
+  type FactoryState = {
     Handlers: ComboHandlers
     mutable Mapped: (MetroComboOption array * ComboBoxOption array) voption
   }
 
   // The compiler requires the constructors here: a lambda does not convert to
   // a delegate in a record field (FS0002).
-  let private handlersOf(onEvent: MetroComboBoxEvent -> unit) : ComboHandlers = {
+  let handlersOf(onEvent: MetroComboBoxEvent -> unit) : ComboHandlers = {
     OnSelect = Action<string>(fun id -> onEvent(MetroComboBoxEvent.Selected id))
 
     OnQueryChange =
@@ -152,7 +152,7 @@ module MetroComboBox =
 
   // A factory maps an option array once. The mapped options stay the same
   // instance while the option array does.
-  let private itemsFor
+  let itemsFor
     (state: FactoryState, props: MetroComboBoxProps)
     : ComboBoxOption array =
     let options = props.Options
@@ -167,7 +167,7 @@ module MetroComboBox =
       state.Mapped <- ValueSome(options, items)
       items
 
-  let private createInput
+  let createInput
     (state: FactoryState, props: MetroComboBoxProps)
     : ComboBoxInput =
     let data = dataOf(props, itemsFor(state, props))
@@ -192,7 +192,7 @@ module MetroComboBox =
       AccessibilityName = data.AccessibilityName
     )
 
-  let private mount
+  let mount
     (state: FactoryState, key: string, props: MetroComboBoxProps)
     : Blob =
     Cell.Mount<ComboBoxInput, ComboBox>(key, createInput(state, props))

@@ -9,7 +9,7 @@ open FunGoo.Metro
 /// action of the check inside one of its builds. Inside a build, the Metro
 /// theme and the view of a mounted cell are readable.
 [<AbstractClass>]
-type private CheckRootCell() =
+type CheckRootCell() =
   inherit Cell()
 
   /// Runs <c>action</c> inside the next build of this cell, then renders one
@@ -18,20 +18,20 @@ type private CheckRootCell() =
     host: EmbeddedWindowHost * action: (unit -> unit) -> unit
 
 /// The request of one `DuringBuild`.
-type private DuringBuildRequest = {
+type DuringBuildRequest = {
   Host: EmbeddedWindowHost
   Action: unit -> unit
 }
 
 /// State of the root of the check. One mutable field per concern.
-type private RootState = {
+type RootState = {
   Gallery: Gallery.GalleryCell
   /// The action that the next build runs first, when there is one.
   mutable Pending: (unit -> unit) voption
 }
 
 /// A window host for the headless check. It has no Vulkan surface.
-let private headlessHost() : EmbeddedWindowHost =
+let headlessHost() : EmbeddedWindowHost =
   let noSurface() =
     raise(NotSupportedException("Headless check host has no Vulkan surface."))
 
@@ -56,11 +56,11 @@ let private headlessHost() : EmbeddedWindowHost =
         noSurface()
   }
 
-module private CheckRoot =
+module CheckRoot =
 
   /// The mounted gallery below the root. The action of a pending
   /// `DuringBuild` runs first.
-  let private build(state: RootState, galleryFactory: unit -> Cell) : Blob =
+  let build(state: RootState, galleryFactory: unit -> Cell) : Blob =
     state.Pending
     |> ValueOption.iter(fun action ->
       state.Pending <- ValueNone
@@ -71,7 +71,7 @@ module private CheckRoot =
   /// Requests one build that runs the action of the request first. The check
   /// writes no state of the root cell: it asks the root cell for one build,
   /// because no callback and no owner rule does it.
-  let private requestDuringBuild
+  let requestDuringBuild
     (cell: CheckRootCell, state: RootState, request: DuringBuildRequest)
     : unit =
     state.Pending <- ValueSome request.Action
@@ -97,7 +97,7 @@ module private CheckRoot =
 
 /// Depth-first search of the Container and Button children for a keyed
 /// element. It uses the public children collections only.
-let rec private findBlobByKey(root: Blob, key: string) : Blob voption =
+let rec findBlobByKey(root: Blob, key: string) : Blob voption =
   if not(isNull root) && root.Key = key then
     ValueSome root
   else
@@ -119,13 +119,13 @@ let rec private findBlobByKey(root: Blob, key: string) : Blob voption =
     found
 
 /// The value of a search, or a failure with <paramref name="message"/>.
-let private requireSome(message: string, found: 'a voption) : 'a =
+let requireSome(message: string, found: 'a voption) : 'a =
   match found with
   | ValueSome value -> value
   | ValueNone -> failwith message
 
 /// The keyed button in a tree, or a failure.
-let private requireButton(tree: Blob, key: string, message: string) : Button =
+let requireButton(tree: Blob, key: string, message: string) : Button =
   match findBlobByKey(tree, key) with
   | ValueSome blob -> blob :?> Button
   | ValueNone -> failwith message

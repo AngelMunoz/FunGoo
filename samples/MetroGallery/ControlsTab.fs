@@ -7,7 +7,7 @@ open MetroGallery.GalleryStore
 
 /// The buttons: four variants, one toggle button, and one disabled button.
 /// Each button is a Blob of this tab, so the owner rule rebuilds the tab.
-let private buttons(store: GalleryStore) : Blob =
+let buttons(store: GalleryStore) : Blob =
   Container(
     FlexDirection = FlexDirection.Row,
     FlexWrap = FlexWrap.Wrap,
@@ -48,7 +48,7 @@ let private buttons(store: GalleryStore) : Blob =
     )
 
 /// One field of the display name and one field of the passcode.
-let private fields(store: GalleryStore) : Blob =
+let fields(store: GalleryStore) : Blob =
   Container(
     FlexDirection = FlexDirection.Row,
     FlexWrap = FlexWrap.Wrap,
@@ -79,7 +79,7 @@ let private fields(store: GalleryStore) : Blob =
     )
 
 /// The radio buttons of the density, below one caption.
-let private density(store: GalleryStore) : Blob =
+let density(store: GalleryStore) : Blob =
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 6.0)
     .Children(
       MetroText.caption "DENSITY",
@@ -110,7 +110,7 @@ let private density(store: GalleryStore) : Blob =
     )
 
 /// The toggle switch, the check box, and the density.
-let private toggles(store: GalleryStore) : Blob =
+let toggles(store: GalleryStore) : Blob =
   Container(
     FlexDirection = FlexDirection.Row,
     FlexWrap = FlexWrap.Wrap,
@@ -137,9 +137,7 @@ let private toggles(store: GalleryStore) : Blob =
     )
 
 /// The slider, the two progress bars, and the progress ring.
-let private progress
-  (store: GalleryStore, onSliderChange: float -> unit)
-  : Blob =
+let progress(store: GalleryStore, onSliderChange: float -> unit) : Blob =
   Container(
     FlexDirection = FlexDirection.Column,
     Gap = Length.Pixels 12.0,

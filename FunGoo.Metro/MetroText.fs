@@ -30,7 +30,7 @@ type MetroTextProps = {
 [<RequireQualifiedAccess>]
 module MetroText =
 
-  let private resolveTone(theme: MetroTheme, tone: MetroTextTone) : Color =
+  let resolveTone(theme: MetroTheme, tone: MetroTextTone) : Color =
     let p = theme.Palette
 
     match tone with
@@ -45,7 +45,7 @@ module MetroText =
     | MetroTextTone.Danger -> p.Danger
     | MetroTextTone.Custom color -> color
 
-  let private defaultHeadingLevel(role: MetroTextRole) : int voption =
+  let defaultHeadingLevel(role: MetroTextRole) : int voption =
     match role with
     | MetroTextRole.Hero
     | MetroTextRole.Title -> ValueSome 1

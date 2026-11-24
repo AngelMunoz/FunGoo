@@ -25,7 +25,7 @@ type MetroButtonProps = {
 module MetroButton =
 
   [<Struct; NoComparison>]
-  type private VariantVisuals = {
+  type VariantVisuals = {
     Background: Color
     Foreground: Color
     BorderWidth: Edges
@@ -37,12 +37,12 @@ module MetroButton =
     ActiveStyle: Style
   }
 
-  let private emptyShadows: BoxShadow array = Array.empty
-  let private zeroRadius = Length.Pixels 0.0
-  let private zeroBorder = Edges(Length.Pixels 0.0)
-  let private metroBorder = Edges(Length.Pixels 2.0)
-  let private transparentBorder = Edges<Color>(Color.Transparent)
-  let private pressScaleTransform = PanelTransform(Scale = 0.985)
+  let emptyShadows: BoxShadow array = Array.empty
+  let zeroRadius = Length.Pixels 0.0
+  let zeroBorder = Edges(Length.Pixels 0.0)
+  let metroBorder = Edges(Length.Pixels 2.0)
+  let transparentBorder = Edges<Color>(Color.Transparent)
+  let pressScaleTransform = PanelTransform(Scale = 0.985)
 
   let defaults(content: string) : MetroButtonProps = {
     Content = content

@@ -86,41 +86,41 @@ module MetroGridView =
   // build a tile again when its value is equal, so only a tile whose selection
   // changed is built again.
   [<Struct; NoComparison>]
-  type private GridTile = {
+  type GridTile = {
     Item: MetroGridViewItem
     Selected: bool
   }
 
   /// State of a grid view factory. One mutable field per concern.
-  type private GridState = {
+  type GridState = {
     mutable SelectedIds: string array
     mutable Mode: MetroListSelectionMode
     mutable TileSize: float
   }
 
   /// The values that the functions of a grid view factory work on.
-  type private GridContext = {
+  type GridContext = {
     State: GridState
     /// Raises the events of the grid.
     Raise: MetroListEvent -> unit
   }
 
   /// The key and the builder delegates of the virtual collection.
-  type private GridDelegates = {
+  type GridDelegates = {
     ItemKey: Func<GridTile, string>
     ItemBuilder: Func<GridTile, Blob>
   }
 
-  let private tileBorder = Edges(Length.Pixels 2.0)
-  let private zeroRadius = Length.Pixels 0.0
+  let tileBorder = Edges(Length.Pixels 2.0)
+  let zeroRadius = Length.Pixels 0.0
 
-  let private resolveTileSize(tileSize: float) : float =
+  let resolveTileSize(tileSize: float) : float =
     if Double.IsFinite tileSize && tileSize > 0.0 then
       tileSize
     else
       defaultTilePx
 
-  let private isSelected(selectedIds: string array, id: string) : bool =
+  let isSelected(selectedIds: string array, id: string) : bool =
     if isNull selectedIds || isNull id then
       false
     else
@@ -133,7 +133,7 @@ module MetroGridView =
 
       found
 
-  let private tilesOf(props: MetroGridViewProps) : GridTile array =
+  let tilesOf(props: MetroGridViewProps) : GridTile array =
     if isNull props.Items then
       Array.empty
     else
@@ -145,7 +145,7 @@ module MetroGridView =
 
   // The latest Build of the factory supplies the selection behavior of the
   // activation of a tile.
-  let private request(ctx: GridContext, id: string) : unit =
+  let request(ctx: GridContext, id: string) : unit =
     let selectedIds = ctx.State.SelectedIds
 
     match ctx.State.Mode with
@@ -174,9 +174,7 @@ module MetroGridView =
       ctx.Raise(MetroListEvent.SelectionChanged next)
 
   /// Builds one tile: a sharp button with the icon and the label.
-  let private buildTile
-    (ctx: GridContext, tile: GridTile, tileSize: float)
-    : Blob =
+  let buildTile(ctx: GridContext, tile: GridTile, tileSize: float) : Blob =
     let item = tile.Item
     let selected = tile.Selected
     let theme = Metro.read()
@@ -258,7 +256,7 @@ module MetroGridView =
 
   /// Builds the grid. The Virtual element is its own scroll viewport, so it
   /// carries the wrap layout, the size, and the accessibility role.
-  let private buildGrid
+  let buildGrid
     (ctx: GridContext, props: MetroGridViewProps, delegates: GridDelegates)
     : Blob =
     ctx.State.Mode <- props.Mode

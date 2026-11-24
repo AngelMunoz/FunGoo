@@ -6,7 +6,7 @@ open FunGoo.Children
 open FunGoo.Metro
 open Goo.Widgets.Inputs
 
-module private Content =
+module Content =
 
   let sizes = [|
     {
@@ -72,7 +72,7 @@ type InputsTabCell() =
 
 
 /// State of the tab. One mutable field per concern.
-type private InputsState = {
+type InputsState = {
   mutable Quantity: float
   mutable Rating: float
   mutable SizeSelected: string
@@ -85,7 +85,7 @@ type private InputsState = {
 /// build, and the target of the delegate is the function value. Thus the
 /// input of two builds compares equal, and an unchanged input does not
 /// rebuild a widget.
-type private InputsContext = {
+type InputsContext = {
   State: InputsState
   SizeFactory: IMetroComboBoxFactory
   CityFactory: IMetroComboBoxFactory
@@ -93,12 +93,12 @@ type private InputsContext = {
   OnRatingChange: float -> unit
 }
 
-let private applySize(state: InputsState, event: MetroComboBoxEvent) : unit =
+let applySize(state: InputsState, event: MetroComboBoxEvent) : unit =
   match event with
   | MetroComboBoxEvent.Selected id -> state.SizeSelected <- id
   | _ -> ()
 
-let private applyCity(state: InputsState, event: MetroComboBoxEvent) : unit =
+let applyCity(state: InputsState, event: MetroComboBoxEvent) : unit =
   match event with
   | MetroComboBoxEvent.Selected id ->
     // A selected city fills the entry with its name.
@@ -110,14 +110,14 @@ let private applyCity(state: InputsState, event: MetroComboBoxEvent) : unit =
     state.CitySelected <- ""
   | MetroComboBoxEvent.OpenChanged _ -> ()
 
-let private sizeProps(state: InputsState) : MetroComboBoxProps = {
+let sizeProps(state: InputsState) : MetroComboBoxProps = {
   MetroComboBox.defaults(Content.sizes, state.SizeSelected) with
       Placeholder = ValueSome "size"
       AccessibilityName = ValueSome "size"
       Width = ValueSome(Length.Pixels 200.0)
 }
 
-let private cityProps(state: InputsState) : MetroComboBoxProps = {
+let cityProps(state: InputsState) : MetroComboBoxProps = {
   MetroComboBox.autoSuggest(
     Content.suggestionsFor state.CityQuery,
     state.CityQuery
@@ -131,7 +131,7 @@ let private cityProps(state: InputsState) : MetroComboBoxProps = {
 }
 
 /// The tree of the tab.
-let private build(ctx: InputsContext) : Blob =
+let build(ctx: InputsContext) : Blob =
   let state = ctx.State
 
   Container(

@@ -107,10 +107,10 @@ type MetroToggleSwitchProps = {
 [<RequireQualifiedAccess>]
 module MetroToggleSwitch =
 
-  let private emptyShadows: BoxShadow array = Array.empty
-  let private zeroRadius = Length.Pixels 0.0
-  let private zeroBorder = Edges(Length.Pixels 0.0)
-  let private metroBorder = Edges(Length.Pixels 2.0)
+  let emptyShadows: BoxShadow array = Array.empty
+  let zeroRadius = Length.Pixels 0.0
+  let zeroBorder = Edges(Length.Pixels 0.0)
+  let metroBorder = Edges(Length.Pixels 2.0)
 
   let defaults(isChecked: bool) : MetroToggleSwitchProps = {
     Header = ValueNone
@@ -311,8 +311,8 @@ type MetroRadioButtonProps = {
 [<RequireQualifiedAccess>]
 module MetroRadioButton =
 
-  let private metroBorder = Edges(Length.Pixels 2.0)
-  let private zeroRadius = Length.Pixels 0.0
+  let metroBorder = Edges(Length.Pixels 2.0)
+  let zeroRadius = Length.Pixels 0.0
 
   let build(props: MetroRadioButtonProps, onSelect: unit -> unit) : Blob =
     let theme = Metro.read()

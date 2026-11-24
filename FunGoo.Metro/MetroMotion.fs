@@ -28,7 +28,7 @@ type ExponentialEaseArgs = {
 module CubicBezierSimulation =
 
   // The Bezier coefficients of the two axes.
-  type private Curve = {
+  type Curve = {
     Cx: float
     Bx: float
     Ax: float
@@ -37,7 +37,7 @@ module CubicBezierSimulation =
     Ay: float
   }
 
-  let private validate(args: CubicBezierArgs) : unit =
+  let validate(args: CubicBezierArgs) : unit =
     if
       not(Double.IsFinite args.DurationSeconds) || args.DurationSeconds < 0.0
     then
@@ -61,7 +61,7 @@ module CubicBezierSimulation =
     if not(Double.IsFinite args.Y2) then
       raise(ArgumentOutOfRangeException("y2"))
 
-  let private curveOf(args: CubicBezierArgs) : Curve =
+  let curveOf(args: CubicBezierArgs) : Curve =
     let cx = 3.0 * args.X1
     let bx = 3.0 * (args.X2 - args.X1) - cx
     let ax = 1.0 - cx - bx
@@ -78,20 +78,20 @@ module CubicBezierSimulation =
       Ay = ay
     }
 
-  let private sampleX(curve: Curve, u: float) : float =
+  let sampleX(curve: Curve, u: float) : float =
     ((curve.Ax * u + curve.Bx) * u + curve.Cx) * u
 
-  let private sampleY(curve: Curve, u: float) : float =
+  let sampleY(curve: Curve, u: float) : float =
     ((curve.Ay * u + curve.By) * u + curve.Cy) * u
 
-  let private sampleDX(curve: Curve, u: float) : float =
+  let sampleDX(curve: Curve, u: float) : float =
     (3.0 * curve.Ax * u + 2.0 * curve.Bx) * u + curve.Cx
 
-  let private sampleDY(curve: Curve, u: float) : float =
+  let sampleDY(curve: Curve, u: float) : float =
     (3.0 * curve.Ay * u + 2.0 * curve.By) * u + curve.Cy
 
   // Newton on x(u) = t first, then a bisection when Newton did not converge.
-  let private solveU(curve: Curve, t: float) : float =
+  let solveU(curve: Curve, t: float) : float =
     if t <= 0.0 then
       0.0
     elif t >= 1.0 then
@@ -141,9 +141,7 @@ module CubicBezierSimulation =
 
       u
 
-  let private position
-    (curve: Curve, args: CubicBezierArgs, elapsed: float)
-    : float =
+  let position(curve: Curve, args: CubicBezierArgs, elapsed: float) : float =
     if elapsed < 0.0 then
       args.FromValue
     elif args.DurationSeconds <= 0.0 then
@@ -157,9 +155,7 @@ module CubicBezierSimulation =
       let u = solveU(curve, t)
       args.FromValue + (args.ToValue - args.FromValue) * sampleY(curve, u)
 
-  let private velocity
-    (curve: Curve, args: CubicBezierArgs, elapsed: float)
-    : float =
+  let velocity(curve: Curve, args: CubicBezierArgs, elapsed: float) : float =
     if
       args.DurationSeconds <= 0.0
       || elapsed < 0.0
@@ -208,14 +204,14 @@ module CubicBezierSimulation =
 module ExponentialEaseSimulation =
 
   // The values that each evaluation needs, resolved once.
-  type private Curve = {
+  type Curve = {
     Delta: float
     IsLinear: bool
     InvDenom: float
     OverflowNegative: bool
   }
 
-  let private validate(args: ExponentialEaseArgs) : unit =
+  let validate(args: ExponentialEaseArgs) : unit =
     if
       not(Double.IsFinite args.DurationSeconds) || args.DurationSeconds < 0.0
     then
@@ -230,7 +226,7 @@ module ExponentialEaseSimulation =
     if not(Double.IsFinite args.Exponent) then
       raise(ArgumentOutOfRangeException("exponent"))
 
-  let private curveOf(args: ExponentialEaseArgs) : Curve =
+  let curveOf(args: ExponentialEaseArgs) : Curve =
     let isLinear = abs args.Exponent < 1e-6
     let expNegE = if isLinear then 1.0 else Math.Exp(-args.Exponent)
 
@@ -247,7 +243,7 @@ module ExponentialEaseSimulation =
       OverflowNegative = not isLinear && not(Double.IsFinite expNegE)
     }
 
-  let private progress(curve: Curve, exponent: float, t: float) : float =
+  let progress(curve: Curve, exponent: float, t: float) : float =
     if curve.IsLinear then
       t
     elif curve.OverflowNegative then
@@ -255,7 +251,7 @@ module ExponentialEaseSimulation =
     else
       (1.0 - Math.Exp(-exponent * t)) * curve.InvDenom
 
-  let private position
+  let position
     (curve: Curve, args: ExponentialEaseArgs, elapsed: float)
     : float =
     if elapsed < 0.0 then
@@ -270,7 +266,7 @@ module ExponentialEaseSimulation =
       let t = elapsed / args.DurationSeconds
       args.FromValue + curve.Delta * progress(curve, args.Exponent, t)
 
-  let private velocity
+  let velocity
     (curve: Curve, args: ExponentialEaseArgs, elapsed: float)
     : float =
     if
@@ -310,7 +306,7 @@ module ExponentialEaseSimulation =
 [<RequireQualifiedAccess>]
 module PeriodicSimulation =
 
-  let private validate(periodSeconds: float) : unit =
+  let validate(periodSeconds: float) : unit =
     if
       not(Double.IsFinite periodSeconds)
       || periodSeconds <= 0.0
@@ -319,7 +315,7 @@ module PeriodicSimulation =
       raise(ArgumentOutOfRangeException("periodSeconds"))
 
   // The phase in [0.0, 1.0).
-  let private phase(invPeriod: float, elapsed: float) : float =
+  let phase(invPeriod: float, elapsed: float) : float =
     let raw = (elapsed * invPeriod) % 1.0
 
     if raw < 0.0 then
@@ -345,7 +341,7 @@ module PeriodicSimulation =
 [<RequireQualifiedAccess>]
 module MetroMotion =
 
-  let private instant = Motion.Tween(0.0)
+  let instant = Motion.Tween(0.0)
 
   let cubicBezier
     (durationMs: float, x1: float, y1: float, x2: float, y2: float)
@@ -495,7 +491,7 @@ module Continuum =
 [<RequireQualifiedAccess>]
 module MetroFallbackMotion =
 
-  let private clamp01(value: float) : float =
+  let clamp01(value: float) : float =
     if not(Double.IsFinite value) || value <= 0.0 then 0.0
     elif value >= 1.0 then 1.0
     else value

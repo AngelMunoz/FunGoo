@@ -4,7 +4,7 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
-module private Content =
+module Content =
 
   let samples = [|
     MetroTextRole.Hero, "Hero 56 px Light"
@@ -21,7 +21,7 @@ module private Content =
 
 /// One row of the tab: the size and the weight of a text role, then a sample
 /// of the role.
-let private sampleRow(index: int, sample: MetroTextRole * string) : Blob =
+let sampleRow(index: int, sample: MetroTextRole * string) : Blob =
   let role, sampleText = sample
   let spec = MetroTypography.spec role
 

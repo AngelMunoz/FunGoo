@@ -4,7 +4,7 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
-module private Content =
+module Content =
 
   let items = [|
     {
@@ -121,7 +121,7 @@ module private Content =
 /// The factories of the four collections of the tab. `create` makes them
 /// once, so each collection receives the same callback instances and an
 /// unchanged input does not rebuild it.
-type private ListFactories = {
+type ListFactories = {
   Single: IMetroListViewFactory
   Multiple: IMetroListViewFactory
   Box: IMetroListViewFactory
@@ -129,7 +129,7 @@ type private ListFactories = {
 }
 
 /// State of the tab. One mutable field per concern.
-type private ListsState = {
+type ListsState = {
   mutable SingleSelected: string array
   mutable MultipleSelected: string array
   mutable BoxSelected: string array
@@ -140,7 +140,7 @@ type private ListsState = {
 /// The handler of one collection of the tab. The collection gives each event
 /// to this tab through `InvokeInputCallback`, so the owner rule rebuilds the
 /// tab. The handler writes the state and does not call `Rebuild()`.
-let private handlerOf
+let handlerOf
   (state: ListsState, select: string array -> unit)
   : MetroListEvent -> unit =
   function
@@ -148,7 +148,7 @@ let private handlerOf
   | MetroListEvent.ItemClick id -> state.LastAction <- $"Activated {id}"
 
 /// One column of the tab: a subheader above one collection.
-let private column(title: string, content: Blob) : Blob =
+let column(title: string, content: Blob) : Blob =
   Container(
     FlexDirection = FlexDirection.Column,
     FlexGrow = 1.0,
@@ -158,7 +158,7 @@ let private column(title: string, content: Blob) : Blob =
   )
     .Children(MetroText.subheader title, content)
 
-let private view(state: ListsState, factories: ListFactories) : Blob =
+let view(state: ListsState, factories: ListFactories) : Blob =
   let singleProps = {
     MetroListView.defaults Content.items with
         SelectedIds = state.SingleSelected

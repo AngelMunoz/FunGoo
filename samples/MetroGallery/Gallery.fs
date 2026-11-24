@@ -82,7 +82,7 @@ let overviewStart: GalleryStart = {
 
 /// One event of the gallery. Each callback of the gallery gives one event.
 [<Struct; NoComparison>]
-type private GalleryEvent =
+type GalleryEvent =
   | TabSelected of id: string
   | ModeChanged of mode: MetroMode
   | AccentChanged of accent: MetroAccentKind
@@ -93,7 +93,7 @@ type private GalleryEvent =
   | CommandInvoked of id: string
 
 /// State of the gallery. One mutable field per concern.
-type private GalleryState = {
+type GalleryState = {
   /// The values that the controls tab writes and that the hub reads.
   Store: GalleryStore
   mutable ActiveTab: string
@@ -108,7 +108,7 @@ type private GalleryState = {
 
 /// The factories of the cells that the gallery mounts. `create` makes them
 /// once, so that each mount reuses its factory.
-type private GalleryFactories = {
+type GalleryFactories = {
   ControlsTab: unit -> Cell
   FlipViewTab: unit -> Cell
   ListsTab: unit -> Cell
@@ -120,7 +120,7 @@ type private GalleryFactories = {
 }
 
 /// The values that the functions of the gallery work on.
-type private GalleryContext = {
+type GalleryContext = {
   State: GalleryState
   Factories: GalleryFactories
   /// Applies a mode to the host window.
@@ -132,7 +132,7 @@ type private GalleryContext = {
   RebuildHub: unit -> unit
 }
 
-let private pivotItems = [|
+let pivotItems = [|
   { Id = "overview"; Header = "overview" }
   {
     Id = "typography"
@@ -149,7 +149,7 @@ let private pivotItems = [|
   { Id = "motion"; Header = "motion" }
 |]
 
-let private hubSections = [|
+let hubSections = [|
   {
     Id = "start"
     Header = "start tiles"
@@ -168,7 +168,7 @@ let private hubSections = [|
 |]
 
 /// The layout of the start section of the hub. It holds no state.
-let private tileGrid =
+let tileGrid =
   TileGridLayout.create {
     CellSize = 72.0
     Gap = 8.0
@@ -184,7 +184,7 @@ let private tileGrid =
     |]
   }
 
-let private liveFaces = [|
+let liveFaces = [|
   {
     Title = "System Telemetry"
     Subtitle = ValueSome "Vulkan retained compositor"
@@ -205,7 +205,7 @@ let private liveFaces = [|
   }
 |]
 
-let private primaryCommands = [|
+let primaryCommands = [|
   {
     Id = "theme"
     Label = "Theme"
@@ -226,7 +226,7 @@ let private primaryCommands = [|
   }
 |]
 
-let private secondaryCommands = [|
+let secondaryCommands = [|
   {
     Id = "reset"
     Label = "Reset gallery state"
@@ -242,7 +242,7 @@ let private secondaryCommands = [|
 |]
 
 /// A store with the first values of the gallery.
-let private initialStore() : GalleryStore = {
+let initialStore() : GalleryStore = {
   TileTapCount = 0
   LastAction = "Ready"
   SliderValue = 65.0
@@ -256,7 +256,7 @@ let private initialStore() : GalleryStore = {
 
 /// Sets each value of the store back to its first value. The last action
 /// becomes "State reset".
-let private resetStore(store: GalleryStore) : unit =
+let resetStore(store: GalleryStore) : unit =
   store.TileTapCount <- 0
   store.LastAction <- "State reset"
   store.SliderValue <- 65.0
@@ -268,19 +268,19 @@ let private resetStore(store: GalleryStore) : unit =
   store.TogglePressed <- false
 
 /// The next mode of the theme command.
-let private nextModeOf(mode: MetroMode) : MetroMode =
+let nextModeOf(mode: MetroMode) : MetroMode =
   match mode with
   | MetroMode.Dark -> MetroMode.Light
   | MetroMode.Light -> MetroMode.Dark
   | MetroMode.System -> MetroMode.Dark
 
 /// Sets the mode of the gallery and of the host window.
-let private setMode(ctx: GalleryContext, mode: MetroMode) : unit =
+let setMode(ctx: GalleryContext, mode: MetroMode) : unit =
   ctx.State.Mode <- mode
   ctx.ApplyMode mode
 
 /// Sets the mode, the store, and the open states back to their first values.
-let private reset(ctx: GalleryContext) : unit =
+let reset(ctx: GalleryContext) : unit =
   let state = ctx.State
   state.ActiveTab <- "overview"
   resetStore state.Store
@@ -288,7 +288,7 @@ let private reset(ctx: GalleryContext) : unit =
   ctx.RebuildHub()
 
 /// Applies one command of the app bar.
-let private applyCommand(ctx: GalleryContext, id: string) : unit =
+let applyCommand(ctx: GalleryContext, id: string) : unit =
   let state = ctx.State
 
   match id with
@@ -308,7 +308,7 @@ let private applyCommand(ctx: GalleryContext, id: string) : unit =
   | _ -> ()
 
 /// Applies one event to the state of the gallery.
-let private applyEvent(ctx: GalleryContext, event: GalleryEvent) : unit =
+let applyEvent(ctx: GalleryContext, event: GalleryEvent) : unit =
   let state = ctx.State
 
   match event with
@@ -331,21 +331,19 @@ let private applyEvent(ctx: GalleryContext, event: GalleryEvent) : unit =
 /// Writes the action of one iconic tile of the hub. The Hub cell builds the
 /// tile, so it owns the callback of the tile: the owner rule rebuilds the
 /// Hub cell, and its sections read the store again.
-let private openTile(store: GalleryStore, tile: string) : unit =
+let openTile(store: GalleryStore, tile: string) : unit =
   store.TileTapCount <- store.TileTapCount + 1
   store.LastAction <- $"Opened {tile}"
 
 /// Writes the action of the live tile. The live tile gives each click to the
 /// Hub cell through `InvokeInputCallback`, so the owner rule rebuilds the
 /// Hub cell.
-let private tapLiveTile(store: GalleryStore) : unit =
+let tapLiveTile(store: GalleryStore) : unit =
   store.TileTapCount <- store.TileTapCount + 1
   store.LastAction <- $"Live tile tapped ({store.TileTapCount})"
 
 /// The start section of the hub: the live tile and six iconic tiles.
-let private startTiles
-  (ctx: GalleryContext, onEvent: GalleryEvent -> unit)
-  : Blob =
+let startTiles(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
   let store = ctx.State.Store
 
   Container(Layout = tileGrid)
@@ -410,9 +408,7 @@ let private startTiles
 
 /// The status section of the hub: the last action, the slider value as a
 /// progress bar, and two buttons.
-let private statusSection
-  (state: GalleryState, onEvent: GalleryEvent -> unit)
-  : Blob =
+let statusSection(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 16.0)
     .Children(
       MetroText.subtitle "Glance and go",
@@ -444,7 +440,7 @@ let private statusSection
     )
 
 /// The principles section of the hub: two short texts.
-let private principlesSection() : Blob =
+let principlesSection() : Blob =
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 12.0)
     .Children(
       MetroText.subtitle "Fierce reduction",
@@ -461,7 +457,7 @@ let private principlesSection() : Blob =
 
 /// Builds one section of the hub. The Hub cell calls this function inside
 /// its own `Build`, so it owns the callbacks of the section.
-let private hubSection
+let hubSection
   (ctx: GalleryContext, onEvent: GalleryEvent -> unit, sectionId: string)
   : Blob =
   match sectionId with
@@ -470,14 +466,14 @@ let private hubSection
   | _ -> principlesSection()
 
 /// The input of the Pivot.
-let private pivotInput(state: GalleryState) : MetroPivotInput = {
+let pivotInput(state: GalleryState) : MetroPivotInput = {
   MetroPivot.defaults(pivotItems, state.ActiveTab) with
       Title = ValueSome "FUNGOO METRO"
 }
 
 /// The content of one tab. The Pivot calls this function inside its own
 /// `Build`.
-let private tabContent
+let tabContent
   (ctx: GalleryContext, hubFactory: unit -> MetroHubCell, tabId: string)
   : Blob =
   match tabId with
@@ -499,9 +495,7 @@ let private tabContent
 
 /// The content of the settings flyout: the three modes and one swatch for
 /// each Metro accent.
-let private settingsContent
-  (state: GalleryState, onEvent: GalleryEvent -> unit)
-  : Blob =
+let settingsContent(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   let theme = Metro.read()
 
   let swatchGrid =
@@ -589,9 +583,7 @@ let private settingsContent
     )
 
 /// The settings flyout of the gallery.
-let private settingsFlyout
-  (state: GalleryState, onEvent: GalleryEvent -> unit)
-  : Blob =
+let settingsFlyout(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   MetroSettingsFlyout.build(
     MetroSettingsFlyout.defaults("Settings", state.SettingsOpen),
     (fun () -> onEvent(SettingsOpenChanged false)),
@@ -599,7 +591,7 @@ let private settingsFlyout
   )
 
 /// The app bar of the gallery.
-let private appBar(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
+let appBar(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   MetroAppBar.build(
     {
       MetroAppBar.defaults primaryCommands with
@@ -611,9 +603,7 @@ let private appBar(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   )
 
 /// The content dialog of the gallery.
-let private contentDialog
-  (state: GalleryState, onEvent: GalleryEvent -> unit)
-  : Blob =
+let contentDialog(state: GalleryState, onEvent: GalleryEvent -> unit) : Blob =
   MetroContentDialog.build(
     {
       MetroContentDialog.defaults("Metro Content Dialog", state.DialogOpen) with
@@ -632,7 +622,7 @@ let private contentDialog
 
 /// The gallery page: the workspace with the Pivot, then the app bar, the
 /// settings flyout, and the content dialog.
-let private page
+let page
   (
     ctx: GalleryContext,
     pivotFactory: unit -> MetroPivotCell,
@@ -674,7 +664,7 @@ let private page
 
 /// Builds the tree of the gallery. It counts its builds for the headless
 /// check.
-let private build
+let build
   (
     ctx: GalleryContext,
     pivotFactory: unit -> MetroPivotCell,
@@ -686,7 +676,7 @@ let private build
 /// Applies one event for the headless check, then rebuilds the gallery. The
 /// check writes the state of the gallery from outside a callback: no owner
 /// rule rebuilds the gallery, thus the gallery rebuilds itself.
-let private applyFromCheck
+let applyFromCheck
   (cell: GalleryCell, ctx: GalleryContext, event: GalleryEvent)
   : unit =
   applyEvent(ctx, event)
