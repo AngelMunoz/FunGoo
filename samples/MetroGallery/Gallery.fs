@@ -50,6 +50,9 @@ type GalleryCell() =
   /// The mounted inputs tab, for the headless check.
   abstract InputsTab: InputsTab.InputsTabCell voption
 
+  /// The mounted date and time tab, for the headless check.
+  abstract DateTimeTab: DateTimeTab.DateTimeTabCell voption
+
   /// The mounted settings flyout, for the headless check.
   abstract SettingsFlyout: MetroSettingsFlyoutCell voption
 
@@ -124,6 +127,7 @@ type GalleryFactories = {
   SelectionTab: unit -> Cell
   ZoomTab: unit -> Cell
   InputsTab: unit -> Cell
+  DateTimeTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
@@ -162,6 +166,10 @@ let pivotItems = [|
   }
   { Id = "zoom"; Header = "zoom" }
   { Id = "inputs"; Header = "inputs" }
+  {
+    Id = "datetime"
+    Header = "date & time"
+  }
   { Id = "motion"; Header = "motion" }
 |]
 
@@ -536,6 +544,7 @@ let tabContent
   | "selection" -> Cell.Mount<Cell>("selection-tab", ctx.Factories.SelectionTab)
   | "zoom" -> Cell.Mount<Cell>("zoom-tab", ctx.Factories.ZoomTab)
   | "inputs" -> Cell.Mount<Cell>("inputs-tab", ctx.Factories.InputsTab)
+  | "datetime" -> Cell.Mount<Cell>("datetime-tab", ctx.Factories.DateTimeTab)
   | "motion" ->
     MotionTab.view(ctx.Factories.ContinuumDemo, ctx.Factories.StaggerDemo)
   | _ -> TypographyTab.view()
@@ -758,6 +767,7 @@ let create
   let mutable selectionTabRef: SelectionTab.SelectionTabCell voption = ValueNone
   let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
   let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
+  let mutable dateTimeTabRef: DateTimeTab.DateTimeTabCell voption = ValueNone
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
   let mutable dialogRef: MetroContentDialogCell voption = ValueNone
 
@@ -843,6 +853,11 @@ let create
         let tab = InputsTab.create()
         inputsTabRef <- ValueSome tab
         tab :> Cell
+    DateTimeTab =
+      fun () ->
+        let tab = DateTimeTab.create()
+        dateTimeTabRef <- ValueSome tab
+        tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
     LiveTile = MetroLiveTile.createFactory(fun () -> tapLiveTile state.Store)
@@ -888,6 +903,7 @@ let create
       override _.SelectionTab = selectionTabRef
       override _.ZoomTab = zoomTabRef
       override _.InputsTab = inputsTabRef
+      override _.DateTimeTab = dateTimeTabRef
       override _.SettingsFlyout = flyoutRef
       override _.ContentDialog = dialogRef
       override _.Builds = state.Builds

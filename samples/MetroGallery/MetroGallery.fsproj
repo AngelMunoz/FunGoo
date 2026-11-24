@@ -17,6 +17,7 @@
     <Compile Include="SelectionTab.fs" />
     <Compile Include="ZoomTab.fs" />
     <Compile Include="InputsTab.fs" />
+    <Compile Include="DateTimeTab.fs" />
     <Compile Include="Gallery.fs" />
     <Compile Include="GalleryCheck.fs" />
     <Compile Include="Program.fs" />

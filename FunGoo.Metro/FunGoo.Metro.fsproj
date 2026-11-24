@@ -61,6 +61,10 @@
     <Compile Include="MetroNumberRating.fs" />
     <Compile Include="MetroComboBox.fsi" />
     <Compile Include="MetroComboBox.fs" />
+    <Compile Include="MetroLoopingSelector.fsi" />
+    <Compile Include="MetroLoopingSelector.fs" />
+    <Compile Include="MetroDateTimePickers.fsi" />
+    <Compile Include="MetroDateTimePickers.fs" />
   </ItemGroup>
 
   <ItemGroup>

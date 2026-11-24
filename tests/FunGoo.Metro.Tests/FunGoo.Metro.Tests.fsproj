@@ -23,6 +23,7 @@
     <Compile Include="ListPickerFixTests.fs" />
     <Compile Include="SelectionControlsTests.fs" />
     <Compile Include="LongListSelectorFixTests.fs" />
+    <Compile Include="DateTimePickerTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -209,6 +209,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "motion"
       "overview"
       "inputs"
+      "datetime"
       "controls"
       "flip-view"
       "lists"
@@ -218,6 +219,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "motion"
       "overview"
       "inputs"
+      "datetime"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -480,6 +482,47 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     || not(selectionTab.ExpandedTreeIds |> Array.contains "samples")
   then
     failwith "Expected tree view expand and select to update tab state."
+
+  // 11. Date and time tab: inline rollers and modal pickers rebuild the tab
+  // via InvokeInputCallback.
+  gallery.SelectTab "datetime"
+  pump 2
+
+  let dtTab =
+    requireSome("Expected the datetime tab to be mounted.", gallery.DateTimeTab)
+
+  let dateRoller = requireSome("Expected inline date roller.", dtTab.DateRoller)
+
+  let monthCol =
+    requireSome("Expected month roller column.", dateRoller.MonthRoller)
+
+  let dtBuildsBefore = dtTab.Builds
+  monthCol.Step(1)
+  pump 2
+
+  if
+    dtTab.RollerDate <> DateOnly(2026, 12, 24)
+    || dtTab.Builds <> dtBuildsBefore + 1
+  then
+    failwith
+      $"Expected roller date 2026-12-24 in one build, got {dtTab.RollerDate}."
+
+  let datePicker =
+    requireSome("Expected compact date picker.", dtTab.DatePicker)
+
+  datePicker.Handle(MetroDatePickerEvent.OpenChanged true)
+  pump 2
+
+  if not datePicker.IsOpen then
+    failwith "Expected compact date picker modal to open."
+
+  datePicker.Handle(MetroDatePickerEvent.DateCommitted(DateOnly(2027, 3, 15)))
+  pump 2
+
+  if
+    datePicker.IsOpen || dtTab.PickedDate <> ValueSome(DateOnly(2027, 3, 15))
+  then
+    failwith "Expected committed date 2027-03-15 and closed modal."
 
   printfn "MetroGallery checks passed."
   0
