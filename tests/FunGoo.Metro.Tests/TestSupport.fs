@@ -1,5 +1,6 @@
 module FunGoo.Metro.Tests.TestSupport
 
+open System
 open Goo
 
 /// State of a capture cell. One mutable field per concern.
@@ -106,6 +107,55 @@ module CaptureCell =
     scale <- cell.AnimateValue(1.0)
     alpha <- cell.AnimateValue(1.0)
     cell
+
+/// A cell with a window timer, for a check of the owner rule of a timer
+/// action. The type holds the members that the tests read.
+/// `TimerProbeCell.create` makes the cell.
+[<AbstractClass>]
+type TimerProbeCell() =
+  inherit Cell()
+
+  /// The number of builds.
+  abstract Builds: int
+
+  /// The number of runs of the timer action.
+  abstract Actions: int
+
+  /// Starts the timer of the probe. The action only counts its runs: it has
+  /// no `Rebuild()` call.
+  abstract Start: intervalMs: float -> unit
+
+[<RequireQualifiedAccess>]
+module TimerProbeCell =
+
+  /// State of the probe. One mutable field per concern.
+  type private ProbeState = {
+    mutable Builds: int
+    mutable Actions: int
+  }
+
+  /// Creates the probe. Each build makes an empty Container.
+  let create() : TimerProbeCell =
+    let state: ProbeState = { Builds = 0; Actions = 0 }
+
+    {
+      new TimerProbeCell() with
+        override _.Builds = state.Builds
+        override _.Actions = state.Actions
+
+        override this.Start(intervalMs) =
+          // `Every` is a protected member of the cell, and F# does not permit
+          // a call to it from a lambda of an object expression (FS0491).
+          this.Every(
+            intervalMs,
+            Action(fun () -> state.Actions <- state.Actions + 1)
+          )
+          |> ignore
+
+        override _.Build() : Blob =
+          state.Builds <- state.Builds + 1
+          Container()
+    }
 
 /// Number of children of a Container or a Button. Other Blob types return 0.
 let childCount(blob: Blob) : int =

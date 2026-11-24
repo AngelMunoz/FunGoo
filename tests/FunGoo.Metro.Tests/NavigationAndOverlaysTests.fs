@@ -714,6 +714,33 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
   Assert.False(liveCell.IsTimerActive)
 
 [<Fact>]
+let ``A timer action of a cell rebuilds the cell through the owner rule``() =
+  use host = createHost(400, 300)
+  let probe = TimerProbeCell.create()
+
+  let rootCell =
+    CaptureCell.create(fun () ->
+      Cell.Mount<Cell>("probe", fun () -> probe :> Cell))
+
+  let window = Window(Root = rootCell)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  // The action counts its run. It does not rebuild the cell.
+  probe.Start(100.0)
+  pumpFrames(host, 2)
+  let buildsBefore = probe.Builds
+
+  // A window timer uses the wall clock, thus the test waits in real time for
+  // more than the interval. The next frames run the timer action.
+  System.Threading.Thread.Sleep(150)
+  pumpFrames(host, 3)
+
+  Assert.True(probe.Actions >= 1, "The timer action did not run.")
+  Assert.True(probe.Builds > buildsBefore, "Goo did not rebuild the cell.")
+
+[<Fact>]
 let ``MetroAppBar MetroSettingsFlyout and MetroContentDialog wire commands portals and dismiss``
   ()
   =

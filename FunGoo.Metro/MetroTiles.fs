@@ -549,10 +549,10 @@ module MetroLiveTile =
     state.Opacity.Snap(1.0)
 
   /// Moves to the next face with a slide. It stops the cycle when there is
-  /// one face or reduced motion.
-  let private advanceFace
-    (cell: MetroLiveTileCell, ctx: LiveTileContext)
-    : unit =
+  /// one face or reduced motion. The timer action of the cell runs this
+  /// function. Goo rebuilds the cell after a timer action, so the function
+  /// does not call `Rebuild()`.
+  let private advanceFace(ctx: LiveTileContext) : unit =
     let state = ctx.State
     let faces = state.Input.Faces
 
@@ -569,7 +569,6 @@ module MetroLiveTile =
       )
 
       state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
-      cell.Rebuild()
 
   /// Starts, keeps, or stops the cycle timer for the input.
   let private syncTimer
@@ -595,7 +594,7 @@ module MetroLiveTile =
       stopTimer state
       state.ActiveIntervalMs <- interval
 
-      let advance = Action(fun () -> advanceFace(cell, ctx))
+      let advance = Action(fun () -> advanceFace ctx)
       state.Timer <- ValueSome(cell.ScheduleEvery(interval, advance))
 
   /// Keeps the index of the face inside the new faces, then syncs the timer.
