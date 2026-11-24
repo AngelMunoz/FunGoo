@@ -210,6 +210,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "overview"
       "inputs"
       "datetime"
+      "overlays"
       "controls"
       "flip-view"
       "lists"
@@ -220,6 +221,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "overview"
       "inputs"
       "datetime"
+      "overlays"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -541,6 +543,44 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   if dtTab.DropdownDate <> ValueSome(DateOnly(2026, 12, 1)) then
     failwith "Expected CalendarDatePicker selection 2026-12-01."
+
+  // 12. Overlays tab: Flyout, MessageDialog, MenuFlyout, ContextMenu, and
+  // Tooltip mount and route callbacks cleanly.
+  gallery.SelectTab "overlays"
+  pump 2
+
+  let ovTab = requireSome("Expected overlays tab.", gallery.OverlaysTab)
+
+  let tooltip = requireSome("Expected tooltip cell.", ovTab.Tooltip)
+
+  if not tooltip.IsVisible then
+    failwith "Expected pinned showcase tooltip to be visible."
+
+  ovTab.MenuInput.OnClick.Invoke("pin")
+  pump 2
+
+  if ovTab.LastAction <> "Menu item: pin" then
+    failwith $"Expected 'Menu item: pin', got '{ovTab.LastAction}'."
+
+  ovTab.ContextMenuInput.OnClick.Invoke("inspect")
+  pump 2
+
+  if ovTab.LastAction <> "Context item: inspect" then
+    failwith $"Expected 'Context item: inspect', got '{ovTab.LastAction}'."
+
+  let msgDialog =
+    requireSome("Expected message dialog cell.", ovTab.MessageDialog)
+
+  let msgBuildsBefore = ovTab.Builds
+  msgDialog.Handle(MetroMessageDialogResult.CommandInvoked "save")
+  pump 2
+
+  if
+    ovTab.LastAction <> "Message command: save"
+    || ovTab.Builds <> msgBuildsBefore + 1
+  then
+    failwith
+      $"Expected 'Message command: save' in one build, got '{ovTab.LastAction}'."
 
   printfn "MetroGallery checks passed."
   0

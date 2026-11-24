@@ -43,6 +43,14 @@
     <Compile Include="MetroTiles.fs" />
     <Compile Include="MetroOverlays.fsi" />
     <Compile Include="MetroOverlays.fs" />
+    <Compile Include="MetroFlyout.fsi" />
+    <Compile Include="MetroFlyout.fs" />
+    <Compile Include="MetroMessageDialog.fsi" />
+    <Compile Include="MetroMessageDialog.fs" />
+    <Compile Include="MetroMenus.fsi" />
+    <Compile Include="MetroMenus.fs" />
+    <Compile Include="MetroTooltip.fsi" />
+    <Compile Include="MetroTooltip.fs" />
     <Compile Include="MetroFlipView.fsi" />
     <Compile Include="MetroFlipView.fs" />
     <Compile Include="MetroListView.fsi" />
