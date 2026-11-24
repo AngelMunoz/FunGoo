@@ -6,10 +6,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="GalleryStore.fs" />
+    <Compile Include="TypographyTab.fs" />
+    <Compile Include="ContinuumDemo.fs" />
+    <Compile Include="StaggerDemo.fs" />
+    <Compile Include="MotionTab.fs" />
+    <Compile Include="ControlsTab.fs" />
     <Compile Include="FlipViewTab.fs" />
     <Compile Include="ListsTab.fs" />
     <Compile Include="ZoomTab.fs" />
     <Compile Include="InputsTab.fs" />
+    <Compile Include="Gallery.fs" />
+    <Compile Include="GalleryCheck.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

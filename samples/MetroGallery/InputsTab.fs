@@ -4,6 +4,7 @@ open System
 open Goo
 open FunGoo.Children
 open FunGoo.Metro
+open Goo.Widgets.Inputs
 
 module private Content =
 
@@ -48,142 +49,183 @@ module private Content =
     })
 
 /// Gallery tab with a Metro number box, a rating control, a combo box, and an
-/// auto-suggest box. The tab owns every value.
-[<Sealed>]
-type InputsTabCell() as this =
+/// auto-suggest box. The tab owns every value. The headless check of the
+/// gallery reads the values and the widget inputs through these members.
+[<AbstractClass>]
+type InputsTabCell() =
   inherit Cell()
 
-  let mutable quantity = 12.5
-  let mutable rating = 3.0
-  let mutable sizeSelected = "medium"
-  let mutable citySelected = ""
-  let mutable cityQuery = ""
+  /// Identifier of the selected size.
+  abstract SizeSelected: string
 
-  // Created once: every Build gives the widgets the same callback instances,
-  // so an unchanged input does not rebuild them. The widgets own these
-  // callbacks, so the tab rebuilds itself.
-  let onQuantityChange =
-    Action<float>(fun value ->
-      quantity <- value
-      this.Rebuild())
+  /// Identifier of the selected city.
+  abstract CitySelected: string
 
-  let onRatingChange =
-    Action<float>(fun value ->
-      rating <- value
-      this.Rebuild())
+  /// Text of the city entry.
+  abstract CityQuery: string
 
-  // Each control has its own handler, because each one owns a different value.
-  let onSize(event: MetroComboBoxEvent) =
-    match event with
-    | MetroComboBoxEvent.Selected id -> sizeSelected <- id
-    | _ -> ()
+  /// Widget input of the size combo box.
+  abstract SizeInput: ComboBoxInput
 
-    this.Rebuild()
+  /// Widget input of the city auto-suggest box.
+  abstract CityInput: ComboBoxInput
 
-  let onCity(event: MetroComboBoxEvent) =
-    match event with
-    | MetroComboBoxEvent.Selected id ->
-      // A selected city fills the entry with its name.
-      citySelected <- id
-      cityQuery <- id
-    | MetroComboBoxEvent.QueryChanged query ->
-      // A new query starts a new search, so it clears the selection.
-      cityQuery <- query
-      citySelected <- ""
-    | MetroComboBoxEvent.OpenChanged _ -> ()
 
-    this.Rebuild()
+/// State of the tab. One mutable field per concern.
+type private InputsState = {
+  mutable Quantity: float
+  mutable Rating: float
+  mutable SizeSelected: string
+  mutable CitySelected: string
+  mutable CityQuery: string
+}
 
-  // One factory per control: each factory holds its own callback set.
-  let sizeFactory = MetroComboBox.createFactory onSize
-  let cityFactory = MetroComboBox.createFactory onCity
+/// The factories and the callbacks that the functions of the tab work on.
+/// `create` makes them once. F# converts a function to a delegate at each
+/// build, and the target of the delegate is the function value. Thus the
+/// input of two builds compares equal, and an unchanged input does not
+/// rebuild a widget.
+type private InputsContext = {
+  State: InputsState
+  SizeFactory: IMetroComboBoxFactory
+  CityFactory: IMetroComboBoxFactory
+  OnQuantityChange: float -> unit
+  OnRatingChange: float -> unit
+}
 
-  let sizeProps() : MetroComboBoxProps = {
-    MetroComboBox.defaults(Content.sizes, sizeSelected) with
-        Placeholder = ValueSome "size"
-        AccessibilityName = ValueSome "size"
-        Width = ValueSome(Length.Pixels 200.0)
-  }
+let private applySize(state: InputsState, event: MetroComboBoxEvent) : unit =
+  match event with
+  | MetroComboBoxEvent.Selected id -> state.SizeSelected <- id
+  | _ -> ()
 
-  let cityProps() : MetroComboBoxProps = {
-    MetroComboBox.autoSuggest(Content.suggestionsFor cityQuery, cityQuery) with
-        SelectedId = citySelected
-        Placeholder = ValueSome "city"
-        SearchPlaceholder = ValueSome "city"
-        EmptyText = ValueSome "No city matches"
-        AccessibilityName = ValueSome "city"
-        Width = ValueSome(Length.Pixels 200.0)
-  }
+let private applyCity(state: InputsState, event: MetroComboBoxEvent) : unit =
+  match event with
+  | MetroComboBoxEvent.Selected id ->
+    // A selected city fills the entry with its name.
+    state.CitySelected <- id
+    state.CityQuery <- id
+  | MetroComboBoxEvent.QueryChanged query ->
+    // A new query starts a new search, so it clears the selection.
+    state.CityQuery <- query
+    state.CitySelected <- ""
+  | MetroComboBoxEvent.OpenChanged _ -> ()
 
-  /// Identifier of the selected size, for the headless check of the gallery.
-  member _.SizeSelected = sizeSelected
+let private sizeProps(state: InputsState) : MetroComboBoxProps = {
+  MetroComboBox.defaults(Content.sizes, state.SizeSelected) with
+      Placeholder = ValueSome "size"
+      AccessibilityName = ValueSome "size"
+      Width = ValueSome(Length.Pixels 200.0)
+}
 
-  /// Identifier of the selected city, for the headless check of the gallery.
-  member _.CitySelected = citySelected
+let private cityProps(state: InputsState) : MetroComboBoxProps = {
+  MetroComboBox.autoSuggest(
+    Content.suggestionsFor state.CityQuery,
+    state.CityQuery
+  ) with
+      SelectedId = state.CitySelected
+      Placeholder = ValueSome "city"
+      SearchPlaceholder = ValueSome "city"
+      EmptyText = ValueSome "No city matches"
+      AccessibilityName = ValueSome "city"
+      Width = ValueSome(Length.Pixels 200.0)
+}
 
-  /// Text of the city entry, for the headless check of the gallery.
-  member _.CityQuery = cityQuery
+/// The tree of the tab.
+let private build(ctx: InputsContext) : Blob =
+  let state = ctx.State
 
-  /// Widget input of the size combo box, for the headless check.
-  member _.SizeInput = sizeFactory.CreateInput(sizeProps())
-
-  /// Widget input of the city auto-suggest box, for the headless check.
-  member _.CityInput = cityFactory.CreateInput(cityProps())
-
-  override _.Build() : Blob =
-    Container(
-      FlexDirection = FlexDirection.Column,
-      FlexGrow = 1.0,
-      Width = Length.Percent 100.0,
-      OverflowY = Overflow.Scroll,
-      OverflowX = Overflow.Hidden,
-      Gap = Length.Pixels 24.0
-    )
-      .Children(
-        MetroText.secondary
-          "The host owns each value. The number box has spin buttons and open \
-           bounds. The rating control uses the accent color.",
-        Container(
-          FlexDirection = FlexDirection.Row,
-          Width = Length.Percent 100.0,
-          FlexShrink = 0.0,
-          AlignItems = AlignItems.FlexStart,
-          Gap = Length.Pixels 48.0
-        )
-          .Children(
-            MetroNumberBox.mount(
-              "gallery-number",
-              {
-                MetroNumberBox.defaults quantity with
-                    Minimum = ValueSome 0.0
-                    Maximum = ValueSome 100.0
-                    Step = ValueSome 0.5
-                    Label = ValueSome "quantity"
-                    Width = ValueSome(Length.Pixels 200.0)
-              },
-              onQuantityChange
-            ),
-            MetroRating.mount(
-              "gallery-rating",
-              {
-                MetroRating.defaults rating with
-                    AccessibilityName = ValueSome "rating"
-              },
-              onRatingChange
-            )
-          ),
-        MetroText.secondary
-          "The combo box selects one option. The auto-suggest box filters its \
-           options through the query, and the host supplies the options.",
-        Container(
-          FlexDirection = FlexDirection.Row,
-          Width = Length.Percent 100.0,
-          FlexShrink = 0.0,
-          AlignItems = AlignItems.FlexStart,
-          Gap = Length.Pixels 48.0
-        )
-          .Children(
-            sizeFactory.Mount("gallery-combo", sizeProps()),
-            cityFactory.Mount("gallery-suggest", cityProps())
-          )
+  Container(
+    FlexDirection = FlexDirection.Column,
+    FlexGrow = 1.0,
+    Width = Length.Percent 100.0,
+    OverflowY = Overflow.Scroll,
+    OverflowX = Overflow.Hidden,
+    Gap = Length.Pixels 24.0
+  )
+    .Children(
+      MetroText.secondary
+        "The host owns each value. The number box has spin buttons and open \
+         bounds. The rating control uses the accent color.",
+      Container(
+        FlexDirection = FlexDirection.Row,
+        Width = Length.Percent 100.0,
+        FlexShrink = 0.0,
+        AlignItems = AlignItems.FlexStart,
+        Gap = Length.Pixels 48.0
       )
+        .Children(
+          MetroNumberBox.mount(
+            "gallery-number",
+            {
+              MetroNumberBox.defaults state.Quantity with
+                  Minimum = ValueSome 0.0
+                  Maximum = ValueSome 100.0
+                  Step = ValueSome 0.5
+                  Label = ValueSome "quantity"
+                  Width = ValueSome(Length.Pixels 200.0)
+            },
+            ctx.OnQuantityChange
+          ),
+          MetroRating.mount(
+            "gallery-rating",
+            {
+              MetroRating.defaults state.Rating with
+                  AccessibilityName = ValueSome "rating"
+            },
+            ctx.OnRatingChange
+          )
+        ),
+      MetroText.secondary
+        "The combo box selects one option. The auto-suggest box filters its \
+         options through the query, and the host supplies the options.",
+      Container(
+        FlexDirection = FlexDirection.Row,
+        Width = Length.Percent 100.0,
+        FlexShrink = 0.0,
+        AlignItems = AlignItems.FlexStart,
+        Gap = Length.Pixels 48.0
+      )
+        .Children(
+          ctx.SizeFactory.Mount("gallery-combo", sizeProps state),
+          ctx.CityFactory.Mount("gallery-suggest", cityProps state)
+        )
+    )
+
+/// Creates the inputs tab. Each widget is a mounted Goo.Widgets control: it
+/// gives each callback of its input to this tab through
+/// `InvokeInputCallback`, so the owner rule rebuilds the tab. Thus a handler
+/// writes the state, and no handler calls `Rebuild()`.
+let create() : InputsTabCell =
+  let state: InputsState = {
+    Quantity = 12.5
+    Rating = 3.0
+    SizeSelected = "medium"
+    CitySelected = ""
+    CityQuery = ""
+  }
+
+  let onQuantityChange(value: float) = state.Quantity <- value
+
+  let onRatingChange(value: float) = state.Rating <- value
+
+  // One factory per control: each control has its own values, and the events
+  // do not name the control.
+  let ctx: InputsContext = {
+    State = state
+    SizeFactory =
+      MetroComboBox.createFactory(fun event -> applySize(state, event))
+    CityFactory =
+      MetroComboBox.createFactory(fun event -> applyCity(state, event))
+    OnQuantityChange = onQuantityChange
+    OnRatingChange = onRatingChange
+  }
+
+  {
+    new InputsTabCell() with
+      override _.SizeSelected = state.SizeSelected
+      override _.CitySelected = state.CitySelected
+      override _.CityQuery = state.CityQuery
+      override _.SizeInput = ctx.SizeFactory.CreateInput(sizeProps state)
+      override _.CityInput = ctx.CityFactory.CreateInput(cityProps state)
+      override _.Build() : Blob = build ctx
+  }

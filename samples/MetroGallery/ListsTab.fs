@@ -1,6 +1,5 @@
 module MetroGallery.ListsTab
 
-open System
 open Goo
 open FunGoo.Children
 open FunGoo.Metro
@@ -119,142 +118,158 @@ module private Content =
     }
   |]
 
-/// Gallery tab with two Metro lists, one list box, and one grid view. The tab
-/// owns every selection.
-[<Sealed>]
-type ListsTabCell() as this =
-  inherit Cell()
+/// The factories of the four collections of the tab. `create` makes them
+/// once, so each collection receives the same callback instances and an
+/// unchanged input does not rebuild it.
+type private ListFactories = {
+  Single: IMetroListViewFactory
+  Multiple: IMetroListViewFactory
+  Box: IMetroListViewFactory
+  Grid: IMetroGridViewFactory
+}
 
-  let mutable singleSelected: string array = [| "mail" |]
-  let mutable multipleSelected: string array = [| "photos"; "maps" |]
-  let mutable boxSelected: string array = [| "medium" |]
-  let mutable gridSelected: string array = [| "photos"; "maps"; "music" |]
-  let mutable lastAction = "Ready"
+/// State of the tab. One mutable field per concern.
+type private ListsState = {
+  mutable SingleSelected: string array
+  mutable MultipleSelected: string array
+  mutable BoxSelected: string array
+  mutable GridSelected: string array
+  mutable LastAction: string
+}
 
-  let onSingle(event: MetroListEvent) =
-    match event with
-    | MetroListEvent.SelectionChanged ids -> singleSelected <- ids
-    | MetroListEvent.ItemClick id -> lastAction <- $"Activated {id}"
+/// The handler of one collection of the tab. The collection gives each event
+/// to this tab through `InvokeInputCallback`, so the owner rule rebuilds the
+/// tab. The handler writes the state and does not call `Rebuild()`.
+let private handlerOf
+  (state: ListsState, select: string array -> unit)
+  : MetroListEvent -> unit =
+  function
+  | MetroListEvent.SelectionChanged ids -> select ids
+  | MetroListEvent.ItemClick id -> state.LastAction <- $"Activated {id}"
 
-    this.Rebuild()
+/// One column of the tab: a subheader above one collection.
+let private column(title: string, content: Blob) : Blob =
+  Container(
+    FlexDirection = FlexDirection.Column,
+    FlexGrow = 1.0,
+    FlexBasis = Length.Pixels 0.0,
+    MinWidth = Length.Pixels 0.0,
+    Gap = Length.Pixels 8.0
+  )
+    .Children(MetroText.subheader title, content)
 
-  let onMultiple(event: MetroListEvent) =
-    match event with
-    | MetroListEvent.SelectionChanged ids -> multipleSelected <- ids
-    | MetroListEvent.ItemClick id -> lastAction <- $"Activated {id}"
+let private view(state: ListsState, factories: ListFactories) : Blob =
+  let singleProps = {
+    MetroListView.defaults Content.items with
+        SelectedIds = state.SingleSelected
+        Height = ValueSome(Length.Pixels 300.0)
+  }
 
-    this.Rebuild()
+  let multipleProps = {
+    MetroListView.defaults Content.items with
+        Mode = MetroListSelectionMode.Multiple
+        SelectedIds = state.MultipleSelected
+        Height = ValueSome(Length.Pixels 300.0)
+  }
 
-  // Created once: every Build reuses the same factories, so each list
-  // receives the same callback instances and an unchanged input does not
-  // rebuild it.
-  let singleFactory = MetroListView.createFactory onSingle
-  let multipleFactory = MetroListView.createFactory onMultiple
+  let boxProps = {
+    MetroListView.defaults Content.choices with
+        SelectedIds = state.BoxSelected
+        Height = ValueSome(Length.Pixels 160.0)
+  }
 
-  let onBox(event: MetroListEvent) =
-    match event with
-    | MetroListEvent.SelectionChanged ids -> boxSelected <- ids
-    | MetroListEvent.ItemClick id -> lastAction <- $"Activated {id}"
+  let gridProps = {
+    MetroGridView.defaults Content.tiles with
+        SelectedIds = state.GridSelected
+        TileSize = 96.0
+        Height = ValueSome(Length.Pixels 216.0)
+        AccessibilityName = ValueSome "Apps"
+  }
 
-    this.Rebuild()
-
-  let onGrid(event: MetroListEvent) =
-    match event with
-    | MetroListEvent.SelectionChanged ids -> gridSelected <- ids
-    | MetroListEvent.ItemClick id -> lastAction <- $"Activated {id}"
-
-    this.Rebuild()
-
-  let boxFactory = MetroListView.createFactory onBox
-  let gridFactory = MetroGridView.createFactory onGrid
-
-  let listColumn(title: string, mount: unit -> Blob) : Blob =
+  let listsRow =
     Container(
-      FlexDirection = FlexDirection.Column,
-      FlexGrow = 1.0,
-      FlexBasis = Length.Pixels 0.0,
-      MinWidth = Length.Pixels 0.0,
-      Gap = Length.Pixels 8.0
-    )
-      .Children(MetroText.subheader title, mount())
-
-  override _.Build() : Blob =
-    let singleProps = {
-      MetroListView.defaults Content.items with
-          SelectedIds = singleSelected
-          Height = ValueSome(Length.Pixels 300.0)
-    }
-
-    let multipleProps = {
-      MetroListView.defaults Content.items with
-          Mode = MetroListSelectionMode.Multiple
-          SelectedIds = multipleSelected
-          Height = ValueSome(Length.Pixels 300.0)
-    }
-
-    let boxProps = {
-      MetroListView.defaults Content.choices with
-          SelectedIds = boxSelected
-          Height = ValueSome(Length.Pixels 160.0)
-    }
-
-    let gridProps = {
-      MetroGridView.defaults Content.tiles with
-          SelectedIds = gridSelected
-          TileSize = 96.0
-          Height = ValueSome(Length.Pixels 216.0)
-          AccessibilityName = ValueSome "Apps"
-    }
-
-    let listsRow =
-      Container(
-        FlexDirection = FlexDirection.Row,
-        Width = Length.Percent 100.0,
-        FlexShrink = 0.0,
-        Gap = Length.Pixels 24.0
-      )
-        .Children(
-          listColumn(
-            "single selection",
-            fun () -> singleFactory.Mount("gallery-list-single", singleProps)
-          ),
-          listColumn(
-            "multiple selection",
-            fun () ->
-              multipleFactory.Mount("gallery-list-multiple", multipleProps)
-          )
-        )
-
-    let collectionsRow =
-      Container(
-        FlexDirection = FlexDirection.Row,
-        Width = Length.Percent 100.0,
-        FlexShrink = 0.0,
-        Gap = Length.Pixels 24.0
-      )
-        .Children(
-          listColumn(
-            "list box",
-            fun () ->
-              MetroListBox.build("gallery-list-box", boxProps, boxFactory)
-          ),
-          listColumn("grid view", fun () -> gridFactory.Build gridProps)
-        )
-
-    Container(
-      FlexDirection = FlexDirection.Column,
-      FlexGrow = 1.0,
+      FlexDirection = FlexDirection.Row,
       Width = Length.Percent 100.0,
-      OverflowY = Overflow.Scroll,
-      OverflowX = Overflow.Hidden,
-      Gap = Length.Pixels 16.0
+      FlexShrink = 0.0,
+      Gap = Length.Pixels 24.0
     )
       .Children(
-        MetroText.secondary
-          "The host owns the selection. Each selected row shows a 3 px accent \
-           indicator on its start edge and an accent tint. The list box adds a \
-           2 px border. The grid view mounts only the tiles near the viewport.",
-        listsRow,
-        collectionsRow,
-        MetroText.caption lastAction
+        column(
+          "single selection",
+          factories.Single.Mount("gallery-list-single", singleProps)
+        ),
+        column(
+          "multiple selection",
+          factories.Multiple.Mount("gallery-list-multiple", multipleProps)
+        )
       )
+
+  let collectionsRow =
+    Container(
+      FlexDirection = FlexDirection.Row,
+      Width = Length.Percent 100.0,
+      FlexShrink = 0.0,
+      Gap = Length.Pixels 24.0
+    )
+      .Children(
+        column(
+          "list box",
+          MetroListBox.build("gallery-list-box", boxProps, factories.Box)
+        ),
+        column("grid view", factories.Grid.Build gridProps)
+      )
+
+  Container(
+    FlexDirection = FlexDirection.Column,
+    FlexGrow = 1.0,
+    Width = Length.Percent 100.0,
+    OverflowY = Overflow.Scroll,
+    OverflowX = Overflow.Hidden,
+    Gap = Length.Pixels 16.0
+  )
+    .Children(
+      MetroText.secondary
+        "The host owns the selection. Each selected row shows a 3 px accent \
+         indicator on its start edge and an accent tint. The list box adds a \
+         2 px border. The grid view mounts only the tiles near the viewport.",
+      listsRow,
+      collectionsRow,
+      MetroText.caption state.LastAction
+    )
+
+/// Creates the lists tab with two Metro lists, one list box, and one grid
+/// view. The tab owns every selection.
+let create() : Cell =
+  let state: ListsState = {
+    SingleSelected = [| "mail" |]
+    MultipleSelected = [| "photos"; "maps" |]
+    BoxSelected = [| "medium" |]
+    GridSelected = [| "photos"; "maps"; "music" |]
+    LastAction = "Ready"
+  }
+
+  // Created once: every Build gives each collection the same factory. Each
+  // collection has its own factory, because each one owns its own selection.
+  let factories: ListFactories = {
+    Single =
+      MetroListView.createFactory(
+        handlerOf(state, fun ids -> state.SingleSelected <- ids)
+      )
+    Multiple =
+      MetroListView.createFactory(
+        handlerOf(state, fun ids -> state.MultipleSelected <- ids)
+      )
+    Box =
+      MetroListView.createFactory(
+        handlerOf(state, fun ids -> state.BoxSelected <- ids)
+      )
+    Grid =
+      MetroGridView.createFactory(
+        handlerOf(state, fun ids -> state.GridSelected <- ids)
+      )
+  }
+
+  {
+    new Cell() with
+      override _.Build() : Blob = view(state, factories)
+  }
