@@ -176,7 +176,11 @@ let progress(store: GalleryStore, sliderCell: MetroSliderCell) : Blob =
         .Children(
           MetroProgressBar.build(
             "gallery-det-progress",
-            MetroProgressBar.determinate(store.SliderValue / 100.0)
+            {
+              MetroProgressBar.determinate store.SliderValue with
+                  Maximum = 100.0
+                  ShowLabel = true
+            }
           )
         ),
       MetroText.caption "INDETERMINATE",

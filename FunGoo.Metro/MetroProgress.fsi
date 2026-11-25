@@ -6,9 +6,16 @@ open Goo
 /// Data-only properties for a determinate or indeterminate Metro progress bar.
 [<Struct; NoComparison>]
 type MetroProgressBarProps = {
-  /// Normalized progress in <c>[0.0, 1.0]</c> for determinate mode, or
-  /// <c>ValueNone</c> for indeterminate 5-dot motion.
+  /// Raw progress for determinate mode, scaled as <c>Value / Maximum</c>
+  /// clamped to <c>[0.0, 1.0]</c>, or <c>ValueNone</c> for indeterminate
+  /// 5-dot motion.
   Value: float voption
+  /// Scale of <c>Value</c> for determinate mode (defaults to <c>1.0</c>).
+  /// Non-finite and non-positive values build as <c>1.0</c>.
+  Maximum: float
+  /// When <c>true</c>, renders the determinate percent as a
+  /// <c>MetroText</c> caption under the bar. Indeterminate bars ignore it.
+  ShowLabel: bool
   /// Bar and dot height in logical pixels (defaults to <c>4.0</c>).
   Height: float
   /// Track width (defaults to <c>Length.Percent 100.0</c>).
@@ -59,11 +66,13 @@ module MetroIndeterminateBar =
 module MetroProgressBar =
 
   /// Creates determinate <see cref="MetroProgressBarProps"/> with
-  /// <paramref name="value"/> (clamped to <c>[0.0, 1.0]</c> when built).
+  /// <paramref name="value"/> (scaled by <c>Maximum</c> and clamped to
+  /// <c>[0.0, 1.0]</c> when built).
   val determinate: value: float -> MetroProgressBarProps
 
   /// Default indeterminate <see cref="MetroProgressBarProps"/> with
-  /// <c>Value = ValueNone</c>, 4 px height, and 100% width.
+  /// <c>Value = ValueNone</c>, <c>Maximum = 1.0</c>,
+  /// <c>ShowLabel = false</c>, 4 px height, and 100% width.
   val indeterminate: MetroProgressBarProps
 
   /// Builds a determinate bar or mounts the indeterminate 5-dot progress cell

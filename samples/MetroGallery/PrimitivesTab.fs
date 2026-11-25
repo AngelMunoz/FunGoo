@@ -96,6 +96,21 @@ let chip(label: string) : Blob =
     MetroText.caption label
   )
 
+let chipRounded(label: string) : Blob =
+  let theme = Metro.read()
+
+  MetroBorder.build(
+    {
+      MetroBorder.defaults() with
+          Thickness = Edges(Length.Pixels 1.0)
+          BorderColor = ValueSome theme.Palette.Border
+          Background = ValueSome theme.Palette.BackgroundAlt
+          Padding = Edges(Length.Pixels 4.0, Length.Pixels 10.0)
+          CornerRadius = 8.0
+    },
+    MetroText.caption label
+  )
+
 // The natural 200x48 stamp that both viewboxes scale. A plain function, so
 // the responsive viewbox cell can rebuild it inside its own build.
 // Typography alone carries the demo: no border or fill wrapper.
@@ -158,16 +173,14 @@ let view
               Bordered = true
               AccessibilityLabel = ValueSome "Metro mosaic sample"
         },
-        MetroImage.buildWithFallback(
-          {
-            MetroImage.defaults ValueNone with
-                Width = ValueSome(Length.Pixels 64.0)
-                Height = ValueSome(Length.Pixels 64.0)
-                Bordered = true
-          },
-          ValueNone,
-          ValueSome(MetroIcon.named "broken_image")
-        )
+        MetroImage.build {
+          MetroImage.defaults ValueNone with
+              Width = ValueSome(Length.Pixels 64.0)
+              Height = ValueSome(Length.Pixels 64.0)
+              Bordered = true
+              Placeholder = ValueSome(MetroIcon.named "image")
+              Fallback = ValueSome(MetroIcon.named "broken_image")
+        }
       )
 
   let richBlock =
@@ -315,6 +328,7 @@ let view
               chip " TYPOGRAPHY "
               chip " MOTION "
               chip " CONTENT OVER CHROME "
+              chipRounded " ROUNDED 8 PX "
             |]
           ),
           MetroText.caption $"VIEWBOX ({state.ViewboxStretch})",

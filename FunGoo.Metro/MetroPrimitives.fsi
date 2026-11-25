@@ -61,6 +61,9 @@ type MetroBorderProps = {
   Background: Color voption
   /// Inner padding around the child content.
   Padding: Edges
+  /// Corner radius in logical pixels (defaults to <c>0.0</c> sharp Metro).
+  /// Non-finite and negative values build as <c>0.0</c>.
+  CornerRadius: float
 }
 
 /// Sharp <c>0 px</c> Metro border and surface frame.
@@ -122,6 +125,15 @@ type MetroImageProps = {
   Bordered: bool
   /// Optional accessible description of the image.
   AccessibilityLabel: string voption
+  /// Content rendered when <c>Source</c> is <c>ValueNone</c>, and passed to
+  /// the image element as its loading content for a present source.
+  Placeholder: Blob voption
+  /// Content the image element shows when a present source provider yields
+  /// no image. A load failure is only observable by the image element, so
+  /// the Metro layer keeps no loading state: <c>Fallback</c> is wired to the
+  /// element slot, and renders as the empty-source content when
+  /// <c>Placeholder</c> is <c>ValueNone</c>.
+  Fallback: Blob voption
 }
 
 /// Sharp <c>0 px</c> Metro image primitive with placeholder and fallback slots.
@@ -135,7 +147,10 @@ module MetroImage =
   val build: props: MetroImageProps -> Blob
 
   /// Builds the Metro image frame with optional <paramref name="placeholder"/>
-  /// and <paramref name="fallback"/> elements.
+  /// and <paramref name="fallback"/> elements. Explicit arguments win over
+  /// the matching <c>MetroImageProps</c> slots; when <c>Source</c> is
+  /// <c>ValueNone</c>, the placeholder renders, else the fallback renders as
+  /// the empty-source content.
   val buildWithFallback:
     props: MetroImageProps * placeholder: Blob voption * fallback: Blob voption ->
       Blob

@@ -2,6 +2,7 @@ module FunGoo.Metro.Tests.PrimitivesAndLayoutTests
 
 open System
 open System.Diagnostics
+open System.Reflection
 open Xunit
 open Goo
 open FunGoo.Children
@@ -196,6 +197,56 @@ let ``MetroPersonPicture initialsOf extracts uppercase initials cleanly``() =
   Assert.Equal("MS", MetroPersonPicture.initialsOf "Mary-Jane Watson Smith")
   Assert.Equal("", MetroPersonPicture.initialsOf "   ")
   Assert.Equal("", MetroPersonPicture.initialsOf null)
+
+
+let private flags =
+  BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+
+let private entriesMethod = typeof<Style>.GetMethod("Entries", flags)
+
+type private StyleSample = { FieldName: string; A: float32 }
+
+let private readEntries(style: Style) : StyleSample array =
+  if isNull style then
+    Array.empty
+  else
+    let entries = entriesMethod.Invoke(style, null)
+
+    if isNull entries then
+      Array.empty
+    else
+      let entriesType = entries.GetType()
+
+      let count =
+        entriesType.GetProperty("Count", flags).GetValue(entries) :?> int
+
+      let atMethod = entriesType.GetMethod("At", flags)
+
+      Array.init count (fun i ->
+        let e = atMethod.Invoke(entries, [| box i |])
+        let et = e.GetType()
+
+        {
+          FieldName = et.GetField("Field", flags).GetValue(e).ToString()
+          A = et.GetField("A", flags).GetValue(e) :?> float32
+        })
+
+let private tryLastEntry
+  (style: Style, fieldName: string)
+  : StyleSample voption =
+  let entries = readEntries style
+  let mutable found = ValueNone
+
+  for i = entries.Length - 1 downto 0 do
+    if found.IsNone && entries[i].FieldName = fieldName then
+      found <- ValueSome entries[i]
+
+  found
+
+let private requireEntry(style: Style, fieldName: string) : StyleSample =
+  match tryLastEntry(style, fieldName) with
+  | ValueSome s -> s
+  | ValueNone -> failwith $"Expected style entry '{fieldName}' to be present."
 
 [<Fact>]
 let ``MetroPrimitives build Icon, Border, Expander, Image fallback, PersonPicture, and RichTextBlock without errors``
@@ -1029,3 +1080,116 @@ let ``a child with a percentage size has no size in the responsive viewbox``() =
   // MetroLayout signature states.
   Assert.Equal(0.0, h.BorderBox.Width, 3)
   Assert.Equal(0.0, h.BorderBox.Height, 3)
+
+[<Fact>]
+let ``MetroBorder CornerRadius applies and sanitizes to sharp``() =
+  Assert.Equal(0.0, MetroBorder.defaults().CornerRadius)
+  Assert.Equal(0.0, MetroBorder.card().CornerRadius)
+
+  use host = createHost(400, 200)
+
+  let root =
+    CaptureCell.create(fun () ->
+      Container()
+        .Children(
+          MetroBorder.build(
+            {
+              MetroBorder.defaults() with
+                  CornerRadius = 6.0
+            },
+            Container(Key = "radius-child") :> Blob
+          ),
+          MetroBorder.build(
+            {
+              MetroBorder.defaults() with
+                  CornerRadius = -4.0
+            },
+            Container(Key = "neg-child") :> Blob
+          ),
+          MetroBorder.build(
+            {
+              MetroBorder.defaults() with
+                  CornerRadius = Double.NaN
+            },
+            Container(Key = "nan-child") :> Blob
+          )
+        ))
+
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  let rounded = childAt(root.Captured, 0) :?> Container
+  let negative = childAt(root.Captured, 1) :?> Container
+  let nan = childAt(root.Captured, 2) :?> Container
+
+  Assert.Equal(6.0f, requireEntry(rounded, "BorderRadius").A, 3)
+  Assert.Equal(0.0f, requireEntry(negative, "BorderRadius").A, 3)
+  Assert.Equal(0.0f, requireEntry(nan, "BorderRadius").A, 3)
+
+[<Fact>]
+let ``MetroImage renders Placeholder for no source and keeps present sources``
+  ()
+  =
+  let imageDefaults = MetroImage.defaults ValueNone
+  Assert.True(imageDefaults.Placeholder.IsNone)
+  Assert.True(imageDefaults.Fallback.IsNone)
+  Assert.False(imageDefaults.Bordered)
+
+  use host = createHost(400, 200)
+  let px = Array.zeroCreate<byte>(2 * 2 * 4)
+
+  for i = 0 to px.Length - 1 do
+    px[i] <- 200uy
+
+  use source = new ImageSource(2, 2, px)
+
+  let root =
+    CaptureCell.create(fun () ->
+      Container()
+        .Children(
+          MetroImage.build {
+            MetroImage.defaults ValueNone with
+                Placeholder = ValueSome(Container(Key = "img-ph") :> Blob)
+                Fallback = ValueSome(Container(Key = "img-fb") :> Blob)
+          },
+          MetroImage.build {
+            MetroImage.defaults ValueNone with
+                Fallback = ValueSome(Container(Key = "img-fb-only") :> Blob)
+          },
+          MetroImage.build {
+            MetroImage.defaults(ValueSome(source :> ImageSourceProvider)) with
+                Placeholder = ValueSome(Container(Key = "img-src-ph") :> Blob)
+                Fallback = ValueSome(Container(Key = "img-src-fb") :> Blob)
+          },
+          MetroImage.build {
+            MetroImage.defaults ValueNone with
+                Width = ValueSome(Length.Pixels 48.0)
+                Height = ValueSome(Length.Pixels 48.0)
+          }
+        ))
+
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  // An empty source renders the placeholder, not the fallback.
+  Assert.True(findBlobByKey(root.Captured, "img-ph").IsSome)
+  Assert.True(findBlobByKey(root.Captured, "img-fb").IsNone)
+
+  // The fallback is the empty-source content when no placeholder is set.
+  Assert.True(findBlobByKey(root.Captured, "img-fb-only").IsSome)
+
+  // A present source renders the image element, which owns the wired
+  // placeholder and fallback slots for its own load states.
+  let loaded = childAt(root.Captured, 2) :?> Container
+  Assert.Equal(1, childCount loaded)
+  Assert.IsType<Image>(childAt(loaded, 0)) |> ignore
+  Assert.True(findBlobByKey(root.Captured, "img-src-ph").IsNone)
+  Assert.True(findBlobByKey(root.Captured, "img-src-fb").IsNone)
+
+  // Neither slot leaves an empty frame.
+  let empty = childAt(root.Captured, 3) :?> Container
+  Assert.Equal(0, childCount empty)

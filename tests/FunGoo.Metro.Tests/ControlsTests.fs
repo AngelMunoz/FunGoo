@@ -1019,6 +1019,83 @@ let ``MetroProgressBar clamps determinate and animates without rebuilds``() =
     Assert.False(opacityAnims[i].Running)
 
 [<Fact>]
+let ``MetroProgressBar scales by Maximum and shows a caption label``() =
+  Assert.Equal(1.0, MetroProgressBar.indeterminate.Maximum)
+  Assert.False(MetroProgressBar.indeterminate.ShowLabel)
+
+  let root =
+    runInMetroWindow(
+      darkConfig,
+      ValueNone,
+      fun () ->
+        Container()
+          .Children(
+            MetroProgressBar.build(
+              "p-max",
+              {
+                MetroProgressBar.determinate 50.0 with
+                    Maximum = 100.0
+                    ShowLabel = true
+              }
+            ),
+            MetroProgressBar.build(
+              "p-max-over",
+              {
+                MetroProgressBar.determinate 250.0 with
+                    Maximum = 200.0
+              }
+            ),
+            MetroProgressBar.build(
+              "p-max-bad",
+              {
+                MetroProgressBar.determinate 0.5 with
+                    Maximum = 0.0
+              }
+            ),
+            MetroProgressBar.build(
+              "p-max-ind",
+              {
+                MetroProgressBar.indeterminate with
+                    Maximum = 100.0
+                    ShowLabel = true
+              }
+            )
+          )
+    )
+    :?> Container
+
+  // A labeled bar wraps the track and a percent caption in a column.
+  let labeled = childAt(root, 0) :?> Container
+  Assert.Equal(2, childCount labeled)
+
+  let track = childAt(labeled, 0) :?> Container
+  let fill = childAt(track, 0) :?> Container
+  Assert.Equal(50.0f, requireEntry(fill, "Width").A, 3)
+  Assert.Equal(Nullable 100.0, track.Accessibility.Range.Maximum)
+  Assert.Equal(Nullable 50.0, track.Accessibility.Range.Now)
+
+  let label = childAt(labeled, 1) :?> Text
+  Assert.Equal("50%", label.Content)
+
+  // Values above Maximum clamp to a full fill and a Maximum Now.
+  let overTrack = childAt(root, 1) :?> Container
+  let overFill = childAt(overTrack, 0) :?> Container
+  Assert.Equal(100.0f, requireEntry(overFill, "Width").A, 3)
+  Assert.Equal(Nullable 200.0, overTrack.Accessibility.Range.Maximum)
+  Assert.Equal(Nullable 200.0, overTrack.Accessibility.Range.Now)
+
+  // A non-positive Maximum builds as 1.0.
+  let badTrack = childAt(root, 2) :?> Container
+  let badFill = childAt(badTrack, 0) :?> Container
+  Assert.Equal(50.0f, requireEntry(badFill, "Width").A, 3)
+  Assert.Equal(Nullable 1.0, badTrack.Accessibility.Range.Maximum)
+  Assert.Equal(Nullable 0.5, badTrack.Accessibility.Range.Now)
+
+  // An indeterminate bar with ShowLabel still mounts its dot cell: the
+  // label only applies to determinate values.
+  Assert.Equal(4, childCount root)
+
+[<Fact>]
 let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
   let darkConfig = {
     MetroConfig.defaultConfig with

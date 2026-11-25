@@ -77,6 +77,7 @@ type MetroBorderProps = {
   BorderColor: Color voption
   Background: Color voption
   Padding: Edges
+  CornerRadius: float
 }
 
 [<RequireQualifiedAccess>]
@@ -87,6 +88,7 @@ module MetroBorder =
     BorderColor = ValueNone
     Background = ValueNone
     Padding = Edges(Length.Pixels 12.0)
+    CornerRadius = 0.0
   }
 
   let card() : MetroBorderProps = {
@@ -94,6 +96,7 @@ module MetroBorder =
     BorderColor = ValueNone
     Background = ValueNone
     Padding = Edges(Length.Pixels 16.0)
+    CornerRadius = 0.0
   }
 
   let build(props: MetroBorderProps, child: Blob) : Blob =
@@ -108,11 +111,17 @@ module MetroBorder =
 
     let bgCol = props.Background |> ValueOption.defaultValue Color.Transparent
 
+    let radius =
+      if Double.IsFinite props.CornerRadius && props.CornerRadius > 0.0 then
+        props.CornerRadius
+      else
+        0.0
+
     let box =
       Container(
         FlexDirection = FlexDirection.Column,
         Padding = props.Padding,
-        BorderRadius = PrimitivesInternals.zeroRadius,
+        BorderRadius = Length.Pixels radius,
         BorderWidth = props.Thickness,
         BorderColor = Edges<Color>(borderCol),
         BoxShadows = PrimitivesInternals.emptyShadows,
@@ -190,6 +199,8 @@ type MetroImageProps = {
   Height: Length voption
   Bordered: bool
   AccessibilityLabel: string voption
+  Placeholder: Blob voption
+  Fallback: Blob voption
 }
 
 [<RequireQualifiedAccess>]
@@ -202,6 +213,8 @@ module MetroImage =
     Height = ValueNone
     Bordered = false
     AccessibilityLabel = ValueNone
+    Placeholder = ValueNone
+    Fallback = ValueNone
   }
 
   let buildWithFallback
@@ -209,6 +222,10 @@ module MetroImage =
     : Blob =
     let theme = Metro.read()
     let p = theme.Palette
+
+    let placeholderSlot = placeholder |> ValueOption.orElse props.Placeholder
+
+    let fallbackSlot = fallback |> ValueOption.orElse props.Fallback
 
     let frame =
       Container(
@@ -248,12 +265,12 @@ module MetroImage =
           Height = Length.Percent 100.0
         )
 
-      placeholder |> ValueOption.iter(fun ph -> img.Placeholder <- ph)
-      fallback |> ValueOption.iter(fun fb -> img.Fallback <- fb)
+      placeholderSlot |> ValueOption.iter(fun ph -> img.Placeholder <- ph)
+      fallbackSlot |> ValueOption.iter(fun fb -> img.Fallback <- fb)
       frame.Add(img)
     | _ ->
-      fallback
-      |> ValueOption.orElse placeholder
+      placeholderSlot
+      |> ValueOption.orElse fallbackSlot
       |> ValueOption.iter(fun fb ->
         if not(isNull fb) then
           frame.Add(fb))

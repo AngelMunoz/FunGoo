@@ -7,6 +7,8 @@ open FunGoo.Children
 [<Struct; NoComparison>]
 type MetroProgressBarProps = {
   Value: float voption
+  Maximum: float
+  ShowLabel: bool
   Height: float
   Width: Length
   AccessibilityName: string voption
@@ -64,6 +66,15 @@ module ProgressInternals =
     if not(Double.IsFinite value) || value <= 0.0 then 0.0
     elif value >= 1.0 then 1.0
     else value
+
+  let resolveMaximum(maximum: float) : float =
+    if Double.IsFinite maximum && maximum > 0.0 then
+      maximum
+    else
+      1.0
+
+  let normalizeProgress(value: float, maximum: float) : float =
+    clamp01(value / resolveMaximum maximum)
 
   let resolveBarHeight(height: float) : float =
     if Double.IsFinite height && height > 0.0 then
@@ -460,6 +471,8 @@ module MetroProgressBar =
 
   let determinate(value: float) : MetroProgressBarProps = {
     Value = ValueSome value
+    Maximum = 1.0
+    ShowLabel = false
     Height = 4.0
     Width = Length.Percent 100.0
     AccessibilityName = ValueNone
@@ -467,6 +480,8 @@ module MetroProgressBar =
 
   let indeterminate: MetroProgressBarProps = {
     Value = ValueNone
+    Maximum = 1.0
+    ShowLabel = false
     Height = 4.0
     Width = Length.Percent 100.0
     AccessibilityName = ValueNone
@@ -481,7 +496,11 @@ module MetroProgressBar =
     props.Value
     |> ValueOption.map(fun rawValue ->
       let theme = Metro.read()
-      let clamped = ProgressInternals.clamp01 rawValue
+      let maximum = ProgressInternals.resolveMaximum props.Maximum
+
+      let clamped =
+        ProgressInternals.normalizeProgress(rawValue, props.Maximum)
+
       let height = ProgressInternals.resolveBarHeight props.Height
 
       let accName =
@@ -504,29 +523,41 @@ module MetroProgressBar =
         else
           theme.Palette.Border
 
-      Container(
-        Key = key,
-        Width = props.Width,
-        Height = Length.Pixels height,
-        FlexDirection = FlexDirection.Row,
-        BackgroundColor = trackBg,
-        BorderRadius = ProgressInternals.zeroRadius,
-        BoxShadows = ProgressInternals.emptyShadows,
-        Overflow = Overflow.Hidden,
-        Accessibility =
-          Accessibility(
-            Role = AccessibilityRole.ProgressBar,
-            Name = accName,
-            Range =
-              AccessibilityValue(
-                Minimum = Nullable 0.0,
-                Maximum = Nullable 1.0,
-                Now = Nullable clamped
-              )
-          )
-      )
-        .Children(fill)
-      :> Blob)
+      let track =
+        Container(
+          Key = key,
+          Width = props.Width,
+          Height = Length.Pixels height,
+          FlexDirection = FlexDirection.Row,
+          BackgroundColor = trackBg,
+          BorderRadius = ProgressInternals.zeroRadius,
+          BoxShadows = ProgressInternals.emptyShadows,
+          Overflow = Overflow.Hidden,
+          Accessibility =
+            Accessibility(
+              Role = AccessibilityRole.ProgressBar,
+              Name = accName,
+              Range =
+                AccessibilityValue(
+                  Minimum = Nullable 0.0,
+                  Maximum = Nullable maximum,
+                  Now = Nullable(clamped * maximum)
+                )
+            )
+        )
+          .Children(fill)
+
+      if props.ShowLabel then
+        let percent = int(Math.Round(clamped * 100.0))
+
+        Container(
+          FlexDirection = FlexDirection.Column,
+          Gap = Length.Pixels 4.0
+        )
+          .Children(track, MetroText.caption $"{percent}%%")
+        :> Blob
+      else
+        track :> Blob)
     |> ValueOption.defaultWith(fun () ->
       let input: MetroIndeterminateBarInput = {
         Height = props.Height
