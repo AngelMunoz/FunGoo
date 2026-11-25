@@ -98,7 +98,7 @@ Each commit of the re-shape and each new control passes gate 9.
     - One factory of `MetroListView`, of `MetroGridView`, or of `MetroComboBox` sends the events of all its controls to one handler, and the events do not name the control. Use one factory for each control.
     - A timer action of a cell runs through `RunOwnedAction`, and Goo rebuilds the cell after the action (`RebuildAfterCallback`). Measured on 2026-11-23 in a headless window with a probe cell: after a window timer ran the action, the cell built again, with no `Rebuild()` call in the action. A window timer uses the wall clock and not the frame time. A test that waits for a timer waits in real time.
     - A Goo.Widgets control calls `InvokeInputCallback` for the callbacks of its input (45 widget source files, among them `Slider`, `NumberInput`, `RatingControl`, `ComboBox`, and `ListView`). Goo runs the callback in the callback scope of the host cell, and the owner rule rebuilds the host. A host handler of a widget callback writes its state and returns. It does not call `Rebuild()`. Measured on 2026-11-23 in a headless window: one click on a spin button of `NumberInput` rebuilt the host from 1 to 2 builds, with no `Rebuild()` call.
-    - Since the re-shape (R5, R6, R7), each typed cell of `FunGoo.Metro` gives the callbacks of its host (`onSelect`, `onEvent`, `onClick`) to the host cell through `InvokeInputCallback`, as a Goo.Widgets control does. Thus no host rebuilds itself from such a callback. No cell of `FunGoo.Metro` calls `Rebuild()`.
+    - Since the re-shape (R5, R6, R7), each typed cell of `FunGoo.Metro` gives the callbacks of its host (`onSelect`, `onEvent`, `onClick`) to the host cell through `InvokeInputCallback`, as a Goo.Widgets control does. Thus no host rebuilds itself from such a callback. No cell of `FunGoo.Metro` calls `Rebuild()`. Exceptions: a cell calls `Rebuild()` only when no callback and no timer caused the change. The animated overlays call it at the end of a close animation, to unmount the closed surface. `MetroViewboxCell` calls it when its viewport size or its content size changes.
 
 16. **Object expressions (measured on 2026-11-23 in a headless window):**
     - An object expression behaves like the type that it expresses. `{ new Cell() with ... }`, `{ new Cell<TInput>() with ... }`, `{ new Simulation() with ... }`, and `{ new EmbeddedWindowHost() with ... }` compile and run. `Build(input)`, `InputChanged`, `Mounted`, and `Unmounting` are overridden in the object expression.
@@ -124,21 +124,24 @@ Each commit of the re-shape and each new control passes gate 9.
     - A function value needs no wrapper, also at a parameter of an F# function that has a delegate type, and also as a record field of a function type. `let onSliderChange (value: float) = ...` then `MetroSlider.mount(key, props, onSliderChange)` compiles. `MetroFlipView.mount(key, input, factory)` takes `unit -> MetroFlipViewCell`. Measured on 2026-11-23 (R9, R9b).
     - Measured with `NumberInputInput` and `MediaTransportInput`: a function value that F# converts at each build keeps the input equal, because the target of the delegate is the function value. One delegate made once keeps the input equal. A lambda with a capture that is written inside `Build` makes the input different.
 
+19. **Portals render nothing in `goo render`:**
+    - `goo render` of Goo.DevTools 0.31.0 shows no `Portal` content. Measured on 2026-11-24: an anchored portal, a portal with no size, and a portal with a size and a scrim all render nothing in the frame.
+    - Verify an overlay with a headless geometry test in `EmbeddedWindowHost`. There a portal lays out correctly from the first frame.
+
 ## Control Catalog Gap (2026-11-22)
 
-Metrino registers 74 controls. `FunGoo.Metro` ships 25 public control types:
-`MetroText`, `MetroButton`, `MetroTextBox`, `MetroToggleSwitch`, `MetroCheckBox`, `MetroRadioButton`, `MetroSlider`, `MetroProgressBar`, `MetroProgressRing`, `MetroPivotCell`, `MetroHubCell`, `TileGridLayout`, `MetroIconicTile`, `MetroLiveTileCell`, `MetroAppBar`, `MetroSettingsFlyout`, `MetroContentDialog`, `MetroFlipViewCell`, `MetroListView`, `MetroListBox`, `MetroGridView`, `MetroSemanticZoomCell`, `MetroNumberBox`, `MetroRating`, and `MetroComboBox` (combo box and auto-suggest box).
+State of the catalog after stack #16 (PR #14 to #21), on 2026-11-24:
 
 | Family | Metrino controls | In `FunGoo.Metro` | Missing |
 | --- | --- | --- | --- | --- |
 | Buttons | Button, DropdownButton, HyperlinkButton, RepeatButton | Button, Hyperlink (variant) | DropdownButton, RepeatButton |
-| Date and time | Calendar, CalendarDatePicker, DatePicker, DatePickerRoller, TimePicker, TimePickerRoller | none | all 6 |
-| Dialogs | ContentDialog, Flyout, MessageDialog, SettingsFlyout, TeachingTip | ContentDialog, SettingsFlyout | Flyout, MessageDialog, TeachingTip |
+| Date and time | Calendar, CalendarDatePicker, DatePicker, DatePickerRoller, TimePicker, TimePickerRoller | Calendar (`MetroCalendar`), CalendarDatePicker (`MetroCalendarDatePicker`), DatePicker (`MetroDatePicker`), DatePickerRoller (`MetroDatePickerRoller`), TimePicker (`MetroTimePicker`), TimePickerRoller (`MetroTimePickerRoller`) | none |
+| Dialogs | ContentDialog, Flyout, MessageDialog, SettingsFlyout, TeachingTip | ContentDialog, SettingsFlyout, Flyout (`MetroFlyout`), MessageDialog (`MetroMessageDialog`), TeachingTip (`MetroTeachingTip`) | none |
 | Inputs | AutoSuggestBox, CheckBox, ComboBox, NumberBox, PasswordBox, RadioButton, Rating, RichEditBox, Slider, TextBox, ToggleSwitch | CheckBox, RadioButton, Slider, TextBox (with password mode), ToggleSwitch, NumberBox (`MetroNumberBox`), Rating (`MetroRating`), ComboBox and AutoSuggestBox (`MetroComboBoxFactory`) | RichEditBox |
-| Layout | Canvas, Grid, ScrollViewer, StackPanel, TileGrid, VariableSizedWrapGrid, Viewbox, WrapPanel | TileGridLayout | Canvas, Grid, ScrollViewer, StackPanel, VariableSizedWrapGrid, Viewbox, WrapPanel |
-| Navigation | AppBar, AppBarButton, AppBarSeparator, AppBarToggleButton, Hub, HubSection, Panorama, PanoramaItem, Pivot, PivotItem, SplitView, TabView, TabViewItem | AppBar (commands only), Hub (with sections), Pivot | AppBarButton, AppBarSeparator, AppBarToggleButton, Panorama, SplitView, TabView |
-| Primitives | Border, ContextMenu, Expander, Icon, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, TextBlock, Toast, Tooltip | TextBlock (as `MetroText`), Icon (as `MaterialIcons` in tiles) | Border, ContextMenu, Expander, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, Toast, Tooltip |
-| Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | FlipView, ListView (`MetroListView`), ListBox (`MetroListBox`), GridView (`MetroGridView`), SemanticZoom (`MetroSemanticZoomCell`) | ListPicker, LongListSelector, TreeView |
+| Layout | Canvas, Grid, ScrollViewer, StackPanel, TileGrid, VariableSizedWrapGrid, Viewbox, WrapPanel | TileGridLayout, ScrollViewer (`MetroScrollViewer`), VariableSizedWrapGrid (`MetroVariableSizedWrapGrid`), Viewbox (`MetroViewbox`), WrapPanel (`MetroWrapPanel`) | Canvas, Grid, StackPanel |
+| Navigation | AppBar, AppBarButton, AppBarSeparator, AppBarToggleButton, Hub, HubSection, Panorama, PanoramaItem, Pivot, PivotItem, SplitView, TabView, TabViewItem | AppBar (commands only), Hub (with sections), Pivot, AppBarButton (`MetroAppBarButton`), AppBarSeparator (`MetroAppBarSeparator`), AppBarToggleButton (`MetroAppBarToggleButton`), Panorama (`MetroPanorama`), SplitView (`MetroSplitView`), TabView (`MetroTabView`) | none |
+| Primitives | Border, ContextMenu, Expander, Icon, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, TextBlock, Toast, Tooltip | TextBlock (as `MetroText`), Icon (as `MaterialIcons` in tiles), Border (`MetroBorder`), ContextMenu (`MetroContextMenu`), Expander (`MetroExpander`), Image (`MetroImage`), InfoBar (`MetroInfoBar`), MenuFlyout (`MetroMenuFlyout`), PersonPicture (`MetroPersonPicture`), RichTextBlock (`MetroRichTextBlock`), Toast (`MetroToast`), Tooltip (`MetroTooltip`) | MediaElement |
+| Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | FlipView, ListView (`MetroListView`), ListBox (`MetroListBox`), GridView (`MetroGridView`), SemanticZoom (`MetroSemanticZoomCell`), ListPicker (`MetroListPicker`), LongListSelector (`MetroLongListSelector`), TreeView (`MetroTreeView`) | none |
 | Tiles | CycleTile, FlipTile, IconicTile, LiveTile | IconicTile, LiveTile | CycleTile, FlipTile |
 
 ## Stackable PR Roadmap (GitHub Stack `#5`)
@@ -156,20 +159,20 @@ Stack `#5` was delivered as stacked pull requests. GitHub merged the 12 pull req
 | PR 7 | `metro/07-public-view-builders` | | Public view builders for the existing stateful controls, so that the tests and the gallery check use the public API only | Deferred. See the note below the table |
 | PR 8 | `metro/08-list-view` | #8 | `MetroListView`: `Goo.Widgets.ListView` with sharp 44 px rows, a 3 px accent indicator and an accent tint on selected rows, selection modes `Activate`, `Single`, and `Multiple`, one event channel, a factory that keeps one callback set, gallery tab and scene, reflection-free tests | Complete |
 | PR 9 | `metro/09-list-box-grid` | #9 | `MetroListBox`: a sharp 2 px bordered box around a Metro list. `MetroGridViewFactory` (now `MetroGridView.createFactory`): a virtual wrapped grid of square tile buttons on `VirtualItems`, with a 2 px accent border and an accent tint on selected tiles, selection modes `Activate`, `Single`, and `Multiple`, gallery additions, reflection-free tests | Complete |
-| PR 10 | `metro/10-long-list-selector` | | Grouped list with group headers and a jump list. Needs its own virtual list with its own handle, because `ListView` gives no public access to its scroll viewport (hard fact 14) | Planned |
+| PR 10 | `metro/10-long-list-selector` | #14 | Grouped list with group headers and a jump list. Needs its own virtual list with its own handle, because `ListView` gives no public access to its scroll viewport (hard fact 14) | Complete |
 | PR 11 | `metro/11-semantic-zoom` | #10 | `MetroSemanticZoomCell`: a zoomed-in detail view and a zoomed-out overview view of the same content, a zoom toggle button in the top end corner, a scale and fade transition on each zoom, reduced motion, public view seam (`MetroSemanticZoom.buildView`, `View`, `State`, `Handle`), gallery tab and scene, reflection-free tests | Complete |
-| PR 12 | `metro/12-looping-selector` | | Shared roller column (`MetroLoopingSelector`) | Planned |
-| PR 13 | `metro/13-date-time-pickers` | | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Planned |
-| PR 14 | `metro/14-calendar` | | `MetroCalendar`, `MetroCalendarDatePicker` | Planned |
+| PR 12 | `metro/12-looping-selector` | #15 | Shared roller column (`MetroLoopingSelector`) | Complete |
+| PR 13 | `metro/13-date-time-pickers` | #15 | `MetroDatePicker` and `MetroTimePicker` on the roller; dropdown variants | Complete |
+| PR 14 | `metro/14-calendar` | #17 | `MetroCalendar`, `MetroCalendarDatePicker` | Complete |
 | PR 15 | `metro/13-combo-suggest` | #12 | `MetroComboBoxFactory` (now `MetroComboBox.createFactory`) on `Goo.Widgets.Inputs.ComboBox`: a combo box (`MetroComboBox.defaults`) and an auto-suggest box (`MetroComboBox.autoSuggest`) with one event channel (`Selected`, `QueryChanged`, `OpenChanged`), a pure `toData` mapping, cached callbacks and mapped options, the gallery `inputs` tab (which replaces the `number` tab) and its `inputs` scene, reflection-free tests | Complete |
 | PR 16 | `metro/12-number-rating` | #11 | `MetroNumberBox` on `Goo.Widgets.Inputs.NumberInput` (spin buttons, bounds, step, label) and `MetroRating` on `Goo.Widgets.Inputs.RatingControl` (accent stars), each with a pure `toInput` mapping, a gallery tab and scene, reflection-free tests | Complete |
-| PR 17 | `metro/17-dialogs` | | `MetroFlyout`, `MetroMessageDialog` | Planned |
-| PR 18 | `metro/18-menus-tooltips` | | `MetroContextMenu`, `MetroTooltip` | Planned |
-| PR 19 | `metro/19-notifications` | | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Planned |
-| PR 20 | `metro/20-split-tab` | | `MetroSplitView`, `MetroTabView` | Planned |
-| PR 21 | `metro/21-app-bar-parts` | | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Planned |
-| PR 22 | `metro/22-primitives` | | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Planned |
-| PR 23 | `metro/23-layout` | | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Planned |
+| PR 17 | `metro/17-dialogs` | #18 | `MetroFlyout`, `MetroMessageDialog` | Complete |
+| PR 18 | `metro/18-menus-tooltips` | #18 | `MetroContextMenu`, `MetroTooltip` | Complete |
+| PR 19 | `metro/19-notifications` | #19 | `MetroToast`, `MetroInfoBar`, `MetroTeachingTip` | Complete |
+| PR 20 | `metro/20-split-tab` | #20 | `MetroSplitView`, `MetroTabView` | Complete |
+| PR 21 | `metro/21-app-bar-parts` | #20 | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Complete |
+| PR 22 | `metro/22-primitives` | #21 | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Complete |
+| PR 23 | `metro/23-layout` | #21 | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Complete |
 | PR 24 | `metro/24-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
 | PR 25 | `metro/25-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
 | PR 26 | `metro/14-gallery-zoom-inputs-fix` | #13 | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
@@ -256,10 +259,10 @@ Each commit is on `main`, and each passed the nine gates. The 16 rendered frames
 
 The state after R10:
 
-- `as this` has no hit in `FunGoo.Metro`, `samples/MetroGallery`, and `tests/FunGoo.Metro.Tests`. Each `inherit Cell` in the three directories is an abstract cell type. No cell of `FunGoo.Metro` calls `Rebuild()`. No code of `FunGoo.Metro` and no code of the gallery reads a member through reflection. (`MetroShader` opens `System.Reflection` for `Assembly`, to load the embedded shader resource.)
+- `as this` has no hit in `FunGoo.Metro`, `samples/MetroGallery`, and `tests/FunGoo.Metro.Tests`. Each `inherit Cell` in the three directories is an abstract cell type. No cell of `FunGoo.Metro` calls `Rebuild()`. Exceptions: a cell calls `Rebuild()` only when no callback and no timer caused the change. The animated overlays call it at the end of a close animation, to unmount the closed surface. `MetroViewboxCell` calls it when its viewport size or its content size changes. No code of `FunGoo.Metro` and no code of the gallery reads a member through reflection. (`MetroShader` opens `System.Reflection` for `Assembly`, to load the embedded shader resource.)
 - The abstract cell types of the library and of the gallery are `MetroPivotCell`, `MetroHubCell`, `MetroFlipViewCell`, `MetroSemanticZoomCell`, `MetroLiveTileCell`, `MetroIndeterminateBarCell`, `MetroProgressRingCell`, `GalleryCell`, `ZoomTabCell`, and `InputsTabCell`. Each has a member that outside code drives, a member that a check reads, or a forwarding member.
 - `samples/MetroGallery` has one file module per tab (13 files). `Program.fs` holds the composition root and `main`: 75 lines, from 1429.
-- The gallery check has 10 steps (0 to 9) and uses the public API only.
+- The gallery check has 16 steps (0 to 15) and uses the public API only.
 
 Deviations from the steps table, with the reason:
 
@@ -280,7 +283,7 @@ Exceptions of gate 9 after the re-shape:
 1. **Reflection in three test files.** The gallery check uses the public API only since R9. The tests of each cell that the re-shape changed use the public API only. Three kinds of reflection remain, and each has its reason. (a) Style values: `readEntries`, `requireEntry`, `tryLastEntry`, and `boxShadowCount` in `ControlsTests` and `NavigationAndOverlaysTests` read `Style.Entries`, because a style value is write-only (hard fact 6). (b) One retained node: `findNodeByKey` in `ControlsTests` reads the entry node of a mounted widget, two times in the test of the Metro inputs, because a Goo.Widgets control has no public node. (c) Animation ticks: `pumpMotionFrames` in `MotionAndShaderTests` calls `Window.UpdateTree`. This is brittle. PR 7 makes the decision. New tests use the public API only.
 2. **Tile text color.** Tile text is black on the Blue accent, because `MetroAccent.fromColor` selects the contrast-safe foreground. Metrino paints white text on its iconic, live, and cycle tiles. Decide with the Metro skill and apply to all tiles.
 3. **Toggle thumb color.** The `controls` scene frame shows a dark thumb on the accent track in light mode. Review against the Metro skill.
-4. **Pivot header overflow.** `MetroPivotCell` clips its header strip (`OverflowX = Hidden`). The headers do not pan when they do not fit. The gallery reached this limit on 2026-11-23 with nine tabs at 1200 px, and two headers were shortened. Plan one small PR that lets the header strip pan without a visible scrollbar, and keeps keyboard navigation.
+4. **Pivot header overflow: resolved.** PR #14 lets the header strip pan without a visible scrollbar and keeps the active tab header in view.
 5. **Code shape: resolved.** R1 to R10 replaced each named class that held logic or state in `FunGoo.Metro`, `samples/MetroGallery`, and the tests. `as this` has no hit, each `inherit Cell` is an abstract cell type, and the 9 redundant calls of `Rebuild()` in the handlers of the widget inputs are gone.
 6. **Live tile timer callback: resolved.** R9c removed the `Rebuild()` call from the timer action of the live tile. Hard fact 15 has the measurement that permits it.
 7. **Public functions with four or more parameters.** `MetroMotion.cubicBezier` has 5, `Continuum.playEnter` and `Continuum.playExit` have 4, and `MetroContentDialog.build` has 5 (the properties and four callbacks). The re-shape did not change them, because they are the public API of controls that a planned row extends. `FunGoo.Metro` is not released. Move each into one contextual record when its row starts.
@@ -291,7 +294,7 @@ Exceptions of gate 9 after the re-shape:
    ```sh
    git fetch origin && git checkout main && git pull --ff-only
    ```
-2. Build and run all `56` headless tests plus the gallery check:
+2. Build and run all `171` headless tests plus the gallery check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj

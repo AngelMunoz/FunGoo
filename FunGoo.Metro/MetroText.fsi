@@ -52,6 +52,10 @@ type MetroTextProps = {
 [<RequireQualifiedAccess>]
 module MetroText =
 
+  val internal resolveTone: theme: MetroTheme * tone: MetroTextTone -> Color
+
+  val internal defaultHeadingLevel: role: MetroTextRole -> int voption
+
   /// Creates default <see cref="MetroTextProps"/> for
   /// <paramref name="content"/> and <paramref name="role"/> with primary tone,
   /// unlimited lines, wrapping enabled, and automatic heading semantics.

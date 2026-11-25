@@ -204,18 +204,30 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
       "controls"
       "flip-view"
       "lists"
+      "selection"
       "zoom"
       "motion"
       "overview"
       "inputs"
+      "datetime"
+      "overlays"
+      "notifications"
+      "navigation"
+      "primitives"
       "controls"
       "flip-view"
       "lists"
+      "selection"
       "zoom"
       "typography"
       "motion"
       "overview"
       "inputs"
+      "datetime"
+      "overlays"
+      "notifications"
+      "navigation"
+      "primitives"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -416,6 +428,276 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if zoomTabAgain.Builds <> buildsBefore + 1 then
     failwith
       "Expected the owner rule to rebuild the zoom tab once after a zoom request."
+
+  // 10. Selection tab: LongListSelector jump grid, ListPicker, and TreeView
+  // rebuild the tab through InvokeInputCallback with no manual Rebuild().
+  gallery.SelectTab "selection"
+  pump 2
+
+  let selectionTab =
+    requireSome(
+      "Expected the selection tab to be mounted.",
+      gallery.SelectionTab
+    )
+
+  let longList =
+    requireSome(
+      "Expected the long list selector to be mounted.",
+      selectionTab.LongList
+    )
+
+  let selBuildsBefore = selectionTab.Builds
+  longList.Handle(MetroLongListEvent.JumpOpenChanged true)
+  pump 2
+
+  if not longList.IsJumpOpen || selectionTab.Builds <> selBuildsBefore + 1 then
+    failwith "Expected long list jump grid to open in one host build."
+
+  longList.Handle(MetroLongListEvent.GroupJumped "g")
+  pump 2
+
+  if longList.IsJumpOpen || selectionTab.LastAction <> "Jumped to group g" then
+    failwith
+      $"Expected jump to 'g' to close jump grid, got '{selectionTab.LastAction}'."
+
+  let inlinePicker =
+    requireSome(
+      "Expected the inline list picker to be mounted.",
+      selectionTab.InlinePicker
+    )
+
+  inlinePicker.Handle(MetroListPickerEvent.OpenChanged true)
+  pump 2
+
+  if not inlinePicker.IsOpen then
+    failwith "Expected inline list picker to open."
+
+  inlinePicker.Handle(MetroListPickerEvent.Selected "pulse")
+  inlinePicker.Handle(MetroListPickerEvent.OpenChanged false)
+  pump 2
+
+  if inlinePicker.IsOpen || selectionTab.LastAction <> "Ringtone: pulse" then
+    failwith
+      $"Expected 'Ringtone: pulse' and closed picker, got '{selectionTab.LastAction}'."
+
+  selectionTab.TreeInput.OnExpandedChange.Invoke("samples", true)
+  pump 2
+  selectionTab.TreeInput.OnSelectionChange.Invoke([| "gallery" |])
+  pump 2
+
+  if
+    selectionTab.SelectedTreeIds <> [| "gallery" |]
+    || not(selectionTab.ExpandedTreeIds |> Array.contains "samples")
+  then
+    failwith "Expected tree view expand and select to update tab state."
+
+  // 11. Date and time tab: inline rollers and modal pickers rebuild the tab
+  // via InvokeInputCallback.
+  gallery.SelectTab "datetime"
+  pump 2
+
+  let dtTab =
+    requireSome("Expected the datetime tab to be mounted.", gallery.DateTimeTab)
+
+  let dateRoller = requireSome("Expected inline date roller.", dtTab.DateRoller)
+
+  let monthCol =
+    requireSome("Expected month roller column.", dateRoller.MonthRoller)
+
+  let dtBuildsBefore = dtTab.Builds
+  monthCol.Step(1)
+  pump 2
+
+  if
+    dtTab.RollerDate <> DateOnly(2026, 12, 24)
+    || dtTab.Builds <> dtBuildsBefore + 1
+  then
+    failwith
+      $"Expected roller date 2026-12-24 in one build, got {dtTab.RollerDate}."
+
+  let datePicker =
+    requireSome("Expected compact date picker.", dtTab.DatePicker)
+
+  datePicker.Handle(MetroDatePickerEvent.OpenChanged true)
+  pump 2
+
+  if not datePicker.IsOpen then
+    failwith "Expected compact date picker modal to open."
+
+  datePicker.Handle(MetroDatePickerEvent.DateCommitted(DateOnly(2027, 3, 15)))
+  pump 2
+
+  if
+    datePicker.IsOpen || dtTab.PickedDate <> ValueSome(DateOnly(2027, 3, 15))
+  then
+    failwith "Expected committed date 2027-03-15 and closed modal."
+
+  dtTab.CalendarInput.OnChange.Invoke(DateOnly(2026, 11, 30))
+  pump 2
+
+  if dtTab.CalendarDate <> ValueSome(DateOnly(2026, 11, 30)) then
+    failwith "Expected Calendar selection to update to 2026-11-30."
+
+  dtTab.CalendarDatePickerInput.OnChange.Invoke(Nullable())
+  pump 2
+
+  if dtTab.DropdownDate.IsSome then
+    failwith "Expected CalendarDatePicker clear to reset DropdownDate."
+
+  dtTab.CalendarDatePickerInput.OnChange.Invoke(Nullable(DateOnly(2026, 12, 1)))
+  pump 2
+
+  if dtTab.DropdownDate <> ValueSome(DateOnly(2026, 12, 1)) then
+    failwith "Expected CalendarDatePicker selection 2026-12-01."
+
+  // 12. Overlays tab: Flyout, MessageDialog, MenuFlyout, ContextMenu, and
+  // Tooltip mount and route callbacks cleanly.
+  gallery.SelectTab "overlays"
+  pump 2
+
+  let ovTab = requireSome("Expected overlays tab.", gallery.OverlaysTab)
+
+  let tooltip = requireSome("Expected tooltip cell.", ovTab.Tooltip)
+
+  if not tooltip.IsVisible then
+    failwith "Expected pinned showcase tooltip to be visible."
+
+  ovTab.MenuInput.OnClick.Invoke("pin")
+  pump 2
+
+  if ovTab.LastAction <> "Menu item: pin" then
+    failwith $"Expected 'Menu item: pin', got '{ovTab.LastAction}'."
+
+  ovTab.ContextMenuInput.OnClick.Invoke("inspect")
+  pump 2
+
+  if ovTab.LastAction <> "Context item: inspect" then
+    failwith $"Expected 'Context item: inspect', got '{ovTab.LastAction}'."
+
+  let msgDialog =
+    requireSome("Expected message dialog cell.", ovTab.MessageDialog)
+
+  let msgBuildsBefore = ovTab.Builds
+  msgDialog.Handle(MetroMessageDialogResult.CommandInvoked "save")
+  pump 2
+
+  if
+    ovTab.LastAction <> "Message command: save"
+    || ovTab.Builds <> msgBuildsBefore + 1
+  then
+    failwith
+      $"Expected 'Message command: save' in one build, got '{ovTab.LastAction}'."
+
+  // 13. Notifications tab: InfoBar, ToastHost, and TeachingTip mount and
+  // deliver callbacks cleanly.
+  gallery.SelectTab "notifications"
+  pump 2
+
+  let notifTab =
+    requireSome("Expected notifications tab.", gallery.NotificationsTab)
+
+  if notifTab.InfoOpenMask <> 0b1111 then
+    failwith "Expected all four info bars open initially."
+
+  notifTab.PushSampleToast()
+  pump 2
+
+  let toastHost = requireSome("Expected toast host cell.", notifTab.ToastHost)
+
+  if toastHost.ActiveCount <> 1 || notifTab.ToastCount <> 1 then
+    failwith "Expected 1 active toast after PushSampleToast."
+
+  toastHost.Dismiss "toast-1"
+  pump 2
+
+  if
+    toastHost.ActiveCount <> 0 || notifTab.LastAction <> "Dismissed toast-1"
+  then
+    failwith
+      $"Expected 'Dismissed toast-1', got '{notifTab.LastAction}' (count={toastHost.ActiveCount})."
+
+  notifTab.SetTipOpen true
+  pump 2
+
+  let tipCell = requireSome("Expected teaching tip cell.", notifTab.TeachingTip)
+
+  if not tipCell.IsPresented then
+    failwith "Expected teaching tip to be presented."
+
+  tipCell.InvokeAction()
+  pump 2
+
+  if
+    notifTab.TipOpen || notifTab.LastAction <> "Teaching tip action: Got It"
+  then
+    failwith
+      $"Expected closed tip with 'Teaching tip action: Got It', got '{notifTab.LastAction}'."
+
+  // 14. Navigation tab: SplitView, TabView, BreadcrumbBar, AppBar parts, and
+  // Panorama mount and deliver callbacks cleanly.
+  gallery.SelectTab "navigation"
+  pump 2
+
+  let navTab = requireSome("Expected navigation tab.", gallery.NavigationTab)
+
+  navTab.TabBarInput.OnAdd.Invoke()
+  pump 2
+
+  if navTab.TabCount <> 4 || navTab.ActiveSubTab <> "tab-4" then
+    failwith
+      $"Expected 4 tabs and active 'tab-4', got {navTab.TabCount} and '{navTab.ActiveSubTab}'."
+
+  navTab.TabBarInput.OnClose.Invoke "tab-4"
+  pump 2
+
+  if navTab.TabCount <> 3 then
+    failwith $"Expected 3 tabs after close, got {navTab.TabCount}."
+
+  navTab.BreadcrumbInput.OnSelect.Invoke "apps"
+  pump 2
+
+  if navTab.LastAction <> "Breadcrumb: apps" then
+    failwith $"Expected 'Breadcrumb: apps', got '{navTab.LastAction}'."
+
+  let pan = requireSome("Expected panorama cell.", navTab.Panorama)
+  pan.ScrollHandle.JumpTo(x = System.Nullable 100.0) |> ignore
+  pump 2
+
+  if abs(pan.TitleTranslate.Value.X - (-35.0)) > 0.5 then
+    failwith
+      $"Expected Panorama title parallax -35.0, got {pan.TitleTranslate.Value.X}."
+
+  // 15. Primitives & Layout tab: Icon, PersonPicture, Image, RichTextBlock,
+  // Expander, VariableSizedWrapGrid, WrapPanel, Viewbox, and ScrollViewer
+  // mount and switch modes cleanly.
+  gallery.SelectTab "primitives"
+  pump 2
+
+  let primTab = requireSome("Expected primitives tab.", gallery.PrimitivesTab)
+
+  if not primTab.ExpanderOpen then
+    failwith "Expected primitives expander open initially."
+
+  primTab.SetExpanderOpen false
+  primTab.SetGridOrientation MetroWrapOrientation.Vertical
+  primTab.SetViewboxStretch MetroStretch.Fill
+  pump 2
+
+  if
+    primTab.ExpanderOpen
+    || primTab.GridOrientation <> MetroWrapOrientation.Vertical
+    || primTab.ViewboxStretch <> MetroStretch.Fill
+  then
+    failwith "Expected PrimitivesTab state updates to apply cleanly."
+
+  // The responsive viewbox cell of the primitives tab mounted and scales its
+  // content.
+  let viewboxCell =
+    requireSome("Expected the responsive viewbox cell.", primTab.ViewboxCell)
+
+  if viewboxCell.ScaleX <= 0.0 || viewboxCell.ScaleY <= 0.0 then
+    failwith
+      $"Expected the responsive viewbox scale above 0.0, got {viewboxCell.ScaleX} and {viewboxCell.ScaleY}."
 
   printfn "MetroGallery checks passed."
   0

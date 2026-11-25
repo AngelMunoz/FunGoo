@@ -8,11 +8,17 @@ open FunGoo.Metro
 /// Gallery tabs that also register as named `goo render` scenes, in name order.
 let sceneTabs = [|
   "controls"
+  "datetime"
   "flip-view"
   "inputs"
   "lists"
   "motion"
+  "navigation"
+  "notifications"
+  "overlays"
   "overview"
+  "primitives"
+  "selection"
   "typography"
   "zoom"
 |]

@@ -654,3 +654,177 @@ let ``MetroTilt isolates press tilt per tile and suppresses tilt for disabled ch
   // Wrapping a disabled MetroButton suppresses pointer handlers automatically.
   Assert.Null(disabledWrap.OnPointerDown)
   Assert.False(disabledCell.State.IsPressed)
+
+[<Fact>]
+let ``ReducedMotion tooltip still waits for DelayMs before showing``() =
+  use host = createHost(500, 400)
+
+  let mutable tipRef: MetroTooltipCell voption = ValueNone
+
+  let factory() =
+    let cell = MetroTooltip.create()
+    tipRef <- ValueSome cell
+    cell
+
+  let input = {
+    MetroTooltip.defaults(Container(), "Delayed tip") with
+        DelayMs = 300.0
+  }
+
+  let root =
+    CaptureCell.create(fun () -> MetroTooltip.mountWith("tip", input, factory))
+
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  host.UpdatePreferences(
+    PlatformPreferences(Theme = SystemTheme.Dark, ReducedMotion = Nullable true)
+  )
+
+  pumpFrames(host, 2)
+
+  let tip = tipRef.Value
+  Assert.False(tip.IsVisible)
+
+  let mutable target: Container = null
+
+  root.DuringBuild(
+    host,
+    fun () ->
+      match findBlobByKey(tip.View, "metro-tooltip-target") with
+      | ValueSome blob -> target <- blob :?> Container
+      | ValueNone -> failwith "Expected tooltip target."
+  )
+
+  target.OnPointerEnter.Invoke(pointerAt(4.0, 4.0))
+  root.Rebuild()
+  tip.Rebuild()
+  pumpFrames(host, 2)
+
+  // The hover delay still gates the show under reduced motion.
+  Assert.False(tip.IsVisible)
+
+  // A window timer uses the wall clock, thus the test waits in real time for
+  // more than the delay. The next frames run the timer action.
+  System.Threading.Thread.Sleep(400)
+  pumpFrames(host, 3)
+  Assert.True(tip.IsVisible)
+
+[<Fact>]
+let ``MetroContentDialog 3D reopen continues progress instead of restarting``
+  ()
+  =
+  use host = createHost(900, 600)
+  let effect = createSyntheticEffect()
+  let mutable isOpen = false
+  let mutable dialogRef: MetroContentDialogCell voption = ValueNone
+
+  let factory() =
+    let cell =
+      MetroContentDialog.createWithEffect(
+        ValueSome effect,
+        (fun _ -> isOpen <- false),
+        fun () -> MetroText.body "3D body"
+      )
+
+    dialogRef <- ValueSome cell
+    cell
+
+  let root =
+    CaptureCell.create(fun () ->
+      MetroContentDialog.mount(
+        "dlg-3d-reopen",
+        MetroContentDialog.defaults("3D Dialog", isOpen),
+        factory
+      ))
+
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  let dlg = dialogRef.Value
+  Assert.False(dlg.IsVisible)
+
+  isOpen <- true
+  root.Rebuild()
+  pumpFrames(host, 25)
+  Assert.True(dlg.IsVisible)
+  Assert.Equal(MetroTiltMode.Perspective3D, dlg.Mode)
+  Assert.True(dlg.IsShaderAttached)
+  Assert.Equal(1.0, dlg.ProgressAnim.Target, 3)
+
+  // Start closing, then reopen mid-close while the dialog is still visible.
+  // Headless frames do not advance paint animation values, so the check
+  // observes the animation targets and visibility instead of the progress.
+  isOpen <- false
+  root.Rebuild()
+  pumpFrames(host, 10)
+  Assert.True(dlg.IsVisible)
+  Assert.True(dlg.IsAnimating)
+
+  isOpen <- true
+  root.Rebuild()
+  pumpFrames(host, 1)
+  Assert.True(dlg.IsVisible)
+  Assert.True(dlg.IsShaderAttached)
+  Assert.Equal(1.0, dlg.ProgressAnim.Target, 3)
+  Assert.True(dlg.IsAnimating)
+
+[<Fact>]
+let ``MetroContentDialog 2D reopen mid-close stays visible and retargets``() =
+  use host = createHost(900, 600)
+  let mutable isOpen = false
+  let mutable dialogRef: MetroContentDialogCell voption = ValueNone
+
+  let factory() =
+    let cell =
+      MetroContentDialog.createWithEffect(
+        ValueNone,
+        (fun _ -> isOpen <- false),
+        fun () -> MetroText.body "2D body"
+      )
+
+    dialogRef <- ValueSome cell
+    cell
+
+  let root =
+    CaptureCell.create(fun () ->
+      MetroContentDialog.mount(
+        "dlg-2d-reopen",
+        MetroContentDialog.defaults("2D Dialog", isOpen),
+        factory
+      ))
+
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  let dlg = dialogRef.Value
+  Assert.False(dlg.IsVisible)
+
+  isOpen <- true
+  root.Rebuild()
+  pumpFrames(host, 25)
+  Assert.True(dlg.IsVisible)
+  Assert.Equal(MetroTiltMode.Fallback2D, dlg.Mode)
+  Assert.False(dlg.IsShaderAttached)
+  Assert.Equal(1.0, dlg.ProgressAnim.Target, 3)
+
+  // Start closing, then reopen mid-close while the dialog is still visible.
+  isOpen <- false
+  root.Rebuild()
+  pumpFrames(host, 10)
+  Assert.True(dlg.IsVisible)
+  Assert.True(dlg.IsAnimating)
+
+  isOpen <- true
+  root.Rebuild()
+  pumpFrames(host, 1)
+  Assert.True(dlg.IsVisible)
+  Assert.Equal(1.0, dlg.ProgressAnim.Target, 3)
+  Assert.Equal(1.0, dlg.BackdropOpacity.Target, 3)
+  Assert.True(dlg.IsAnimating)

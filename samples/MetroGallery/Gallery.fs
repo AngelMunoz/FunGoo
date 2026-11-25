@@ -44,8 +44,26 @@ type GalleryCell() =
   /// The mounted semantic zoom tab, for the headless check.
   abstract ZoomTab: ZoomTab.ZoomTabCell voption
 
+  /// The mounted selection tab, for the headless check.
+  abstract SelectionTab: SelectionTab.SelectionTabCell voption
+
   /// The mounted inputs tab, for the headless check.
   abstract InputsTab: InputsTab.InputsTabCell voption
+
+  /// The mounted date and time tab, for the headless check.
+  abstract DateTimeTab: DateTimeTab.DateTimeTabCell voption
+
+  /// The mounted overlays tab, for the headless check.
+  abstract OverlaysTab: OverlaysTab.OverlaysTabCell voption
+
+  /// The mounted notifications tab, for the headless check.
+  abstract NotificationsTab: NotificationsTab.NotificationsTabCell voption
+
+  /// The mounted navigation tab, for the headless check.
+  abstract NavigationTab: NavigationTab.NavigationTabCell voption
+
+  /// The mounted primitives and layout tab, for the headless check.
+  abstract PrimitivesTab: PrimitivesTab.PrimitivesTabCell voption
 
   /// The mounted settings flyout, for the headless check.
   abstract SettingsFlyout: MetroSettingsFlyoutCell voption
@@ -118,8 +136,14 @@ type GalleryFactories = {
   ControlsTab: unit -> Cell
   FlipViewTab: unit -> Cell
   ListsTab: unit -> Cell
+  SelectionTab: unit -> Cell
   ZoomTab: unit -> Cell
   InputsTab: unit -> Cell
+  DateTimeTab: unit -> Cell
+  OverlaysTab: unit -> Cell
+  NotificationsTab: unit -> Cell
+  NavigationTab: unit -> Cell
+  PrimitivesTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
@@ -152,8 +176,29 @@ let pivotItems = [|
     Header = "flip view"
   }
   { Id = "lists"; Header = "lists" }
+  {
+    Id = "selection"
+    Header = "selection"
+  }
   { Id = "zoom"; Header = "zoom" }
   { Id = "inputs"; Header = "inputs" }
+  {
+    Id = "datetime"
+    Header = "date & time"
+  }
+  { Id = "overlays"; Header = "overlays" }
+  {
+    Id = "notifications"
+    Header = "notifications"
+  }
+  {
+    Id = "navigation"
+    Header = "navigation"
+  }
+  {
+    Id = "primitives"
+    Header = "primitives"
+  }
   { Id = "motion"; Header = "motion" }
 |]
 
@@ -525,8 +570,17 @@ let tabContent
   | "controls" -> Cell.Mount<Cell>("controls-tab", ctx.Factories.ControlsTab)
   | "flip-view" -> Cell.Mount<Cell>("flip-view-tab", ctx.Factories.FlipViewTab)
   | "lists" -> Cell.Mount<Cell>("lists-tab", ctx.Factories.ListsTab)
+  | "selection" -> Cell.Mount<Cell>("selection-tab", ctx.Factories.SelectionTab)
   | "zoom" -> Cell.Mount<Cell>("zoom-tab", ctx.Factories.ZoomTab)
   | "inputs" -> Cell.Mount<Cell>("inputs-tab", ctx.Factories.InputsTab)
+  | "datetime" -> Cell.Mount<Cell>("datetime-tab", ctx.Factories.DateTimeTab)
+  | "overlays" -> Cell.Mount<Cell>("overlays-tab", ctx.Factories.OverlaysTab)
+  | "notifications" ->
+    Cell.Mount<Cell>("notifications-tab", ctx.Factories.NotificationsTab)
+  | "navigation" ->
+    Cell.Mount<Cell>("navigation-tab", ctx.Factories.NavigationTab)
+  | "primitives" ->
+    Cell.Mount<Cell>("primitives-tab", ctx.Factories.PrimitivesTab)
   | "motion" ->
     MotionTab.view(ctx.Factories.ContinuumDemo, ctx.Factories.StaggerDemo)
   | _ -> TypographyTab.view()
@@ -746,8 +800,21 @@ let create
 
   // The mounted cells, for the headless check of the gallery.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
+  let mutable selectionTabRef: SelectionTab.SelectionTabCell voption = ValueNone
   let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
   let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
+  let mutable dateTimeTabRef: DateTimeTab.DateTimeTabCell voption = ValueNone
+  let mutable overlaysTabRef: OverlaysTab.OverlaysTabCell voption = ValueNone
+
+  let mutable notificationsTabRef: NotificationsTab.NotificationsTabCell voption =
+    ValueNone
+
+  let mutable navigationTabRef: NavigationTab.NavigationTabCell voption =
+    ValueNone
+
+  let mutable primitivesTabRef: PrimitivesTab.PrimitivesTabCell voption =
+    ValueNone
+
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
   let mutable dialogRef: MetroContentDialogCell voption = ValueNone
 
@@ -818,6 +885,11 @@ let create
     ControlsTab = fun () -> ControlsTab.create state.Store
     FlipViewTab = FlipViewTab.create
     ListsTab = ListsTab.create
+    SelectionTab =
+      fun () ->
+        let tab = SelectionTab.create()
+        selectionTabRef <- ValueSome tab
+        tab :> Cell
     ZoomTab =
       fun () ->
         let tab = ZoomTab.create()
@@ -827,6 +899,31 @@ let create
       fun () ->
         let tab = InputsTab.create()
         inputsTabRef <- ValueSome tab
+        tab :> Cell
+    DateTimeTab =
+      fun () ->
+        let tab = DateTimeTab.create()
+        dateTimeTabRef <- ValueSome tab
+        tab :> Cell
+    OverlaysTab =
+      fun () ->
+        let tab = OverlaysTab.create()
+        overlaysTabRef <- ValueSome tab
+        tab :> Cell
+    NotificationsTab =
+      fun () ->
+        let tab = NotificationsTab.create()
+        notificationsTabRef <- ValueSome tab
+        tab :> Cell
+    NavigationTab =
+      fun () ->
+        let tab = NavigationTab.create()
+        navigationTabRef <- ValueSome tab
+        tab :> Cell
+    PrimitivesTab =
+      fun () ->
+        let tab = PrimitivesTab.create()
+        primitivesTabRef <- ValueSome tab
         tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
@@ -870,8 +967,14 @@ let create
       override _.SettingsOpen = state.SettingsOpen
       override _.DialogOpen = state.DialogOpen
       override _.Pivot = pivotRef
+      override _.SelectionTab = selectionTabRef
       override _.ZoomTab = zoomTabRef
       override _.InputsTab = inputsTabRef
+      override _.DateTimeTab = dateTimeTabRef
+      override _.OverlaysTab = overlaysTabRef
+      override _.NotificationsTab = notificationsTabRef
+      override _.NavigationTab = navigationTabRef
+      override _.PrimitivesTab = primitivesTabRef
       override _.SettingsFlyout = flyoutRef
       override _.ContentDialog = dialogRef
       override _.Builds = state.Builds

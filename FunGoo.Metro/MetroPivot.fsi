@@ -29,12 +29,17 @@ type MetroPivotInput = {
 }
 
 /// Stateful Metro Pivot navigation cell with peeking light-weight headers,
-/// keyboard and pointer-swipe navigation, and animated content transitions.
+/// horizontal header panning without a visible scrollbar, keyboard and
+/// pointer-swipe navigation, and animated content transitions.
 /// <c>MetroPivot.create</c> makes the cell. The type holds the surface that
 /// hosts and tests use.
 [<AbstractClass>]
 type MetroPivotCell =
   inherit Cell<MetroPivotInput>
+
+  /// Handle of the horizontally scrollable header strip. A test or host reads
+  /// or scrolls it.
+  abstract HeaderScrollHandle: ElementHandle
 
   /// Current paint-bound content translation animation. A test reads it.
   abstract ContentTranslate: Anim<Point>

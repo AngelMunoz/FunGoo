@@ -622,6 +622,7 @@ module MetroSettingsFlyout =
         Portal(
           FocusScope = FocusScopeOptions(Modal = true, RestoreFocus = true),
           Scrim = Nullable scrim,
+          ZIndex = 50,
           OnDismiss = Action<PopupDismissReason>(fun _ -> onDismiss()),
           Width = Length.Percent 100.0,
           Height = Length.Percent 100.0,
@@ -767,6 +768,7 @@ module MetroSettingsFlyout =
         Portal(
           FocusScope = FocusScopeOptions(Modal = true, RestoreFocus = true),
           Scrim = Nullable Color.Transparent,
+          ZIndex = 50,
           OnDismiss = ctx.DismissPortal,
           Width = Length.Percent 100.0,
           Height = Length.Percent 100.0,
@@ -923,6 +925,7 @@ module MetroContentDialog =
         Portal(
           FocusScope = FocusScopeOptions(Modal = true, RestoreFocus = true),
           Scrim = Nullable scrim,
+          ZIndex = 50,
           Width = Length.Percent 100.0,
           Height = Length.Percent 100.0,
           FlexDirection = FlexDirection.Column,
@@ -1043,19 +1046,36 @@ module MetroContentDialog =
               MetroPerspective.dialogSwivel(0.0, true)
             )
 
-            state.Progress.Play(0.0, 1.0, OverlayInternals.dialogSpec)
+            if wasVisible then
+              // A reopen during the close animation continues from the
+              // current value; Play would snap back to the start value.
+              state.Progress.To(1.0, OverlayInternals.dialogSpec)
+            else
+              state.Progress.Play(0.0, 1.0, OverlayInternals.dialogSpec)
           | ValueNone ->
             state.ShaderAttached <- false
 
-            state.BandTranslate.Play(
-              Point(X = 0.0, Y = -20.0),
-              OverlayInternals.zeroPoint,
-              OverlayInternals.dialogSpec
-            )
+            if wasVisible then
+              // A reopen during the close animation continues from the
+              // current values; Play would snap to the start values.
+              state.BandTranslate.To(
+                OverlayInternals.zeroPoint,
+                OverlayInternals.dialogSpec
+              )
 
-            state.BandScale.Play(0.88, 1.0, OverlayInternals.dialogSpec)
-            state.BandOpacity.Play(0.0, 1.0, OverlayInternals.dialogSpec)
-            state.Progress.Play(0.0, 1.0, OverlayInternals.dialogSpec)
+              state.BandScale.To(1.0, OverlayInternals.dialogSpec)
+              state.BandOpacity.To(1.0, OverlayInternals.dialogSpec)
+              state.Progress.To(1.0, OverlayInternals.dialogSpec)
+            else
+              state.BandTranslate.Play(
+                Point(X = 0.0, Y = -20.0),
+                OverlayInternals.zeroPoint,
+                OverlayInternals.dialogSpec
+              )
+
+              state.BandScale.Play(0.88, 1.0, OverlayInternals.dialogSpec)
+              state.BandOpacity.Play(0.0, 1.0, OverlayInternals.dialogSpec)
+              state.Progress.Play(0.0, 1.0, OverlayInternals.dialogSpec)
       elif not input.Open && wasOpen then
         if reducedMotion then
           snapDialog(state, false)
@@ -1137,6 +1157,7 @@ module MetroContentDialog =
         Portal(
           FocusScope = FocusScopeOptions(Modal = true, RestoreFocus = true),
           Scrim = Nullable Color.Transparent,
+          ZIndex = 50,
           Width = Length.Percent 100.0,
           Height = Length.Percent 100.0,
           FlexDirection = FlexDirection.Column,
