@@ -104,25 +104,22 @@ let density(store: GalleryStore) : Blob =
       MetroText.caption "DENSITY",
       MetroRadioButton.build(
         {
-          Label = "Compact"
-          Selected = store.RadioChoice = "compact"
-          Disabled = false
+          MetroRadioButton.defaults "Compact" with
+              Selected = store.RadioChoice = "compact"
         },
         fun () -> store.RadioChoice <- "compact"
       ),
       MetroRadioButton.build(
         {
-          Label = "Comfortable"
-          Selected = store.RadioChoice = "comfortable"
-          Disabled = false
+          MetroRadioButton.defaults "Comfortable" with
+              Selected = store.RadioChoice = "comfortable"
         },
         fun () -> store.RadioChoice <- "comfortable"
       ),
       MetroRadioButton.build(
         {
-          Label = "Touch"
-          Selected = store.RadioChoice = "touch"
-          Disabled = false
+          MetroRadioButton.defaults "Touch" with
+              Selected = store.RadioChoice = "touch"
         },
         fun () -> store.RadioChoice <- "touch"
       )
@@ -146,9 +143,8 @@ let toggles(store: GalleryStore) : Blob =
       ),
       MetroCheckBox.build(
         {
-          Label = "Enable sharp borders"
-          Checked = store.CheckAccepted
-          Disabled = false
+          MetroCheckBox.defaults "Enable sharp borders" with
+              Checked = store.CheckAccepted
         },
         fun value -> store.CheckAccepted <- value
       ),
@@ -156,7 +152,7 @@ let toggles(store: GalleryStore) : Blob =
     )
 
 /// The slider, the two progress bars, and the progress ring.
-let progress(store: GalleryStore, onSliderChange: float -> unit) : Blob =
+let progress(store: GalleryStore, sliderCell: MetroSliderCell) : Blob =
   Container(
     FlexDirection = FlexDirection.Column,
     Gap = Length.Pixels 12.0,
@@ -166,14 +162,13 @@ let progress(store: GalleryStore, onSliderChange: float -> unit) : Blob =
       MetroText.header "slider & progress",
       Container()
         .Children(
-          MetroSlider.mount(
+          sliderCell.Mount(
             "gallery-slider",
             {
               MetroSlider.defaults(store.SliderValue, 0.0, 100.0) with
                   Label = ValueSome $"Completion ({int store.SliderValue}%%)"
                   Step = 5.0
-            },
-            onSliderChange
+            }
           )
         ),
       MetroText.caption "DETERMINATE",
@@ -212,7 +207,7 @@ let progress(store: GalleryStore, onSliderChange: float -> unit) : Blob =
     )
 
 /// The controls tab: one section for each kind of control.
-let view(store: GalleryStore, onSliderChange: float -> unit) : Blob =
+let view(store: GalleryStore, sliderCell: MetroSliderCell) : Blob =
   Container(
     FlexDirection = FlexDirection.Column,
     FlexGrow = 1.0,
@@ -232,7 +227,7 @@ let view(store: GalleryStore, onSliderChange: float -> unit) : Blob =
         .Children(MetroText.header "buttons", buttons store),
       fields store,
       toggles store,
-      progress(store, onSliderChange)
+      progress(store, sliderCell)
     )
 
 /// Creates the controls tab. The tab reads its values in
@@ -241,13 +236,12 @@ let view(store: GalleryStore, onSliderChange: float -> unit) : Blob =
 /// control callback. Thus a handler writes the value, and no handler calls
 /// `Rebuild()`.
 let create(store: GalleryStore) : Cell =
-  // Created once. F# converts the function to a delegate at each build. The
-  // target of each delegate is this function value, so the slider input of
-  // two builds compares equal, and an unchanged input does not rebuild the
-  // slider.
-  let onSliderChange(value: float) = store.SliderValue <- value
+  // Created once. The cell owns one cached change delegate, so the slider
+  // input of two builds compares equal, and an unchanged input does not
+  // rebuild the slider.
+  let sliderCell = MetroSlider.create(fun value -> store.SliderValue <- value)
 
   {
     new Cell() with
-      override _.Build() : Blob = view(store, onSliderChange)
+      override _.Build() : Blob = view(store, sliderCell)
   }

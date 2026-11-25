@@ -1,11 +1,21 @@
 module FunGoo.Metro.Tests.NumberRatingTests
 
 open System
+open System.Reflection
 open Xunit
 open Goo
+open Goo.Widgets.Inputs
 open FunGoo.Metro
 open FunGoo.Metro.Tests.TestHost
 open FunGoo.Metro.Tests.TestSupport
+
+let private flags =
+  BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Instance
+
+/// Reads the widget input of a mounted widget blob.
+let private mountedInput<'input>(blob: Blob) : 'input =
+  blob.GetType().GetField("<Input>k__BackingField", flags).GetValue(blob)
+  :?> 'input
 
 /// Mounts `build` in a headless window and returns the built tree.
 let private mountInWindow(build: unit -> Blob) : Blob =
@@ -70,9 +80,27 @@ let ``MetroNumberBox maps props with spin buttons and mounts``() =
   Assert.True(locked.Disabled)
   Assert.True(locked.ReadOnly)
 
+  let numberCell = MetroNumberBox.create(changes.Add)
+  let mutable numberSecond: Blob = null
+
   Assert.NotNull(
-    mountInWindow(fun () -> MetroNumberBox.mount("number", props, onChange))
+    mountInWindow(fun () ->
+      numberSecond <- numberCell.Mount("number-again", props)
+      numberCell.Mount("number", props))
   )
+
+  // The cell owns one cached delegate: a second mount carries the same
+  // callback instance, and it delivers value changes to the handler.
+  let numberFirst =
+    mountedInput<NumberInputInput>(numberCell.Mount("number", props))
+
+  Assert.Same(
+    (mountedInput<NumberInputInput> numberSecond).OnChange,
+    numberFirst.OnChange
+  )
+
+  numberFirst.OnChange.Invoke(14.0)
+  assertListEqual([ 13.0; 14.0 ], List.ofSeq changes)
 
 [<Fact>]
 let ``MetroRating maps props and mounts``() =
@@ -132,6 +160,24 @@ let ``MetroRating maps props and mounts``() =
   Assert.True(readOnly.ReadOnly)
   Assert.True(readOnly.Disabled)
 
+  let ratingCell = MetroRating.create(changes.Add)
+  let mutable ratingSecond: Blob = null
+
   Assert.NotNull(
-    mountInWindow(fun () -> MetroRating.mount("rating", props, onChange))
+    mountInWindow(fun () ->
+      ratingSecond <- ratingCell.Mount("rating-again", props)
+      ratingCell.Mount("rating", props))
   )
+
+  // The cell owns one cached delegate: a second mount carries the same
+  // callback instance, and it delivers value changes to the handler.
+  let ratingFirst =
+    mountedInput<RatingControlInput>(ratingCell.Mount("rating", props))
+
+  Assert.Same(
+    (mountedInput<RatingControlInput> ratingSecond).OnChange,
+    ratingFirst.OnChange
+  )
+
+  ratingFirst.OnChange.Invoke(5.0)
+  assertListEqual([ 4.0; 5.0 ], List.ofSeq changes)

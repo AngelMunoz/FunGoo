@@ -80,17 +80,16 @@ type InputsState = {
   mutable CityQuery: string
 }
 
-/// The factories and the callbacks that the functions of the tab work on.
-/// `create` makes them once. F# converts a function to a delegate at each
-/// build, and the target of the delegate is the function value. Thus the
-/// input of two builds compares equal, and an unchanged input does not
+/// The factories and the cells that the functions of the tab mount through.
+/// `create` makes them once. Each cell owns one cached change delegate, so
+/// the input of two builds compares equal, and an unchanged input does not
 /// rebuild a widget.
 type InputsContext = {
   State: InputsState
   SizeFactory: IMetroComboBoxFactory
   CityFactory: IMetroComboBoxFactory
-  OnQuantityChange: float -> unit
-  OnRatingChange: float -> unit
+  NumberCell: MetroNumberBoxCell
+  RatingCell: MetroRatingCell
 }
 
 let applySize(state: InputsState, event: MetroComboBoxEvent) : unit =
@@ -154,7 +153,7 @@ let build(ctx: InputsContext) : Blob =
         Gap = Length.Pixels 48.0
       )
         .Children(
-          MetroNumberBox.mount(
+          ctx.NumberCell.Mount(
             "gallery-number",
             {
               MetroNumberBox.defaults state.Quantity with
@@ -163,16 +162,14 @@ let build(ctx: InputsContext) : Blob =
                   Step = ValueSome 0.5
                   Label = ValueSome "quantity"
                   Width = ValueSome(Length.Pixels 200.0)
-            },
-            ctx.OnQuantityChange
+            }
           ),
-          MetroRating.mount(
+          ctx.RatingCell.Mount(
             "gallery-rating",
             {
               MetroRating.defaults state.Rating with
                   AccessibilityName = ValueSome "rating"
-            },
-            ctx.OnRatingChange
+            }
           )
         ),
       MetroText.secondary
@@ -204,20 +201,16 @@ let create() : InputsTabCell =
     CityQuery = ""
   }
 
-  let onQuantityChange(value: float) = state.Quantity <- value
-
-  let onRatingChange(value: float) = state.Rating <- value
-
-  // One factory per control: each control has its own values, and the events
-  // do not name the control.
+  // One factory or cell per control: each control has its own values, and
+  // the events do not name the control.
   let ctx: InputsContext = {
     State = state
     SizeFactory =
       MetroComboBox.createFactory(fun event -> applySize(state, event))
     CityFactory =
       MetroComboBox.createFactory(fun event -> applyCity(state, event))
-    OnQuantityChange = onQuantityChange
-    OnRatingChange = onRatingChange
+    NumberCell = MetroNumberBox.create(fun value -> state.Quantity <- value)
+    RatingCell = MetroRating.create(fun value -> state.Rating <- value)
   }
 
   {

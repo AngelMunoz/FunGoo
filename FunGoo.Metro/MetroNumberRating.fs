@@ -23,8 +23,16 @@ module NumberRatingInternals =
     | ValueSome v -> Nullable v
     | ValueNone -> Nullable()
 
+[<AbstractClass>]
+type MetroNumberBoxCell() =
+  inherit Cell<MetroNumberBoxProps>()
+
+  abstract Mount: key: string * props: MetroNumberBoxProps -> Blob
+
 [<RequireQualifiedAccess>]
 module MetroNumberBox =
+
+  let numberSubKey = "number"
 
   let defaults(value: float) : MetroNumberBoxProps = {
     Value = value
@@ -56,10 +64,20 @@ module MetroNumberBox =
       OnChange = onChange
     )
 
-  let mount
-    (key: string, props: MetroNumberBoxProps, onChange: Action<float>)
-    : Blob =
-    Cell.Mount<NumberInputInput, NumberInput>(key, toInput(props, onChange))
+  let create(onChange: float -> unit) : MetroNumberBoxCell =
+    let handler = Action<float>(onChange)
+
+    let mountWidget(key: string, props: MetroNumberBoxProps) : Blob =
+      Cell.Mount<NumberInputInput, NumberInput>(key, toInput(props, handler))
+
+    {
+      new MetroNumberBoxCell() with
+        override _.Build(props: MetroNumberBoxProps) : Blob =
+          mountWidget(numberSubKey, props)
+
+        override _.Mount(key: string, props: MetroNumberBoxProps) : Blob =
+          mountWidget(key, props)
+    }
 
 [<Struct; NoComparison>]
 type MetroRatingProps = {
@@ -71,8 +89,16 @@ type MetroRatingProps = {
   Disabled: bool
 }
 
+[<AbstractClass>]
+type MetroRatingCell() =
+  inherit Cell<MetroRatingProps>()
+
+  abstract Mount: key: string * props: MetroRatingProps -> Blob
+
 [<RequireQualifiedAccess>]
 module MetroRating =
+
+  let ratingSubKey = "rating"
 
   let defaults(value: float) : MetroRatingProps = {
     Value = value
@@ -104,7 +130,20 @@ module MetroRating =
       AccessibilityName = ValueOption.defaultValue null props.AccessibilityName
     )
 
-  let mount
-    (key: string, props: MetroRatingProps, onChange: Action<float>)
-    : Blob =
-    Cell.Mount<RatingControlInput, RatingControl>(key, toInput(props, onChange))
+  let create(onChange: float -> unit) : MetroRatingCell =
+    let handler = Action<float>(onChange)
+
+    let mountWidget(key: string, props: MetroRatingProps) : Blob =
+      Cell.Mount<RatingControlInput, RatingControl>(
+        key,
+        toInput(props, handler)
+      )
+
+    {
+      new MetroRatingCell() with
+        override _.Build(props: MetroRatingProps) : Blob =
+          mountWidget(ratingSubKey, props)
+
+        override _.Mount(key: string, props: MetroRatingProps) : Blob =
+          mountWidget(key, props)
+    }

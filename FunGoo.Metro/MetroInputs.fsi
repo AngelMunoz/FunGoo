@@ -1,6 +1,5 @@
 namespace FunGoo.Metro
 
-open System
 open Goo
 
 /// Data-only properties for a sharp, 2 px bordered Metro text input field.
@@ -87,6 +86,10 @@ type MetroCheckBoxProps = {
 [<RequireQualifiedAccess>]
 module MetroCheckBox =
 
+  /// Creates default <see cref="MetroCheckBoxProps"/> for
+  /// <paramref name="label"/>: unchecked and enabled.
+  val defaults: label: string -> MetroCheckBoxProps
+
   /// Builds a Metro-styled checkbox <see cref="Blob"/> with zero corner radius
   /// and 2 px borders.
   val build: props: MetroCheckBoxProps * onChange: (bool -> unit) -> Blob
@@ -106,6 +109,10 @@ type MetroRadioButtonProps = {
 /// <see cref="Goo.Widgets.Inputs.RadioButton"/>.
 [<RequireQualifiedAccess>]
 module MetroRadioButton =
+
+  /// Creates default <see cref="MetroRadioButtonProps"/> for
+  /// <paramref name="label"/>: unselected and enabled.
+  val defaults: label: string -> MetroRadioButtonProps
 
   /// Builds a Metro-styled radio button <see cref="Blob"/> with 2 px indicator
   /// borders and theme accent selection colors.
@@ -128,7 +135,20 @@ type MetroSliderProps = {
   Disabled: bool
 }
 
-/// Metro slider mounter wrapping <see cref="Goo.Widgets.Inputs.Slider"/>.
+/// Stateful Metro slider cell. <c>MetroSlider.create</c> makes the cell with
+/// one cached change delegate, so every mount carries the same callback
+/// instance and an unchanged input does not rebuild the widget.
+[<AbstractClass>]
+type MetroSliderCell =
+  inherit Cell<MetroSliderProps>
+
+  /// Mounts the slider widget under stable <paramref name="key"/> with
+  /// <paramref name="props"/> and the cached change delegate of this cell,
+  /// with sharp zero-radius thumb and track geometry.
+  abstract Mount: key: string * props: MetroSliderProps -> Blob
+
+/// Metro slider cell constructors wrapping
+/// <see cref="Goo.Widgets.Inputs.Slider"/>.
 [<RequireQualifiedAccess>]
 module MetroSlider =
 
@@ -137,9 +157,10 @@ module MetroSlider =
   val defaults:
     value: float * minValue: float * maxValue: float -> MetroSliderProps
 
-  /// Mounts a stateful <see cref="Goo.Widgets.Inputs.Slider"/> under stable
-  /// <paramref name="key"/> with sharp zero-radius thumb and track geometry.
-  /// Cache <paramref name="onChange"/> outside <c>Build</c> to preserve input
-  /// equality.
-  val mount:
-    key: string * props: MetroSliderProps * onChange: Action<float> -> Blob
+  /// Creates a <see cref="MetroSliderCell"/> delivering value changes to
+  /// <paramref name="onChange"/>. Create the cell once, outside
+  /// <c>Build</c>, and mount through <see cref="MetroSliderCell.Mount"/>.
+  /// Because the widget delivers its callbacks through
+  /// <c>InvokeInputCallback</c>, the owner rule rebuilds the host cell
+  /// automatically.
+  val create: onChange: (float -> unit) -> MetroSliderCell

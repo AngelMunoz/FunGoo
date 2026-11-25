@@ -265,6 +265,12 @@ type MetroCheckBoxProps = {
 [<RequireQualifiedAccess>]
 module MetroCheckBox =
 
+  let defaults(label: string) : MetroCheckBoxProps = {
+    Label = label
+    Checked = false
+    Disabled = false
+  }
+
   let build(props: MetroCheckBoxProps, onChange: bool -> unit) : Blob =
     let theme = Metro.read()
     let p = theme.Palette
@@ -317,6 +323,12 @@ type MetroRadioButtonProps = {
 
 [<RequireQualifiedAccess>]
 module MetroRadioButton =
+
+  let defaults(label: string) : MetroRadioButtonProps = {
+    Label = label
+    Selected = false
+    Disabled = false
+  }
 
   let metroBorder = Edges(Length.Pixels 2.0)
   let zeroRadius = Length.Pixels 0.0
@@ -377,8 +389,16 @@ type MetroSliderProps = {
   Disabled: bool
 }
 
+[<AbstractClass>]
+type MetroSliderCell() =
+  inherit Cell<MetroSliderProps>()
+
+  abstract Mount: key: string * props: MetroSliderProps -> Blob
+
 [<RequireQualifiedAccess>]
 module MetroSlider =
+
+  let sliderSubKey = "slider"
 
   let defaults
     (value: float, minValue: float, maxValue: float)
@@ -391,39 +411,51 @@ module MetroSlider =
     Disabled = false
   }
 
-  let mount
-    (key: string, props: MetroSliderProps, onChange: Action<float>)
-    : Blob =
+  let private inputOf
+    (props: MetroSliderProps, onChange: Action<float>)
+    : SliderInput =
     let theme = Metro.read()
     let p = theme.Palette
     let a = theme.Accent
 
-    let input =
-      SliderInput(
-        Value = props.Value,
-        Minimum = Nullable props.Min,
-        Maximum = Nullable props.Max,
-        Step = (if props.Step > 0.0 then Nullable props.Step else Nullable()),
-        Label = ValueOption.defaultValue null props.Label,
-        Disabled = props.Disabled,
-        OnChange = onChange,
-        ThumbRadius = Nullable 0.0,
-        TrackRadius = Nullable 0.0,
-        TrackThickness = Nullable 4.0,
-        ThumbSize = Nullable 16.0,
-        ThumbBorderWidth = Nullable 0.0,
-        FillColor = Nullable a.Base,
-        ThumbColor = Nullable a.Base,
-        TrackColor =
-          Nullable(if theme.HighContrast then p.Foreground else p.Border),
-        LabelColor = Nullable p.Foreground,
-        ValueColor = Nullable p.ForegroundSecondary,
-        LabelFontSize =
-          Nullable(
-            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
-          ),
-        FocusOutlineColor = Nullable p.Foreground,
-        DisabledOpacity = Nullable(if theme.HighContrast then 1.0 else 0.4)
-      )
+    SliderInput(
+      Value = props.Value,
+      Minimum = Nullable props.Min,
+      Maximum = Nullable props.Max,
+      Step = (if props.Step > 0.0 then Nullable props.Step else Nullable()),
+      Label = ValueOption.defaultValue null props.Label,
+      Disabled = props.Disabled,
+      OnChange = onChange,
+      ThumbRadius = Nullable 0.0,
+      TrackRadius = Nullable 0.0,
+      TrackThickness = Nullable 4.0,
+      ThumbSize = Nullable 16.0,
+      ThumbBorderWidth = Nullable 0.0,
+      FillColor = Nullable a.Base,
+      ThumbColor = Nullable a.Base,
+      TrackColor =
+        Nullable(if theme.HighContrast then p.Foreground else p.Border),
+      LabelColor = Nullable p.Foreground,
+      ValueColor = Nullable p.ForegroundSecondary,
+      LabelFontSize =
+        Nullable(
+          MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+        ),
+      FocusOutlineColor = Nullable p.Foreground,
+      DisabledOpacity = Nullable(if theme.HighContrast then 1.0 else 0.4)
+    )
 
-    Cell.Mount<SliderInput, Slider>(key, input)
+  let create(onChange: float -> unit) : MetroSliderCell =
+    let handler = Action<float>(onChange)
+
+    let mountWidget(key: string, props: MetroSliderProps) : Blob =
+      Cell.Mount<SliderInput, Slider>(key, inputOf(props, handler))
+
+    {
+      new MetroSliderCell() with
+        override _.Build(props: MetroSliderProps) : Blob =
+          mountWidget(sliderSubKey, props)
+
+        override _.Mount(key: string, props: MetroSliderProps) : Blob =
+          mountWidget(key, props)
+    }

@@ -26,6 +26,17 @@ type MetroNumberBoxProps = {
   Width: Length voption
 }
 
+/// Stateful Metro number box cell. <c>MetroNumberBox.create</c> makes the
+/// cell with one cached change delegate, so every mount carries the same
+/// callback instance and an unchanged input does not rebuild the box.
+[<AbstractClass>]
+type MetroNumberBoxCell =
+  inherit Cell<MetroNumberBoxProps>
+
+  /// Mounts the number box widget under stable <paramref name="key"/> with
+  /// <paramref name="props"/> and the cached change delegate of this cell.
+  abstract Mount: key: string * props: MetroNumberBoxProps -> Blob
+
 /// Metro number box on <see cref="Goo.Widgets.Inputs.NumberInput"/>: a sharp
 /// entry with spin buttons, under the Metro widget theme.
 [<RequireQualifiedAccess>]
@@ -40,11 +51,13 @@ module MetroNumberBox =
   val toInput:
     props: MetroNumberBoxProps * onChange: Action<float> -> NumberInputInput
 
-  /// Mounts a number box under the stable <paramref name="key"/>. Cache
-  /// <paramref name="onChange"/> outside <c>Build</c>, so that an unchanged
-  /// input does not rebuild the box.
-  val mount:
-    key: string * props: MetroNumberBoxProps * onChange: Action<float> -> Blob
+  /// Creates a <see cref="MetroNumberBoxCell"/> delivering value changes to
+  /// <paramref name="onChange"/>. Create the cell once, outside
+  /// <c>Build</c>, and mount through <see cref="MetroNumberBoxCell.Mount"/>.
+  /// Because the widget delivers its callbacks through
+  /// <c>InvokeInputCallback</c>, the owner rule rebuilds the host cell
+  /// automatically.
+  val create: onChange: (float -> unit) -> MetroNumberBoxCell
 
 /// Data-only properties for a Metro rating control.
 [<Struct; NoComparison>]
@@ -64,6 +77,17 @@ type MetroRatingProps = {
   Disabled: bool
 }
 
+/// Stateful Metro rating cell. <c>MetroRating.create</c> makes the cell with
+/// one cached change delegate, so every mount carries the same callback
+/// instance and an unchanged input does not rebuild the control.
+[<AbstractClass>]
+type MetroRatingCell =
+  inherit Cell<MetroRatingProps>
+
+  /// Mounts the rating widget under stable <paramref name="key"/> with
+  /// <paramref name="props"/> and the cached change delegate of this cell.
+  abstract Mount: key: string * props: MetroRatingProps -> Blob
+
 /// Metro rating control on <see cref="Goo.Widgets.Inputs.RatingControl"/>, with
 /// the accent color of the active Metro theme.
 [<RequireQualifiedAccess>]
@@ -77,8 +101,10 @@ module MetroRating =
   val toInput:
     props: MetroRatingProps * onChange: Action<float> -> RatingControlInput
 
-  /// Mounts a rating control under the stable <paramref name="key"/>. Cache
-  /// <paramref name="onChange"/> outside <c>Build</c>, so that an unchanged
-  /// input does not rebuild the control.
-  val mount:
-    key: string * props: MetroRatingProps * onChange: Action<float> -> Blob
+  /// Creates a <see cref="MetroRatingCell"/> delivering value changes to
+  /// <paramref name="onChange"/>. Create the cell once, outside
+  /// <c>Build</c>, and mount through <see cref="MetroRatingCell.Mount"/>.
+  /// Because the widget delivers its callbacks through
+  /// <c>InvokeInputCallback</c>, the owner rule rebuilds the host cell
+  /// automatically.
+  val create: onChange: (float -> unit) -> MetroRatingCell

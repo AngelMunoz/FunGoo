@@ -556,7 +556,9 @@ let ``Metro inputs configure sharp Metro styling semantics and callbacks``() =
   let mutable toggleValue: bool voption = ValueNone
   let mutable checkValue: bool voption = ValueNone
   let mutable radioSelected = 0
-  let sliderHandler = Action<float>(fun _ -> ())
+  let mutable sliderSeen = -1.0
+  let sliderCell = MetroSlider.create(fun value -> sliderSeen <- value)
+  let mutable sliderSecond: Blob = null
 
   let darkConfig = {
     MetroConfig.defaultConfig with
@@ -566,8 +568,16 @@ let ``Metro inputs configure sharp Metro styling semantics and callbacks``() =
 
   use host = createHost(800, 600)
 
+  let sliderProps = {
+    MetroSlider.defaults(50.0, 0.0, 100.0) with
+        Label = ValueSome "Volume"
+        Step = 5.0
+  }
+
   let capture =
     CaptureCell.create(fun () ->
+      sliderSecond <- sliderCell.Mount("volume-slider-again", sliderProps)
+
       Container()
         .Children(
           MetroTextBox.build(
@@ -590,41 +600,21 @@ let ``Metro inputs configure sharp Metro styling semantics and callbacks``() =
           ),
           MetroToggleSwitch.build(MetroToggleSwitch.defaults true, fun _ -> ()),
           MetroCheckBox.build(
-            {
-              Label = "Accept terms"
-              Checked = false
-              Disabled = false
-            },
+            MetroCheckBox.defaults "Accept terms",
             fun next -> checkValue <- ValueSome next
           ),
           MetroRadioButton.build(
             {
-              Label = "Option A"
-              Selected = true
-              Disabled = false
+              MetroRadioButton.defaults "Option A" with
+                  Selected = true
             },
             fun () -> ()
           ),
           MetroRadioButton.build(
-            {
-              Label = "Option B"
-              Selected = false
-              Disabled = false
-            },
+            MetroRadioButton.defaults "Option B",
             fun () -> radioSelected <- radioSelected + 1
           ),
-          Container()
-            .Children(
-              MetroSlider.mount(
-                "volume-slider",
-                {
-                  MetroSlider.defaults(50.0, 0.0, 100.0) with
-                      Label = ValueSome "Volume"
-                      Step = 5.0
-                },
-                sliderHandler
-              )
-            )
+          Container().Children(sliderCell.Mount("volume-slider", sliderProps))
         ))
 
   let window = Window(Root = capture)
@@ -763,7 +753,20 @@ let ``Metro inputs configure sharp Metro styling semantics and callbacks``() =
   Assert.Equal(Nullable blue.Base, sliderInput.FillColor)
   Assert.Equal(Nullable blue.Base, sliderInput.ThumbColor)
   Assert.Equal(Nullable p.Border, sliderInput.TrackColor)
-  Assert.Same(sliderHandler, sliderInput.OnChange)
+  Assert.NotNull(sliderInput.OnChange)
+  sliderInput.OnChange.Invoke(60.0)
+  Assert.Equal(60.0, sliderSeen)
+
+  // The cell owns one cached delegate: a second mount carries the same
+  // callback instance.
+  let sliderAgainInput =
+    sliderSecond
+      .GetType()
+      .GetField("<Input>k__BackingField", flags)
+      .GetValue(sliderSecond)
+    :?> SliderInput
+
+  Assert.Same(sliderInput.OnChange, sliderAgainInput.OnChange)
 
   // HighContrast overrides borders and tracks across inputs.
   host.UpdatePreferences(
@@ -1152,7 +1155,7 @@ let ``MetroProgressRing animates hides inactive and respects ReducedMotion``() =
 [<Fact>]
 let ``Warm page of Metro controls stays within bounded allocation budget``() =
   use host = createHost(960, 720)
-  let cachedSliderChange = Action<float>(fun _ -> ())
+  let budgetSliderCell = MetroSlider.create(fun _ -> ())
   let noopClick() = ()
   let noopText(_: string) = ()
   let noopBool(_: bool) = ()
@@ -1180,26 +1183,23 @@ let ``Warm page of Metro controls stays within bounded allocation budget``() =
         MetroToggleSwitch.build(MetroToggleSwitch.defaults true, noopBool),
         MetroCheckBox.build(
           {
-            Label = "Enable animations"
-            Checked = true
-            Disabled = false
+            MetroCheckBox.defaults "Enable animations" with
+                Checked = true
           },
           noopBool
         ),
         MetroRadioButton.build(
           {
-            Label = "Dark"
-            Selected = true
-            Disabled = false
+            MetroRadioButton.defaults "Dark" with
+                Selected = true
           },
           noopClick
         ),
         Container()
           .Children(
-            MetroSlider.mount(
+            budgetSliderCell.Mount(
               "budget-slider",
-              MetroSlider.defaults(0.5, 0.0, 1.0),
-              cachedSliderChange
+              MetroSlider.defaults(0.5, 0.0, 1.0)
             )
           ),
         Container()
