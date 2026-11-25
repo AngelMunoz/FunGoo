@@ -257,11 +257,9 @@ module MetroListView =
       left: (MetroListItem -> string) voption,
       right: (MetroListItem -> string) voption
     ) : bool =
-    match left, right with
-    | ValueNone, ValueNone -> true
-    | ValueSome leftKey, ValueSome rightKey ->
-      obj.ReferenceEquals(leftKey, rightKey)
-    | _ -> false
+    if left.IsNone then right.IsNone
+    elif right.IsNone then false
+    else obj.ReferenceEquals(left.Value, right.Value)
 
   // A factory maps an item array once. The mapped rows and sections stay the
   // same instance while the item array and the group key do, so an unchanged
