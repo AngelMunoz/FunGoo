@@ -130,7 +130,7 @@ Each commit of the re-shape and each new control passes gate 9.
 
 ## Control Catalog Gap (2026-11-22)
 
-State of the catalog after stack #16 (PR #14 to #21), on 2026-11-24:
+State of the catalog after stack #16 (PR #14 to #21, merged to `main` on 2026-11-25; the seven stack branches are deleted):
 
 | Family | Metrino controls | In `FunGoo.Metro` | Missing |
 | --- | --- | --- | --- | --- |
