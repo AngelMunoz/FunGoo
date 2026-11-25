@@ -149,8 +149,6 @@ let view(state: OverlaysState, factories: OverlaysFactories) : Blob =
         AlignItems = AlignItems.Center,
         JustifyContent = JustifyContent.Center,
         Padding = Edges(Length.Pixels 16.0),
-        BorderWidth = Edges(Length.Pixels 2.0),
-        BorderColor = Edges<Color>(p.BorderStrong),
         BackgroundColor = p.BackgroundAlt
       )
         .Children(

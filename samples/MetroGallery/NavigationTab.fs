@@ -142,8 +142,6 @@ let buildPanoramaSection(secId: string) : Blob =
 
   Container(
     Padding = Edges(Length.Pixels 12.0),
-    BorderWidth = Edges(Length.Pixels 1.0),
-    BorderColor = Edges<Color>(p.Border),
     BackgroundColor = p.BackgroundAlt
   )
     .Children(MetroText.body copy)
@@ -179,8 +177,6 @@ let view(state: NavigationState, factories: NavigationFactories) : Blob =
       JustifyContent = JustifyContent.SpaceBetween,
       Gap = Length.Pixels 16.0,
       Padding = Edges(Length.Pixels 8.0, Length.Pixels 12.0),
-      BorderWidth = Edges(Length.Pixels 1.0),
-      BorderColor = Edges<Color>(p.Border),
       BackgroundColor = p.BackgroundAlt
     )
       .Children(
@@ -270,8 +266,7 @@ let view(state: NavigationState, factories: NavigationFactories) : Blob =
             Key = "gallery-split-frame",
             Width = Length.Percent 100.0,
             Height = Length.Pixels 164.0,
-            BorderWidth = Edges(Length.Pixels 2.0),
-            BorderColor = Edges<Color>(p.BorderStrong)
+            BackgroundColor = p.BackgroundAlt
           )
             .Children(
               MetroSplitView.mount(
@@ -296,8 +291,7 @@ let view(state: NavigationState, factories: NavigationFactories) : Blob =
       Container(
         Width = Length.Percent 100.0,
         Height = Length.Pixels 296.0,
-        BorderWidth = Edges(Length.Pixels 2.0),
-        BorderColor = Edges<Color>(p.BorderStrong)
+        BackgroundColor = p.BackgroundAlt
       )
         .Children(
           MetroPanorama.mount(
