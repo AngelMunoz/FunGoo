@@ -142,7 +142,7 @@ State of the catalog after stack #16 (PR #14 to #21, merged to `main` on 2026-11
 | Navigation | AppBar, AppBarButton, AppBarSeparator, AppBarToggleButton, Hub, HubSection, Panorama, PanoramaItem, Pivot, PivotItem, SplitView, TabView, TabViewItem | AppBar (commands only), Hub (with sections), Pivot, AppBarButton (`MetroAppBarButton`), AppBarSeparator (`MetroAppBarSeparator`), AppBarToggleButton (`MetroAppBarToggleButton`), Panorama (`MetroPanorama`), SplitView (`MetroSplitView`), TabView (`MetroTabView`) | none |
 | Primitives | Border, ContextMenu, Expander, Icon, Image, InfoBar, MediaElement, MenuFlyout, PersonPicture, RichTextBlock, TextBlock, Toast, Tooltip | TextBlock (as `MetroText`), Icon (as `MaterialIcons` in tiles), Border (`MetroBorder`), ContextMenu (`MetroContextMenu`), Expander (`MetroExpander`), Image (`MetroImage`), InfoBar (`MetroInfoBar`), MenuFlyout (`MetroMenuFlyout`), PersonPicture (`MetroPersonPicture`), RichTextBlock (`MetroRichTextBlock`), Toast (`MetroToast`), Tooltip (`MetroTooltip`) | MediaElement |
 | Selection | FlipView, GridView, ListBox, ListPicker, ListView, LongListSelector, SemanticZoom, TreeView | FlipView, ListView (`MetroListView`), ListBox (`MetroListBox`), GridView (`MetroGridView`), SemanticZoom (`MetroSemanticZoomCell`), ListPicker (`MetroListPicker`), LongListSelector (`MetroLongListSelector`), TreeView (`MetroTreeView`) | none |
-| Tiles | CycleTile, FlipTile, IconicTile, LiveTile | IconicTile, LiveTile | CycleTile, FlipTile |
+| Tiles | CycleTile, FlipTile, IconicTile, LiveTile | IconicTile, LiveTile, CycleTile (`MetroCycleTile`), FlipTile (`MetroFlipTile`) | none |
 
 ## Stackable PR Roadmap (GitHub Stack `#5`)
 
@@ -173,7 +173,7 @@ Stack `#5` was delivered as stacked pull requests. GitHub merged the 12 pull req
 | PR 21 | `metro/21-app-bar-parts` | #20 | `MetroAppBarButton`, `MetroAppBarToggleButton`, `MetroAppBarSeparator`, `MetroPanorama` | Complete |
 | PR 22 | `metro/22-primitives` | #21 | `MetroExpander`, `MetroBorder`, `MetroImage`, `MetroPersonPicture` | Complete |
 | PR 23 | `metro/23-layout` | #21 | `MetroScrollViewer`, `MetroViewbox`, `MetroWrapPanel`, `MetroVariableSizedWrapGrid` | Complete |
-| PR 24 | `metro/24-tiles-buttons` | | `MetroFlipTile`, `MetroCycleTile`, `MetroDropdownButton`, `MetroRepeatButton` | Planned |
+| PR 24 | `main` | — | `MetroFlipTile`, `MetroCycleTile` on `main` (2026-11-25). `MetroDropdownButton` and `MetroRepeatButton` are cut: ComboBox/MenuFlyout and plain buttons cover their jobs with less chrome | Complete |
 | PR 25 | `metro/25-rtl` | | RTL logical property verification across navigation and layout controls | Planned |
 | PR 26 | `metro/14-gallery-zoom-inputs-fix` | #13 | Gallery fix. The zoom tab now zooms in when a group tile is selected, because it rebuilds itself from a callback that the zoom cell owns. The inputs tab has one handler and one factory for each combo box. The gallery check runs both flows, and two mutations showed that each check fails on its defect. Four signature files explain callback ownership. Two factory signatures state one factory for each control. Audit pass on `goo-fsharp` and `goo-widgets-fsharp`. | Complete |
 | PR 27 | `main` | — | `goo-fsharp` and `goo-widgets-fsharp` corrected: the object expression is the form of a cell, a table states who rebuilds after a callback, callbacks are plain functions, and four API calls are corrected (`Window.Post`, the argument order of `Cell.Mount`, the typed mount, `FunGoo.Virtual.create`). The skills refer to no other skill. Commit `ee13321`. | Complete |
@@ -294,7 +294,7 @@ Exceptions of gate 9 after the re-shape:
    ```sh
    git fetch origin && git checkout main && git pull --ff-only
    ```
-2. Build and run all `171` headless tests plus the gallery check:
+2. Build and run all `182` headless tests plus the gallery check:
    ```sh
    dotnet build FunGoo.slnx
    dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj
