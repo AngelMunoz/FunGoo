@@ -98,18 +98,13 @@ let chip(label: string) : Blob =
 
 // The natural 200x48 stamp that both viewboxes scale. A plain function, so
 // the responsive viewbox cell can rebuild it inside its own build.
+// Typography alone carries the demo: no border or fill wrapper.
 let viewboxStamp() : Blob =
-  let theme = Metro.read()
-  let p = theme.Palette
-
   Container(
     Width = Length.Pixels 200.0,
     Height = Length.Pixels 48.0,
     AlignItems = AlignItems.Center,
-    JustifyContent = JustifyContent.Center,
-    BorderWidth = Edges(Length.Pixels 2.0),
-    BorderColor = Edges<Color>(theme.Accent.Base),
-    BackgroundColor = p.BackgroundAlt
+    JustifyContent = JustifyContent.Center
   )
     .Children(
       MetroText.build {
@@ -123,7 +118,6 @@ let view
   (state: PrimitivesState, viewboxFactory: unit -> MetroViewboxCell)
   : Blob =
   let theme = Metro.read()
-  let p = theme.Palette
 
   let iconAndAvatarRow =
     Container(
@@ -179,24 +173,17 @@ let view
       )
 
   let richBlock =
-    MetroBorder.build(
-      {
-        MetroBorder.card() with
-            Background = ValueSome p.BackgroundAlt
-            BorderColor = ValueSome p.Border
-      },
-      MetroRichTextBlock.build(
-        MetroRichTextBlock.defaults [|
-          MetroRichTextBlock.bold "Fierce reduction: "
-          MetroRichTextBlock.plain "combine "
-          MetroRichTextBlock.italic "expressive typography"
-          MetroRichTextBlock.plain ", "
-          MetroRichTextBlock.accent "accent links"
-          MetroRichTextBlock.plain ", and inline "
-          MetroRichTextBlock.code "TextSpan[]"
-          MetroRichTextBlock.plain " runs in one layout pass."
-        |]
-      )
+    MetroRichTextBlock.build(
+      MetroRichTextBlock.defaults [|
+        MetroRichTextBlock.bold "Fierce reduction: "
+        MetroRichTextBlock.plain "combine "
+        MetroRichTextBlock.italic "expressive typography"
+        MetroRichTextBlock.plain ", "
+        MetroRichTextBlock.accent "accent links"
+        MetroRichTextBlock.plain ", and inline "
+        MetroRichTextBlock.code "TextSpan[]"
+        MetroRichTextBlock.plain " runs in one layout pass."
+      |]
     )
 
   let expander =
@@ -219,7 +206,7 @@ let view
         .Children(
           MetroText.caption "ICONS, PERSON PICTURES, & IMAGES",
           iconAndAvatarRow,
-          MetroText.caption "BORDER & RICH TEXT BLOCK",
+          MetroText.caption "RICH TEXT BLOCK",
           richBlock,
           MetroText.caption "EXPANDER",
           expander
@@ -262,21 +249,12 @@ let view
   }
 
   let viewboxBox =
-    MetroBorder.build(
+    MetroViewbox.build(
       {
-        MetroBorder.defaults() with
-            Padding = Edges(Length.Pixels 0.0)
+        MetroViewbox.defaults(LayoutSize(260.0, 76.0), LayoutSize(200.0, 48.0)) with
+            Stretch = state.ViewboxStretch
       },
-      MetroViewbox.build(
-        {
-          MetroViewbox.defaults(
-            LayoutSize(260.0, 76.0),
-            LayoutSize(200.0, 48.0)
-          ) with
-              Stretch = state.ViewboxStretch
-        },
-        viewboxStamp()
-      )
+      viewboxStamp()
     )
 
   let responsiveViewbox =
