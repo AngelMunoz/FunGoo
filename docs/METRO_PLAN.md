@@ -286,7 +286,7 @@ Exceptions of gate 9 after the re-shape:
 4. **Pivot header overflow: resolved.** PR #14 lets the header strip pan without a visible scrollbar and keeps the active tab header in view.
 5. **Code shape: resolved.** R1 to R10 replaced each named class that held logic or state in `FunGoo.Metro`, `samples/MetroGallery`, and the tests. `as this` has no hit, each `inherit Cell` is an abstract cell type, and the 9 redundant calls of `Rebuild()` in the handlers of the widget inputs are gone.
 6. **Live tile timer callback: resolved.** R9c removed the `Rebuild()` call from the timer action of the live tile. Hard fact 15 has the measurement that permits it.
-7. **Public functions with four or more parameters.** `MetroMotion.cubicBezier` has 5, `Continuum.playEnter` and `Continuum.playExit` have 4, and `MetroContentDialog.build` has 5 (the properties and four callbacks). The re-shape did not change them, because they are the public API of controls that a planned row extends. `FunGoo.Metro` is not released. Move each into one contextual record when its row starts.
+7. **Public functions with four or more parameters: resolved (2026-11-25).** `MetroMotion.cubicBezier` takes `MetroCubicBezierArgs`, `Continuum.playEnter` and `Continuum.playExit` take `MetroContinuumPlayArgs`, and `MetroContentDialog.build` takes the properties and one `MetroContentDialogHandlers` record. No public function of `FunGoo.Metro` has more than 3 parameters.
 
 ### Resuming on Another Machine
 
