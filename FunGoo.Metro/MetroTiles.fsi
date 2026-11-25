@@ -201,3 +201,166 @@ module MetroLiveTile =
     input: MetroLiveTileInput *
     factory: (unit -> MetroLiveTileCell) ->
       Blob
+
+/// Data-only input snapshot for <see cref="MetroCycleTileCell"/>.
+[<Struct; NoComparison>]
+type MetroCycleTileInput = {
+  /// Ordered faces cycled by the cycle tile.
+  Faces: MetroLiveTileFace array
+  /// Tile footprint preset (defaults to <see cref="MetroTileSize.Medium"/>).
+  Size: MetroTileSize
+  /// Single-cell edge length in logical pixels (defaults to <c>72.0</c>).
+  CellSize: float
+  /// Gutter width between cells in logical pixels (defaults to <c>8.0</c>).
+  Gap: float
+  /// Cycle interval in milliseconds between face transitions (defaults to
+  /// <c>3000.0</c>).
+  IntervalMs: float
+  /// Disables pointer and keyboard activation when <c>true</c>.
+  Disabled: bool
+  /// Optional accessible name overriding the active face title.
+  AccessibilityName: string voption
+}
+
+/// Stateful cycling Metro cycle tile cell driven by <c>Cell.Every</c> and
+/// paint-bound slide/fade animations, honoring reduced motion.
+/// <c>MetroCycleTile.create</c> makes the cell. The type holds the surface
+/// that hosts and tests use.
+[<AbstractClass>]
+type MetroCycleTileCell =
+  inherit Cell<MetroCycleTileInput>
+
+  /// Zero-based index of the currently displayed face. A test reads it.
+  abstract ActiveFaceIndex: int
+
+  /// <c>true</c> while an automatic face-cycling timer is active. A host
+  /// window that is not open, such as a <c>goo render</c> frame, never starts
+  /// the timer.
+  abstract IsTimerActive: bool
+
+  /// The tree of the current input. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
+
+  /// Current press-tilt state and animation handles. A test reads it.
+  abstract TiltState: MetroTiltState
+
+  /// The number of builds of this cycle tile cell. A test reads it.
+  abstract Builds: int
+
+  /// Gives one click of this cell to the host cell, as a Goo.Widgets control
+  /// does. The owner rule then rebuilds the host cell, so a host does not
+  /// call <c>Rebuild</c> on itself in the click callback.
+  member Raise: callback: Action -> unit
+
+/// Construction and mounting helpers for <see cref="MetroCycleTileCell"/>.
+[<RequireQualifiedAccess>]
+module MetroCycleTile =
+
+  /// Creates default <see cref="MetroCycleTileInput"/> for
+  /// <paramref name="faces"/> using medium size, <c>72.0</c> px cell unit,
+  /// <c>8.0</c> px gap, and <c>3000.0</c> ms interval.
+  val defaults: faces: MetroLiveTileFace array -> MetroCycleTileInput
+
+  /// Creates a cycle tile cell. The cell gives each activation to
+  /// <paramref name="onClick"/>, and the owner rule then rebuilds the host
+  /// cell.
+  val create: onClick: (unit -> unit) -> MetroCycleTileCell
+
+  /// Creates a cycle tile cell with an explicit optional
+  /// <see cref="ShaderEffect"/> for press tilt. Tests use this to exercise
+  /// both 3D and 2D tilt paths.
+  val createWithEffect:
+    effect: ShaderEffect voption * onClick: (unit -> unit) -> MetroCycleTileCell
+
+  /// Creates a reusable cell factory for <see cref="MetroCycleTileCell"/>.
+  /// Cache the returned factory outside <c>Build</c>.
+  val createFactory: onClick: (unit -> unit) -> unit -> MetroCycleTileCell
+
+  /// Mounts a <see cref="MetroCycleTileCell"/> under stable
+  /// <paramref name="key"/> using the cached <paramref name="factory"/>.
+  val mount:
+    key: string *
+    input: MetroCycleTileInput *
+    factory: (unit -> MetroCycleTileCell) ->
+      Blob
+
+/// Data-only input snapshot for <see cref="MetroFlipTileCell"/>.
+[<Struct; NoComparison>]
+type MetroFlipTileInput = {
+  /// Face displayed while the tile is not flipped.
+  Front: MetroLiveTileFace
+  /// Face displayed while the tile is flipped.
+  Back: MetroLiveTileFace
+  /// Tile footprint preset (defaults to <see cref="MetroTileSize.Medium"/>).
+  Size: MetroTileSize
+  /// Single-cell edge length in logical pixels (defaults to <c>72.0</c>).
+  CellSize: float
+  /// Gutter width between cells in logical pixels (defaults to <c>8.0</c>).
+  Gap: float
+  /// <c>true</c> selects the back face. The cell flips when this value
+  /// changes, and a click flips the tile.
+  Flipped: bool
+  /// Disables pointer and keyboard activation when <c>true</c>.
+  Disabled: bool
+  /// Optional accessible name overriding the displayed face title.
+  AccessibilityName: string voption
+}
+
+/// Stateful Metro flip tile cell showing one of two faces with a tile flip
+/// motion, honoring reduced motion with a snap. <c>MetroFlipTile.create</c>
+/// makes the cell. The type holds the surface that hosts and tests use.
+[<AbstractClass>]
+type MetroFlipTileCell =
+  inherit Cell<MetroFlipTileInput>
+
+  /// <c>true</c> when the back face is displayed. A test reads it.
+  abstract Flipped: bool
+
+  /// The tree of the current input. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
+
+  /// Current press-tilt state and animation handles. A test reads it.
+  abstract TiltState: MetroTiltState
+
+  /// The number of builds of this flip tile cell. A test reads it.
+  abstract Builds: int
+
+  /// Gives one click of this cell to the host cell, as a Goo.Widgets control
+  /// does. The owner rule then rebuilds the host cell, so a host does not
+  /// call <c>Rebuild</c> on itself in the click callback.
+  member Raise: callback: Action -> unit
+
+/// Construction and mounting helpers for <see cref="MetroFlipTileCell"/>.
+[<RequireQualifiedAccess>]
+module MetroFlipTile =
+
+  /// Creates default <see cref="MetroFlipTileInput"/> for
+  /// <paramref name="front"/> and <paramref name="back"/> using medium size,
+  /// <c>72.0</c> px cell unit, and <c>8.0</c> px gap.
+  val defaults:
+    front: MetroLiveTileFace * back: MetroLiveTileFace -> MetroFlipTileInput
+
+  /// Creates a flip tile cell. The cell flips on each activation and gives
+  /// the activation to <paramref name="onClick"/>, and the owner rule then
+  /// rebuilds the host cell.
+  val create: onClick: (unit -> unit) -> MetroFlipTileCell
+
+  /// Creates a flip tile cell with an explicit optional
+  /// <see cref="ShaderEffect"/> for press tilt. Tests use this to exercise
+  /// both 3D and 2D tilt paths.
+  val createWithEffect:
+    effect: ShaderEffect voption * onClick: (unit -> unit) -> MetroFlipTileCell
+
+  /// Creates a reusable cell factory for <see cref="MetroFlipTileCell"/>.
+  /// Cache the returned factory outside <c>Build</c>.
+  val createFactory: onClick: (unit -> unit) -> unit -> MetroFlipTileCell
+
+  /// Mounts a <see cref="MetroFlipTileCell"/> under stable
+  /// <paramref name="key"/> using the cached <paramref name="factory"/>.
+  val mount:
+    key: string *
+    input: MetroFlipTileInput *
+    factory: (unit -> MetroFlipTileCell) ->
+      Blob

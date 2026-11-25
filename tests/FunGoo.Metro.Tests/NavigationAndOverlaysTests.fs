@@ -763,6 +763,191 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
   Assert.False(liveCell.IsTimerActive)
 
 [<Fact>]
+let ``MetroCycleTile cycles faces on a window timer and MetroFlipTile flips on click and props``
+  ()
+  =
+  let mutable cycleClicks = 0
+  let mutable flipClicks = 0
+  let mutable mountCycle = true
+
+  let cycleFaces = [|
+    {
+      Title = "News"
+      Subtitle = ValueSome "Morning edition"
+      Metric = ValueSome "12"
+      AccentOverride = ValueNone
+    }
+    {
+      Title = "News"
+      Subtitle = ValueSome "Evening edition"
+      Metric = ValueSome "8"
+      AccentOverride = ValueNone
+    }
+  |]
+
+  let frontFace: MetroLiveTileFace = {
+    Title = "Mail"
+    Subtitle = ValueSome "3 unread"
+    Metric = ValueSome "3"
+    AccentOverride = ValueNone
+  }
+
+  let backFace: MetroLiveTileFace = {
+    Title = "Photos"
+    Subtitle = ValueSome "New album"
+    Metric = ValueSome "24"
+    AccentOverride = ValueNone
+  }
+
+  let mutable flipInput = MetroFlipTile.defaults(frontFace, backFace)
+
+  let mutable cycleRef: MetroCycleTileCell voption = ValueNone
+  let mutable flipRef: MetroFlipTileCell voption = ValueNone
+
+  let cycleFactory() =
+    let cell = MetroCycleTile.create(fun () -> cycleClicks <- cycleClicks + 1)
+    cycleRef <- ValueSome cell
+    cell
+
+  let flipFactory() =
+    let cell = MetroFlipTile.create(fun () -> flipClicks <- flipClicks + 1)
+    flipRef <- ValueSome cell
+    cell
+
+  use host = createHost(800, 600)
+
+  let capture =
+    CaptureCell.create(fun () ->
+      let root = Container(FlexDirection = FlexDirection.Row)
+
+      if mountCycle then
+        root.Add(
+          Container()
+            .Children(
+              MetroCycleTile.mount(
+                "cycle-weather",
+                {
+                  MetroCycleTile.defaults cycleFaces with
+                      IntervalMs = 200.0
+                },
+                cycleFactory
+              )
+            )
+        )
+
+      root.Add(
+        Container()
+          .Children(MetroFlipTile.mount("flip-mail", flipInput, flipFactory))
+      )
+
+      root)
+
+  let window = Window(Root = capture)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  // Verify cycle tile mounting, active timer, face content, and click.
+  let cycleCell =
+    match cycleRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroCycleTileCell to be mounted."
+
+  Assert.Equal(0, cycleCell.ActiveFaceIndex)
+  Assert.True(cycleCell.IsTimerActive)
+
+  let mutable cycleBlob: Blob = null
+  capture.DuringBuild(host, fun () -> cycleBlob <- cycleCell.View)
+  let cycleBtn = cycleBlob :?> Button
+  Assert.Equal(AccessibilityRole.Button, cycleBtn.Accessibility.Role)
+  cycleBtn.OnClick.Invoke()
+  cycleBtn.KeyBindings[0].OnPress.Invoke()
+  Assert.Equal(2, cycleClicks)
+
+  // ReducedMotion disables timer cycling immediately.
+  host.UpdatePreferences(
+    PlatformPreferences(
+      Theme = SystemTheme.Dark,
+      ReducedMotion = Nullable true,
+      HighContrast = Nullable true
+    )
+  )
+
+  pumpFrames(host, 2)
+  Assert.False(cycleCell.IsTimerActive)
+
+  // Restoring standard motion resumes timer; unmounting cancels it cleanly.
+  host.UpdatePreferences(
+    PlatformPreferences(
+      Theme = SystemTheme.Dark,
+      ReducedMotion = Nullable false
+    )
+  )
+
+  pumpFrames(host, 2)
+  Assert.True(cycleCell.IsTimerActive)
+
+  mountCycle <- false
+  capture.Rebuild()
+  pumpFrames(host, 1)
+  Assert.False(cycleCell.IsTimerActive)
+
+  // Verify flip tile mounting: front face first, sharp corners, no shadows.
+  let flipCell =
+    match flipRef with
+    | ValueSome cell -> cell
+    | ValueNone -> failwith "Expected MetroFlipTileCell to be mounted."
+
+  Assert.False(flipCell.Flipped)
+
+  let mutable flipBlob: Blob = null
+  capture.DuringBuild(host, fun () -> flipBlob <- flipCell.View)
+  let flipBtn = flipBlob :?> Button
+  Assert.Equal(0.0f, requireEntry(flipBtn, "BorderRadius").A)
+  Assert.Equal(0, boxShadowCount flipBtn)
+  Assert.Equal(AccessibilityRole.Button, flipBtn.Accessibility.Role)
+  Assert.Equal("Mail", flipBtn.Accessibility.Name)
+
+  // A click flips the tile and reaches the host callback.
+  flipBtn.OnClick.Invoke()
+  pumpFrames(host, 1)
+  Assert.True(flipCell.Flipped)
+  Assert.Equal(1, flipClicks)
+
+  let mutable flippedBlob: Blob = null
+  capture.DuringBuild(host, fun () -> flippedBlob <- flipCell.View)
+  Assert.Equal("Photos", (flippedBlob :?> Button).Accessibility.Name)
+
+  // The host acknowledges the click in its props, keeping the back face.
+  flipInput <- { flipInput with Flipped = true }
+  capture.Rebuild()
+  pumpFrames(host, 2)
+  Assert.True(flipCell.Flipped)
+
+  // A props change to the other side flips the tile back.
+  flipInput <- { flipInput with Flipped = false }
+  capture.Rebuild()
+  pumpFrames(host, 2)
+  Assert.False(flipCell.Flipped)
+
+  // A props change to the back face flips forward again.
+  flipInput <- { flipInput with Flipped = true }
+  capture.Rebuild()
+  pumpFrames(host, 2)
+  Assert.True(flipCell.Flipped)
+
+  // Reduced motion still flips, resting the animation.
+  host.UpdatePreferences(
+    PlatformPreferences(Theme = SystemTheme.Dark, ReducedMotion = Nullable true)
+  )
+
+  pumpFrames(host, 2)
+  flipInput <- { flipInput with Flipped = false }
+  capture.Rebuild()
+  pumpFrames(host, 2)
+  Assert.False(flipCell.Flipped)
+
+[<Fact>]
 let ``A timer action of a cell rebuilds the cell through the owner rule``() =
   use host = createHost(400, 300)
   let probe = TimerProbeCell.create()

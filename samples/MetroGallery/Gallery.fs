@@ -147,6 +147,8 @@ type GalleryFactories = {
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
+  CycleTile: unit -> MetroCycleTileCell
+  FlipTile: unit -> MetroFlipTileCell
   SettingsFlyout: unit -> MetroSettingsFlyoutCell
   ContentDialog: unit -> MetroContentDialogCell
 }
@@ -234,6 +236,8 @@ let tileGrid =
       MetroTileSize.Small
       MetroTileSize.Small
       MetroTileSize.Wide
+      MetroTileSize.Wide
+      MetroTileSize.Medium
     |]
   }
 
@@ -257,6 +261,35 @@ let liveFaces = [|
     AccentOverride = ValueSome(Color.Rgb(216, 0, 115))
   }
 |]
+
+let cycleFaces = [|
+  {
+    Title = "Build"
+    Subtitle = ValueSome "Release green"
+    Metric = ValueSome "0"
+    AccentOverride = ValueNone
+  }
+  {
+    Title = "Build"
+    Subtitle = ValueSome "Tests passing"
+    Metric = ValueSome "100%"
+    AccentOverride = ValueSome(Color.Rgb(0, 163, 0))
+  }
+|]
+
+let flipFront: MetroLiveTileFace = {
+  Title = "Store"
+  Subtitle = ValueSome "Tap to flip"
+  Metric = ValueSome "S"
+  AccentOverride = ValueNone
+}
+
+let flipBack: MetroLiveTileFace = {
+  Title = "Store"
+  Subtitle = ValueSome "Back again"
+  Metric = ValueSome "B"
+  AccentOverride = ValueSome(Color.Rgb(0, 80, 239))
+}
 
 let primaryCommands = [|
   {
@@ -402,6 +435,16 @@ let tapLiveTile(store: GalleryStore) : unit =
   store.TileTapCount <- store.TileTapCount + 1
   store.LastAction <- $"Live tile tapped ({store.TileTapCount})"
 
+/// Writes the action of the cycle tile.
+let tapCycleTile(store: GalleryStore) : unit =
+  store.TileTapCount <- store.TileTapCount + 1
+  store.LastAction <- $"Cycle tile tapped ({store.TileTapCount})"
+
+/// Writes the action of the flip tile.
+let tapFlipTile(store: GalleryStore) : unit =
+  store.TileTapCount <- store.TileTapCount + 1
+  store.LastAction <- $"Flip tile tapped ({store.TileTapCount})"
+
 /// The start section of the hub: the live tile and six iconic tiles.
 let startTiles(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
   let store = ctx.State.Store
@@ -412,6 +455,19 @@ let startTiles(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
         "gallery-live-tile",
         MetroLiveTile.defaults liveFaces,
         ctx.Factories.LiveTile
+      ),
+      MetroCycleTile.mount(
+        "gallery-cycle-tile",
+        {
+          MetroCycleTile.defaults cycleFaces with
+              Size = MetroTileSize.Wide
+        },
+        ctx.Factories.CycleTile
+      ),
+      MetroFlipTile.mount(
+        "gallery-flip-tile",
+        MetroFlipTile.defaults(flipFront, flipBack),
+        ctx.Factories.FlipTile
       ),
       MetroTilt.mount(
         "tile-mail",
@@ -928,6 +984,8 @@ let create
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
     LiveTile = MetroLiveTile.createFactory(fun () -> tapLiveTile state.Store)
+    CycleTile = MetroCycleTile.createFactory(fun () -> tapCycleTile state.Store)
+    FlipTile = MetroFlipTile.createFactory(fun () -> tapFlipTile state.Store)
     SettingsFlyout = flyoutFactory
     ContentDialog = dialogFactory
   }

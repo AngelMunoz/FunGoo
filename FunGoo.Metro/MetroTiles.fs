@@ -934,3 +934,960 @@ module MetroLiveTile =
     (key: string, input: MetroLiveTileInput, factory: unit -> MetroLiveTileCell)
     : Blob =
     Cell.Mount<MetroLiveTileInput, MetroLiveTileCell>(key, input, factory)
+
+/// Arguments for rendering one tile face.
+type FaceRenderArgs = {
+  FaceContainer: Container
+  Face: MetroLiveTileFace
+  Theme: MetroTheme
+  Accent: MetroAccent
+}
+
+/// Adds the metric, subtitle, and title of one face to its container.
+module private TileFaceContent =
+
+  let render(args: FaceRenderArgs) : unit =
+    let face = args.Face
+    let theme = args.Theme
+    let accent = args.Accent
+
+    let bodyGroup =
+      Container(
+        FlexDirection = FlexDirection.Column,
+        Gap = Length.Pixels 4.0,
+        FlexGrow = 1.0
+      )
+
+    face.Metric
+    |> ValueOption.iter(fun metric ->
+      bodyGroup.Add(
+        Text(
+          Content = metric,
+          Color = accent.OnAccent,
+          FontFamily = theme.FontFamily,
+          FontSize = Length.Pixels(34.0 * theme.TextScaleFactor),
+          FontWeight = 300.0,
+          LineHeight = 1.05,
+          TextWrap = TextWrap.NoWrap,
+          TextTrimming = TextTrimming.Ellipsis
+        )
+      ))
+
+    face.Subtitle
+    |> ValueOption.iter(fun subtitle ->
+      bodyGroup.Add(
+        Text(
+          Content = subtitle,
+          Color = accent.OnAccent,
+          FontFamily = theme.FontFamily,
+          FontSize = Length.Pixels(13.0 * theme.TextScaleFactor),
+          FontWeight = 400.0,
+          TextMaxLines = 2,
+          TextTrimming = TextTrimming.Ellipsis
+        )
+      ))
+
+    args.FaceContainer.Add(bodyGroup)
+
+    let title = if isNull face.Title then "" else face.Title
+
+    if not(String.IsNullOrEmpty title) then
+      args.FaceContainer.Add(
+        Text(
+          Content = title,
+          Color = accent.OnAccent,
+          FontFamily = theme.FontFamily,
+          FontSize =
+            Length.Pixels(
+              MetroTypography.size MetroTextRole.Caption * theme.TextScaleFactor
+            ),
+          FontWeight = 400.0,
+          TextWrap = TextWrap.NoWrap,
+          TextTrimming = TextTrimming.Ellipsis
+        )
+      )
+
+[<Struct; NoComparison>]
+type MetroCycleTileInput = {
+  Faces: MetroLiveTileFace array
+  Size: MetroTileSize
+  CellSize: float
+  Gap: float
+  IntervalMs: float
+  Disabled: bool
+  AccessibilityName: string voption
+}
+
+[<AbstractClass>]
+type MetroCycleTileCell() =
+  inherit Cell<MetroCycleTileInput>()
+
+  abstract ActiveFaceIndex: int
+
+  abstract IsTimerActive: bool
+
+  abstract View: Blob
+
+  abstract TiltState: MetroTiltState
+
+  abstract Builds: int
+
+  // Gives a click of the host to the host cell, as a Goo.Widgets control
+  // does. The owner rule then rebuilds the host cell.
+  member this.Raise(callback: Action) = this.InvokeInputCallback(callback)
+
+  // Runs an action again and again on the window timer of this cell. `Every`
+  // is a protected member of the cell, and F# does not permit a call to it
+  // from a function outside the type.
+  member internal this.ScheduleEvery
+    (intervalMs: float, action: Action)
+    : WindowTimer =
+    this.Every(intervalMs, action)
+
+[<RequireQualifiedAccess>]
+module MetroCycleTile =
+
+  /// State of a cycle tile cell. One mutable field per concern.
+  type CycleTileState = {
+    mutable Input: MetroCycleTileInput
+    mutable AttachedHost: Window voption
+    mutable FaceIndex: int
+    mutable Timer: WindowTimer voption
+    mutable ActiveIntervalMs: float
+    mutable IsMounted: bool
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    mutable Builds: int
+    // Slots for the two animation values. `create` fills them after the cell
+    // exists.
+    mutable Translate: Anim<Point>
+    mutable Opacity: Anim<float>
+  }
+
+  /// The values that the functions of a cycle tile cell work on.
+  type CycleTileContext = {
+    State: CycleTileState
+    Tilt: TiltEngine
+    /// Gives one click to the host cell.
+    Click: Action
+    /// The bindings of the Enter key and of the Space key. `create` makes
+    /// them once.
+    Keys: KeyBinding array
+  }
+
+  /// The host window with the handler of its preferences.
+  type HostAttachment = {
+    Host: Window voption
+    Handler: Action<PlatformPreferences>
+  }
+
+  let emptyInput: MetroCycleTileInput = {
+    Faces = Array.empty
+    Size = MetroTileSize.Medium
+    CellSize = 72.0
+    Gap = 8.0
+    IntervalMs = 3000.0
+    Disabled = false
+    AccessibilityName = ValueNone
+  }
+
+  let defaults(faces: MetroLiveTileFace array) : MetroCycleTileInput = {
+    Faces = faces
+    Size = MetroTileSize.Medium
+    CellSize = 72.0
+    Gap = 8.0
+    IntervalMs = 3000.0
+    Disabled = false
+    AccessibilityName = ValueNone
+  }
+
+  let initialState() : CycleTileState = {
+    Input = emptyInput
+    AttachedHost = ValueNone
+    FaceIndex = 0
+    Timer = ValueNone
+    ActiveIntervalMs = 0.0
+    IsMounted = false
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    Builds = 0
+    Translate = Unchecked.defaultof<Anim<Point>>
+    Opacity = Unchecked.defaultof<Anim<float>>
+  }
+
+  let stopTimer(state: CycleTileState) : unit =
+    state.Timer |> ValueOption.iter(fun timer -> timer.Dispose())
+    state.Timer <- ValueNone
+    state.ActiveIntervalMs <- 0.0
+
+  /// <c>true</c> when a scope or the host window asks for reduced motion.
+  let isReducedMotion(state: CycleTileState) : bool =
+    state.ScopedReducedMotion
+    || (state.AttachedHost
+        |> ValueOption.map(fun w -> Metro.readWindow(w).ReducedMotion)
+        |> ValueOption.defaultValue state.LastReducedMotion)
+
+  let isTimerActive(state: CycleTileState) : bool =
+    state.Timer
+    |> ValueOption.map(fun timer -> timer.IsActive)
+    |> ValueOption.defaultValue false
+
+  /// Puts the face at rest: no translation and fully opaque.
+  let snapToRest(state: CycleTileState) : unit =
+    state.Translate.Snap(TileInternals.zeroPoint)
+    state.Opacity.Snap(1.0)
+
+  /// Moves to the next face with a slide. It stops the cycle when there is
+  /// one face or reduced motion. The timer action of the cell runs this
+  /// function. Goo rebuilds the cell after a timer action, so the function
+  /// does not call `Rebuild()`.
+  let advanceFace(ctx: CycleTileContext) : unit =
+    let state = ctx.State
+    let faces = state.Input.Faces
+
+    if isNull faces || faces.Length <= 1 || isReducedMotion state then
+      stopTimer state
+      snapToRest state
+    else
+      state.FaceIndex <- (state.FaceIndex + 1) % faces.Length
+
+      state.Translate.Play(
+        Point(X = 0.0, Y = 24.0),
+        TileInternals.zeroPoint,
+        MetroMotion.normal
+      )
+
+      state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
+
+  /// Starts, keeps, or stops the cycle timer for the input.
+  let syncTimer
+    (cell: MetroCycleTileCell, ctx: CycleTileContext, input: MetroCycleTileInput) : unit =
+    let state = ctx.State
+    let faceCount = if isNull input.Faces then 0 else input.Faces.Length
+    let interval = TileInternals.resolveIntervalMs input.IntervalMs
+
+    // A mounted window that is not open, such as a `goo render` frame,
+    // rejects window timers, so an open host window is required to cycle.
+    let hostOpen =
+      state.AttachedHost
+      |> ValueOption.map(fun w -> w.IsOpen)
+      |> ValueOption.defaultValue false
+
+    let shouldRun =
+      state.IsMounted && hostOpen && faceCount > 1 && not(isReducedMotion state)
+
+    if not shouldRun then
+      stopTimer state
+    elif state.Timer.IsNone || state.ActiveIntervalMs <> interval then
+      stopTimer state
+      state.ActiveIntervalMs <- interval
+
+      let advance = Action(fun () -> advanceFace ctx)
+      state.Timer <- ValueSome(cell.ScheduleEvery(interval, advance))
+
+  /// Keeps the index of the face inside the new faces, then syncs the timer.
+  let inputChanged
+    (cell: MetroCycleTileCell, ctx: CycleTileContext, input: MetroCycleTileInput) : unit =
+    let state = ctx.State
+    state.Input <- input
+    let count = if isNull input.Faces then 0 else input.Faces.Length
+
+    if count = 0 then
+      state.FaceIndex <- 0
+    elif state.FaceIndex >= count then
+      state.FaceIndex <- 0
+
+    if state.IsMounted then
+      syncTimer(cell, ctx, input)
+
+  /// Subscribes the handler to the preferences of the host window, then
+  /// syncs the timer.
+  let mounted
+    (cell: MetroCycleTileCell, ctx: CycleTileContext, attachment: HostAttachment) : unit =
+    let state = ctx.State
+    state.IsMounted <- true
+    state.AttachedHost <- attachment.Host
+
+    attachment.Host
+    |> ValueOption.iter(fun w -> w.add_PreferencesChanged attachment.Handler)
+
+    syncTimer(cell, ctx, state.Input)
+
+  /// Unsubscribes the handler, stops the timer, and puts the face at rest.
+  let unmount
+    (ctx: CycleTileContext, handler: Action<PlatformPreferences>)
+    : unit =
+    let state = ctx.State
+    state.IsMounted <- false
+
+    state.AttachedHost
+    |> ValueOption.iter(fun w -> w.remove_PreferencesChanged handler)
+
+    state.AttachedHost <- ValueNone
+    state.ScopedReducedMotion <- false
+    stopTimer state
+    snapToRest state
+    TiltEngine.snapToRest ctx.Tilt
+
+  let faceTitle(face: MetroLiveTileFace) : string =
+    if isNull face.Title then "" else face.Title
+
+  let view
+    (ctx: CycleTileContext, input: MetroCycleTileInput, theme: MetroTheme)
+    : Blob =
+    let state = ctx.State
+    let p = theme.Palette
+    let faces = if isNull input.Faces then Array.empty else input.Faces
+
+    let faceOpt =
+      if faces.Length = 0 then
+        ValueNone
+      else
+        let idx = Math.Clamp(state.FaceIndex, 0, faces.Length - 1)
+        ValueSome faces[idx]
+
+    let accent =
+      faceOpt
+      |> ValueOption.bind(fun f -> f.AccentOverride)
+      |> ValueOption.map MetroAccent.fromColor
+      |> ValueOption.defaultValue theme.Accent
+
+    let struct (w, h) =
+      MetroTileMetrics.pixelSize(input.CellSize, input.Gap, input.Size)
+
+    let hoverBg = if theme.IsDark then accent.Light else accent.Dark
+    let hoverStyle = Style(BackgroundColor = hoverBg)
+    let activeStyle = Style(BackgroundColor = accent.Dark)
+
+    let disabledStyle =
+      Style(
+        Color = accent.OnAccent,
+        Opacity = (if theme.HighContrast then 1.0 else 0.4)
+      )
+
+    let focusStyle =
+      Style(
+        OutlineWidth = Length.Pixels 2.0,
+        OutlineColor = p.Foreground,
+        OutlineOffset = Length.Pixels 2.0
+      )
+
+    let borderWidth =
+      if theme.HighContrast then
+        TileInternals.hcBorder
+      else
+        TileInternals.zeroBorder
+
+    let borderColor =
+      if theme.HighContrast then
+        Edges<Color>(p.Foreground)
+      else
+        TileInternals.transparentBorder
+
+    let activeTitle =
+      faceOpt |> ValueOption.map faceTitle |> ValueOption.defaultValue ""
+
+    let accName =
+      input.AccessibilityName |> ValueOption.defaultValue activeTitle
+
+    let faceContainer =
+      Container(
+        FlexDirection = FlexDirection.Column,
+        JustifyContent = JustifyContent.SpaceBetween,
+        AlignItems = AlignItems.Stretch,
+        FlexGrow = 1.0,
+        Width = Length.Percent 100.0,
+        Height = Length.Percent 100.0,
+        TranslateAnim = state.Translate,
+        OpacityAnim = state.Opacity
+      )
+
+    faceOpt
+    |> ValueOption.iter(fun face ->
+      TileFaceContent.render {
+        FaceContainer = faceContainer
+        Face = face
+        Theme = theme
+        Accent = accent
+      })
+
+    let tileBtn =
+      Button(
+        Width = Length.Pixels w,
+        Height = Length.Pixels h,
+        FlexDirection = FlexDirection.Column,
+        AlignItems = AlignItems.Stretch,
+        FlexShrink = 0.0,
+        Padding = Edges(Length.Pixels 12.0),
+        BorderRadius = TileInternals.zeroRadius,
+        BoxShadows = TileInternals.emptyShadows,
+        BorderWidth = borderWidth,
+        BorderColor = borderColor,
+        BackgroundColor = accent.Base,
+        Color = accent.OnAccent,
+        HoverStyle = hoverStyle,
+        ActiveStyle = activeStyle,
+        DisabledStyle = disabledStyle,
+        FocusStyle = focusStyle,
+        TransitionMs = MetroTheme.effectiveMs(theme, MetroTiming.fastMs),
+        TransitionEasing = Easing.EaseOut,
+        Cursor = (if input.Disabled then Cursor.Default else Cursor.Pointer),
+        Focusable = not input.Disabled,
+        TabStop = not input.Disabled,
+        Disabled = input.Disabled,
+        Overflow = Overflow.Hidden,
+        Accessibility =
+          Accessibility(Role = AccessibilityRole.Button, Name = accName)
+      )
+
+    if not input.Disabled then
+      tileBtn.OnClick <- ctx.Click
+      tileBtn.KeyBindings <- ctx.Keys
+
+    TiltEngine.applyToBlob(ctx.Tilt, tileBtn)
+    tileBtn.Children(faceContainer)
+
+  /// Reads the theme, stops the cycle and the animations under reduced
+  /// motion, then builds the tree.
+  let build
+    (
+      ctx: CycleTileContext,
+      input: MetroCycleTileInput,
+      hostReduced: bool voption
+    ) : Blob =
+    let state = ctx.State
+    state.Input <- input
+    state.Builds <- state.Builds + 1
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
+
+    if theme.ReducedMotion then
+      stopTimer state
+      snapToRest state
+
+    TiltEngine.sync(
+      ctx.Tilt,
+      {
+        MetroTilt.defaultConfig with
+            Disabled = input.Disabled
+      },
+      theme.ReducedMotion
+    )
+
+    view(ctx, input, theme)
+
+  /// The reduced motion preference of the host window. <c>ValueNone</c> when
+  /// the cell has no window.
+  let reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  /// The window of a cell with the handler of its preferences.
+  let attachmentOf
+    (host: Window, handler: Action<PlatformPreferences>)
+    : HostAttachment = {
+    Host = (if isNull host then ValueNone else ValueSome host)
+    Handler = handler
+  }
+
+  let createWithEffect
+    (effect: ShaderEffect voption, onClick: unit -> unit)
+    : MetroCycleTileCell =
+    let state = initialState()
+    let tilt = TiltEngine.create effect
+
+    // The slot of the cell: the click delegate is made before the cell exists.
+    let mutable self: MetroCycleTileCell voption = ValueNone
+    let onClickAction = Action(onClick)
+
+    // One delegate for the life of the cell. It gives each click to the host
+    // cell, so the owner rule rebuilds the host.
+    let click =
+      Action(fun () ->
+        self |> ValueOption.iter(fun cell -> cell.Raise(onClickAction)))
+
+    let keys = [|
+      KeyBinding(Key.Enter, KeyModifiers.None, click)
+      KeyBinding(Key.Space, KeyModifiers.None, click)
+    |]
+
+    let context: CycleTileContext = {
+      State = state
+      Tilt = tilt
+      Click = click
+      Keys = keys
+    }
+
+    // One delegate for the life of the cell. The host window subscribes to it.
+    let onPreferencesChanged =
+      Action<PlatformPreferences>(fun _ ->
+        self
+        |> ValueOption.iter(fun cell -> syncTimer(cell, context, state.Input)))
+
+    let cell = {
+      new MetroCycleTileCell() with
+        override _.ActiveFaceIndex = state.FaceIndex
+        override _.IsTimerActive = isTimerActive state
+
+        override _.View = view(context, state.Input, Metro.read())
+
+        override _.TiltState = TiltEngine.snapshot tilt
+        override _.Builds = state.Builds
+
+        override this.Mounted() =
+          mounted(this, context, attachmentOf(this.Host, onPreferencesChanged))
+
+        override this.InputChanged(input) = inputChanged(this, context, input)
+
+        override _.Unmounting() = unmount(context, onPreferencesChanged)
+
+        override this.Build(input) : Blob =
+          build(context, input, reducedMotionOf this.Host)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <- cell.AnimateValue(TileInternals.zeroPoint)
+    state.Opacity <- cell.AnimateValue(1.0)
+    TiltEngine.attach(tilt, cell)
+    self <- ValueSome cell
+    cell
+
+  let create(onClick: unit -> unit) : MetroCycleTileCell =
+    createWithEffect(MetroPerspective.tryCreateDefault(), onClick)
+
+  let createFactory(onClick: unit -> unit) : unit -> MetroCycleTileCell =
+    fun () -> create onClick
+
+  let mount
+    (
+      key: string,
+      input: MetroCycleTileInput,
+      factory: unit -> MetroCycleTileCell
+    ) : Blob =
+    Cell.Mount<MetroCycleTileInput, MetroCycleTileCell>(key, input, factory)
+
+[<Struct; NoComparison>]
+type MetroFlipTileInput = {
+  Front: MetroLiveTileFace
+  Back: MetroLiveTileFace
+  Size: MetroTileSize
+  CellSize: float
+  Gap: float
+  Flipped: bool
+  Disabled: bool
+  AccessibilityName: string voption
+}
+
+[<AbstractClass>]
+type MetroFlipTileCell() =
+  inherit Cell<MetroFlipTileInput>()
+
+  /// <c>true</c> when the back face is displayed. A test reads it.
+  abstract Flipped: bool
+
+  /// The tree of the current input. A test reads it, and only inside a build,
+  /// where the Metro theme is readable.
+  abstract View: Blob
+
+  /// Current press-tilt state and animation handles. A test reads it.
+  abstract TiltState: MetroTiltState
+
+  /// The number of builds of this flip tile cell. A test reads it.
+  abstract Builds: int
+
+  // Gives a click of the host to the host cell, as a Goo.Widgets control
+  // does. The owner rule then rebuilds the host cell.
+  member this.Raise(callback: Action) = this.InvokeInputCallback(callback)
+
+[<RequireQualifiedAccess>]
+module MetroFlipTile =
+
+  /// State of a flip tile cell. One mutable field per concern.
+  type FlipTileState = {
+    mutable Input: MetroFlipTileInput
+    mutable AttachedHost: Window voption
+    mutable Flipped: bool
+    mutable BuiltFlipped: bool
+    mutable IsMounted: bool
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    mutable Builds: int
+    // Slots for the two animation values. `create` fills them after the cell
+    // exists.
+    mutable Translate: Anim<Point>
+    mutable Opacity: Anim<float>
+  }
+
+  /// The values that the functions of a flip tile cell work on.
+  type FlipTileContext = {
+    State: FlipTileState
+    Tilt: TiltEngine
+    /// Gives one click to the host cell.
+    Click: Action
+    /// The bindings of the Enter key and of the Space key. `create` makes
+    /// them once.
+    Keys: KeyBinding array
+  }
+
+  /// The host window with the handler of its preferences.
+  type HostAttachment = {
+    Host: Window voption
+    Handler: Action<PlatformPreferences>
+  }
+
+  let emptyFace: MetroLiveTileFace = {
+    Title = ""
+    Subtitle = ValueNone
+    Metric = ValueNone
+    AccentOverride = ValueNone
+  }
+
+  let emptyInput: MetroFlipTileInput = {
+    Front = emptyFace
+    Back = emptyFace
+    Size = MetroTileSize.Medium
+    CellSize = 72.0
+    Gap = 8.0
+    Flipped = false
+    Disabled = false
+    AccessibilityName = ValueNone
+  }
+
+  let defaults
+    (front: MetroLiveTileFace, back: MetroLiveTileFace)
+    : MetroFlipTileInput = {
+    Front = front
+    Back = back
+    Size = MetroTileSize.Medium
+    CellSize = 72.0
+    Gap = 8.0
+    Flipped = false
+    Disabled = false
+    AccessibilityName = ValueNone
+  }
+
+  let initialState() : FlipTileState = {
+    Input = emptyInput
+    AttachedHost = ValueNone
+    Flipped = false
+    BuiltFlipped = false
+    IsMounted = false
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    Builds = 0
+    Translate = Unchecked.defaultof<Anim<Point>>
+    Opacity = Unchecked.defaultof<Anim<float>>
+  }
+
+  /// <c>true</c> when a scope or the host window asks for reduced motion.
+  let isReducedMotion(state: FlipTileState) : bool =
+    state.ScopedReducedMotion
+    || (state.AttachedHost
+        |> ValueOption.map(fun w -> Metro.readWindow(w).ReducedMotion)
+        |> ValueOption.defaultValue state.LastReducedMotion)
+
+  /// Puts the face at rest: no translation and fully opaque.
+  let snapToRest(state: FlipTileState) : unit =
+    state.Translate.Snap(TileInternals.zeroPoint)
+    state.Opacity.Snap(1.0)
+
+  /// Plays the tile flip motion: a short vertical slide with a fade, as the
+  /// live tile face change does.
+  let playFlip(state: FlipTileState) : unit =
+    state.Translate.Play(
+      Point(X = 0.0, Y = 24.0),
+      TileInternals.zeroPoint,
+      MetroMotion.normal
+    )
+
+    state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
+
+  /// Shows one side with the flip motion, or with a snap under reduced
+  /// motion.
+  let showSide(state: FlipTileState, flipped: bool) : unit =
+    if state.Flipped <> flipped then
+      state.Flipped <- flipped
+
+      if isReducedMotion state then
+        snapToRest state
+      else
+        playFlip state
+
+  /// Stores the input. `build` adopts a changed `Flipped` value, because only
+  /// a build reads the theme for the reduced-motion snap.
+  let inputChanged(ctx: FlipTileContext, input: MetroFlipTileInput) : unit =
+    ctx.State.Input <- input
+
+  /// Subscribes the handler to the preferences of the host window.
+  let mounted(ctx: FlipTileContext, attachment: HostAttachment) : unit =
+    let state = ctx.State
+    state.IsMounted <- true
+    state.AttachedHost <- attachment.Host
+
+    attachment.Host
+    |> ValueOption.iter(fun w -> w.add_PreferencesChanged attachment.Handler)
+
+  /// Unsubscribes the handler and puts the face at rest.
+  let unmount
+    (ctx: FlipTileContext, handler: Action<PlatformPreferences>)
+    : unit =
+    let state = ctx.State
+    state.IsMounted <- false
+
+    state.AttachedHost
+    |> ValueOption.iter(fun w -> w.remove_PreferencesChanged handler)
+
+    state.AttachedHost <- ValueNone
+    state.ScopedReducedMotion <- false
+    snapToRest state
+    TiltEngine.snapToRest ctx.Tilt
+
+  /// Stops the flip animation under reduced motion. The host window calls the
+  /// handler of its preferences after `UpdatePreferences`, so the cell rests
+  /// without waiting for its next build.
+  let syncMotion(ctx: FlipTileContext) : unit =
+    if isReducedMotion ctx.State then
+      snapToRest ctx.State
+
+    TiltEngine.sync(
+      ctx.Tilt,
+      {
+        MetroTilt.defaultConfig with
+            Disabled = ctx.State.Input.Disabled
+      },
+      isReducedMotion ctx.State
+    )
+
+  let faceTitle(face: MetroLiveTileFace) : string =
+    if isNull face.Title then "" else face.Title
+
+  let view
+    (ctx: FlipTileContext, input: MetroFlipTileInput, theme: MetroTheme)
+    : Blob =
+    let state = ctx.State
+    let p = theme.Palette
+    let face = if state.Flipped then input.Back else input.Front
+
+    let accent =
+      face.AccentOverride
+      |> ValueOption.map MetroAccent.fromColor
+      |> ValueOption.defaultValue theme.Accent
+
+    let struct (w, h) =
+      MetroTileMetrics.pixelSize(input.CellSize, input.Gap, input.Size)
+
+    let hoverBg = if theme.IsDark then accent.Light else accent.Dark
+    let hoverStyle = Style(BackgroundColor = hoverBg)
+    let activeStyle = Style(BackgroundColor = accent.Dark)
+
+    let disabledStyle =
+      Style(
+        Color = accent.OnAccent,
+        Opacity = (if theme.HighContrast then 1.0 else 0.4)
+      )
+
+    let focusStyle =
+      Style(
+        OutlineWidth = Length.Pixels 2.0,
+        OutlineColor = p.Foreground,
+        OutlineOffset = Length.Pixels 2.0
+      )
+
+    let borderWidth =
+      if theme.HighContrast then
+        TileInternals.hcBorder
+      else
+        TileInternals.zeroBorder
+
+    let borderColor =
+      if theme.HighContrast then
+        Edges<Color>(p.Foreground)
+      else
+        TileInternals.transparentBorder
+
+    let title = faceTitle face
+    let accName = input.AccessibilityName |> ValueOption.defaultValue title
+
+    let faceContainer =
+      Container(
+        FlexDirection = FlexDirection.Column,
+        JustifyContent = JustifyContent.SpaceBetween,
+        AlignItems = AlignItems.Stretch,
+        FlexGrow = 1.0,
+        Width = Length.Percent 100.0,
+        Height = Length.Percent 100.0,
+        TranslateAnim = state.Translate,
+        OpacityAnim = state.Opacity
+      )
+
+    TileFaceContent.render {
+      FaceContainer = faceContainer
+      Face = face
+      Theme = theme
+      Accent = accent
+    }
+
+    let tileBtn =
+      Button(
+        Width = Length.Pixels w,
+        Height = Length.Pixels h,
+        FlexDirection = FlexDirection.Column,
+        AlignItems = AlignItems.Stretch,
+        FlexShrink = 0.0,
+        Padding = Edges(Length.Pixels 12.0),
+        BorderRadius = TileInternals.zeroRadius,
+        BoxShadows = TileInternals.emptyShadows,
+        BorderWidth = borderWidth,
+        BorderColor = borderColor,
+        BackgroundColor = accent.Base,
+        Color = accent.OnAccent,
+        HoverStyle = hoverStyle,
+        ActiveStyle = activeStyle,
+        DisabledStyle = disabledStyle,
+        FocusStyle = focusStyle,
+        TransitionMs = MetroTheme.effectiveMs(theme, MetroTiming.fastMs),
+        TransitionEasing = Easing.EaseOut,
+        Cursor = (if input.Disabled then Cursor.Default else Cursor.Pointer),
+        Focusable = not input.Disabled,
+        TabStop = not input.Disabled,
+        Disabled = input.Disabled,
+        Overflow = Overflow.Hidden,
+        Accessibility =
+          Accessibility(Role = AccessibilityRole.Button, Name = accName)
+      )
+
+    if not input.Disabled then
+      tileBtn.OnClick <- ctx.Click
+      tileBtn.KeyBindings <- ctx.Keys
+
+    TiltEngine.applyToBlob(ctx.Tilt, tileBtn)
+    tileBtn.Children(faceContainer)
+
+  /// Reads the theme, adopts a changed `Flipped` value, stops the flip
+  /// animation under reduced motion, then builds the tree.
+  let build
+    (ctx: FlipTileContext, input: MetroFlipTileInput, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    // `InputChanged` stores the input before a build runs, so the change is
+    // detected against the last built value and not against the stored input.
+    let flipChanged = input.Flipped <> state.BuiltFlipped
+    state.Input <- input
+    state.BuiltFlipped <- input.Flipped
+    state.Builds <- state.Builds + 1
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
+
+    if flipChanged then
+      state.Flipped <- input.Flipped
+
+    if flipChanged && not theme.ReducedMotion then
+      playFlip state
+    elif theme.ReducedMotion then
+      snapToRest state
+
+    TiltEngine.sync(
+      ctx.Tilt,
+      {
+        MetroTilt.defaultConfig with
+            Disabled = input.Disabled
+      },
+      theme.ReducedMotion
+    )
+
+    view(ctx, input, theme)
+
+  /// The reduced motion preference of the host window. <c>ValueNone</c> when
+  /// the cell has no window.
+  let reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  /// The window of a cell with the handler of its preferences.
+  let attachmentOf
+    (host: Window, handler: Action<PlatformPreferences>)
+    : HostAttachment = {
+    Host = (if isNull host then ValueNone else ValueSome host)
+    Handler = handler
+  }
+
+  let createWithEffect
+    (effect: ShaderEffect voption, onClick: unit -> unit)
+    : MetroFlipTileCell =
+    let state = initialState()
+    let tilt = TiltEngine.create effect
+
+    // The slot of the cell: the click delegate is made before the cell exists.
+    let mutable self: MetroFlipTileCell voption = ValueNone
+    let onClickAction = Action(onClick)
+
+    // One delegate for the life of the cell. It flips the tile, then gives
+    // each click to the host cell, so the owner rule rebuilds the host. The
+    // tile owns the click callback, so Goo rebuilds the tile as well.
+    let click =
+      Action(fun () ->
+        self
+        |> ValueOption.iter(fun cell ->
+          showSide(state, not state.Flipped)
+          cell.Raise(onClickAction)))
+
+    let keys = [|
+      KeyBinding(Key.Enter, KeyModifiers.None, click)
+      KeyBinding(Key.Space, KeyModifiers.None, click)
+    |]
+
+    let context: FlipTileContext = {
+      State = state
+      Tilt = tilt
+      Click = click
+      Keys = keys
+    }
+
+    // One delegate for the life of the cell. The host window subscribes to it.
+    let onPreferencesChanged =
+      Action<PlatformPreferences>(fun _ ->
+        self |> ValueOption.iter(fun _ -> syncMotion context))
+
+    let cell = {
+      new MetroFlipTileCell() with
+        override _.Flipped = state.Flipped
+        override _.View = view(context, state.Input, Metro.read())
+        override _.TiltState = TiltEngine.snapshot tilt
+        override _.Builds = state.Builds
+
+        override this.Mounted() =
+          mounted(context, attachmentOf(this.Host, onPreferencesChanged))
+
+        override _.InputChanged(input) = inputChanged(context, input)
+
+        override _.Unmounting() = unmount(context, onPreferencesChanged)
+
+        override this.Build(input) : Blob =
+          build(context, input, reducedMotionOf this.Host)
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <- cell.AnimateValue(TileInternals.zeroPoint)
+    state.Opacity <- cell.AnimateValue(1.0)
+    TiltEngine.attach(tilt, cell)
+    self <- ValueSome cell
+    cell
+
+  let create(onClick: unit -> unit) : MetroFlipTileCell =
+    createWithEffect(MetroPerspective.tryCreateDefault(), onClick)
+
+  let createFactory(onClick: unit -> unit) : unit -> MetroFlipTileCell =
+    fun () -> create onClick
+
+  let mount
+    (key: string, input: MetroFlipTileInput, factory: unit -> MetroFlipTileCell)
+    : Blob =
+    Cell.Mount<MetroFlipTileInput, MetroFlipTileCell>(key, input, factory)
