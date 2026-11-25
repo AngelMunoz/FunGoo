@@ -219,7 +219,11 @@ module LoopingInternals =
           JustifyContent = JustifyContent.FlexEnd,
           Padding = Edges(Length.Pixels 6.0, Length.Pixels 8.0),
           BorderRadius = zeroRadius,
-          BorderWidth = metroBorder,
+          BorderWidth =
+            (if isCenter || theme.HighContrast then
+               metroBorder
+             else
+               Edges(Length.Pixels 0.0)),
           BorderColor = Edges<Color>(borderColor),
           BoxShadows = emptyShadows,
           BackgroundColor = bg,

@@ -138,7 +138,12 @@ module CalendarInternals =
     let p = theme.Palette
     root.BorderRadius <- zeroRadius
     root.BoxShadows <- emptyShadows
-    root.BorderWidth <- metroBorder
+
+    root.BorderWidth <-
+      (if theme.HighContrast then
+         metroBorder
+       else
+         Edges(Length.Pixels 0.0))
 
     root.BorderColor <-
       Edges<Color>(if theme.HighContrast then p.Foreground else p.BorderStrong)
