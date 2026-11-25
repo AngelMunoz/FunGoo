@@ -232,7 +232,7 @@ let tileGrid =
     Columns = 4
     Sizes = [|
       MetroTileSize.Wide
-      MetroTileSize.Wide
+      MetroTileSize.Medium
       MetroTileSize.Medium
       MetroTileSize.Medium
       MetroTileSize.Small
@@ -461,10 +461,10 @@ let startTiles(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
       MetroCycleTile.mount(
         "gallery-cycle-tile",
         // The secondary cycler runs calmer than the telemetry live tile, so
-        // the two wide tiles do not fight on the start section.
+        // the two cycling tiles do not fight on the start section. It stays
+        // medium: a second wide tile pushes the small tiles out of the frame.
         {
           MetroCycleTile.defaults cycleFaces with
-              Size = MetroTileSize.Wide
               IntervalMs = 6000.0
         },
         ctx.Factories.CycleTile
