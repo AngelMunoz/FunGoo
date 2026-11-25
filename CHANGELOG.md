@@ -20,6 +20,10 @@
 - **Metro:** Metro SplitView, TabView, AppBar parts, Panorama, and BreadcrumbBar: a split view with Compact, Inline, and Overlay display modes, a tab bar with closable tabs and an add action, standalone AppBar buttons, toggle buttons, and separators, a horizontal Panorama with parallax layers, and a breadcrumb bar.
 - **Metro:** Metro primitives and layout: MetroIcon, MetroBorder, MetroExpander, MetroImage, MetroPersonPicture, MetroRichTextBlock, MetroScrollViewer, MetroWrapPanel, MetroVariableSizedWrapGrid, and MetroViewbox with Uniform, Fill, UniformToFill, and None stretch modes.
 
+### Fixed
+
+- **Samples:** The overview start section of the Metro gallery lays out without overlap again: the tile grid slots follow the mount order of the start tiles, and the secondary cycle tile runs on a calmer 6 s cadence so the two wide cycling tiles no longer fight the telemetry live tile.
+
 ## [0.9.0] - 2026-11-16
 
 ### Added

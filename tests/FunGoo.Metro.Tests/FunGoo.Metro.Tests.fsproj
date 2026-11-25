@@ -30,6 +30,7 @@
     <Compile Include="NotificationsTests.fs" />
     <Compile Include="NavigationControlsTests.fs" />
     <Compile Include="PrimitivesAndLayoutTests.fs" />
+    <Compile Include="TileRebuildCeilingTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

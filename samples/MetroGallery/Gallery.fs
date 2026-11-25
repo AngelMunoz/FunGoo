@@ -222,7 +222,9 @@ let hubSections = [|
   }
 |]
 
-/// The layout of the start section of the hub. It holds no state.
+/// The layout of the start section of the hub. It holds no state. The sizes
+/// follow the mount order of `startTiles`: the live tile, the cycle tile,
+/// the flip tile, the mail tile, four small tiles, and the controls tile.
 let tileGrid =
   TileGridLayout.create {
     CellSize = 72.0
@@ -230,14 +232,14 @@ let tileGrid =
     Columns = 4
     Sizes = [|
       MetroTileSize.Wide
+      MetroTileSize.Wide
+      MetroTileSize.Medium
       MetroTileSize.Medium
       MetroTileSize.Small
       MetroTileSize.Small
       MetroTileSize.Small
       MetroTileSize.Small
       MetroTileSize.Wide
-      MetroTileSize.Wide
-      MetroTileSize.Medium
     |]
   }
 
@@ -458,9 +460,12 @@ let startTiles(ctx: GalleryContext, onEvent: GalleryEvent -> unit) : Blob =
       ),
       MetroCycleTile.mount(
         "gallery-cycle-tile",
+        // The secondary cycler runs calmer than the telemetry live tile, so
+        // the two wide tiles do not fight on the start section.
         {
           MetroCycleTile.defaults cycleFaces with
               Size = MetroTileSize.Wide
+              IntervalMs = 6000.0
         },
         ctx.Factories.CycleTile
       ),
