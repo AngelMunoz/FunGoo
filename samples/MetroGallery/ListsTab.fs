@@ -1,10 +1,19 @@
 module MetroGallery.ListsTab
 
+open System
 open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
 module Content =
+
+  /// Groups rows by the first letter of their label, like a metrino
+  /// group-key over the row data.
+  let groupOf(item: MetroListItem) : string =
+    if String.IsNullOrEmpty item.Label then
+      "#"
+    else
+      item.Label.Substring(0, 1).ToUpperInvariant()
 
   let items = [|
     {
@@ -118,12 +127,13 @@ module Content =
     }
   |]
 
-/// The factories of the four collections of the tab. `create` makes them
+/// The factories of the five collections of the tab. `create` makes them
 /// once, so each collection receives the same callback instances and an
 /// unchanged input does not rebuild it.
 type ListFactories = {
   Single: IMetroListViewFactory
   Multiple: IMetroListViewFactory
+  Grouped: IMetroListViewFactory
   Box: IMetroListViewFactory
   Grid: IMetroGridViewFactory
 }
@@ -132,6 +142,7 @@ type ListFactories = {
 type ListsState = {
   mutable SingleSelected: string array
   mutable MultipleSelected: string array
+  mutable GroupedSelected: string array
   mutable BoxSelected: string array
   mutable GridSelected: string array
   mutable LastAction: string
@@ -172,6 +183,13 @@ let view(state: ListsState, factories: ListFactories) : Blob =
         Height = ValueSome(Length.Pixels 300.0)
   }
 
+  let groupedProps = {
+    MetroListView.defaults Content.items with
+        GroupKey = ValueSome Content.groupOf
+        SelectedIds = state.GroupedSelected
+        Height = ValueSome(Length.Pixels 300.0)
+  }
+
   let boxProps = {
     MetroListView.defaults Content.choices with
         SelectedIds = state.BoxSelected
@@ -201,6 +219,10 @@ let view(state: ListsState, factories: ListFactories) : Blob =
         column(
           "multiple selection",
           factories.Multiple.Mount("gallery-list-multiple", multipleProps)
+        ),
+        column(
+          "grouped",
+          factories.Grouped.Mount("gallery-list-grouped", groupedProps)
         )
       )
 
@@ -230,19 +252,21 @@ let view(state: ListsState, factories: ListFactories) : Blob =
     .Children(
       MetroText.secondary
         "The host owns the selection. Each selected row shows a 3 px accent \
-         indicator on its start edge and an accent tint. The list box adds a \
-         2 px border. The grid view mounts only the tiles near the viewport.",
+         indicator on its start edge and an accent tint. The grouped list \
+         files rows under one header per initial letter. The list box adds \
+         a 2 px border. The grid view mounts only the tiles near the viewport.",
       listsRow,
       collectionsRow,
       MetroText.caption state.LastAction
     )
 
-/// Creates the lists tab with two Metro lists, one list box, and one grid
+/// Creates the lists tab with three Metro lists, one list box, and one grid
 /// view. The tab owns every selection.
 let create() : Cell =
   let state: ListsState = {
     SingleSelected = [| "mail" |]
     MultipleSelected = [| "photos"; "maps" |]
+    GroupedSelected = [| "music" |]
     BoxSelected = [| "medium" |]
     GridSelected = [| "photos"; "maps"; "music" |]
     LastAction = "Ready"
@@ -258,6 +282,10 @@ let create() : Cell =
     Multiple =
       MetroListView.createFactory(
         handlerOf(state, fun ids -> state.MultipleSelected <- ids)
+      )
+    Grouped =
+      MetroListView.createFactory(
+        handlerOf(state, fun ids -> state.GroupedSelected <- ids)
       )
     Box =
       MetroListView.createFactory(

@@ -27,6 +27,7 @@ type MetroListViewProps = {
   RowHeight: float
   Height: Length voption
   AccessibilityName: string voption
+  GroupKey: (MetroListItem -> string) voption
 }
 
 [<Struct; NoComparison>]
@@ -62,7 +63,37 @@ module MetroListView =
     RowHeight = defaultRowHeightPx
     Height = ValueNone
     AccessibilityName = ValueNone
+    GroupKey = ValueNone
   }
+
+  // Section key for rows without a key. The widget needs a stable nonempty
+  // section identity, so a null or empty key files its row here.
+  let ungroupedKey = "#"
+
+  let keyOfRow
+    (keyOfItem: MetroListItem -> string, item: MetroListItem)
+    : string =
+    let key = keyOfItem item
+
+    if String.IsNullOrEmpty key then ungroupedKey else key
+
+  // Files rows under one section per key, sorted with the current culture
+  // like the metrino grouping. Each header shows its key.
+  let sectionsOf
+    (
+      items: MetroListItem array,
+      rows: ListViewItem array,
+      keyOfItem: MetroListItem -> string
+    ) : ListViewSection array =
+    items
+    |> Array.mapi(fun i item -> (keyOfRow(keyOfItem, item), i))
+    |> Array.groupBy fst
+    |> Array.sortWith(fun (left, _) (right, _) ->
+      String.Compare(left, right, StringComparison.CurrentCulture))
+    |> Array.map(fun (key, pairs) ->
+      let sectionRows = pairs |> Array.map(fun (_, i) -> rows[i])
+
+      ListViewSection(Id = key, Label = key, Items = sectionRows))
 
   let rowsOf(props: MetroListViewProps) : ListViewItem array =
     let items = if isNull props.Items then Array.empty else props.Items
@@ -85,8 +116,11 @@ module MetroListView =
       ))
 
   let dataOf
-    (props: MetroListViewProps, rows: ListViewItem array)
-    : ListViewInput =
+    (
+      props: MetroListViewProps,
+      rows: ListViewItem array,
+      sections: ListViewSection array
+    ) : ListViewInput =
     let rowHeight =
       if Double.IsFinite props.RowHeight && props.RowHeight > 0.0 then
         props.RowHeight
@@ -107,17 +141,29 @@ module MetroListView =
       else
         props.SelectedIds
 
+    let grouped = props.GroupKey.IsSome
+
     ListViewInput(
-      Items = rows,
+      Items = (if grouped then Array.empty else rows),
       SelectedIds = selectedIds,
       Multiple = (props.Mode = MetroListSelectionMode.Multiple),
       RowHeight = Nullable rowHeight,
       Height = height,
+      Sections = (if grouped then sections else Array.empty),
       AccessibilityName = ValueOption.defaultValue null props.AccessibilityName
     )
 
   let toInput(props: MetroListViewProps) : ListViewInput =
-    dataOf(props, rowsOf props)
+    let rows = rowsOf props
+
+    let sections =
+      match props.GroupKey with
+      | ValueNone -> Array.empty
+      | ValueSome keyOfItem ->
+        let items = if isNull props.Items then Array.empty else props.Items
+        sectionsOf(items, rows, keyOfItem)
+
+    dataOf(props, rows, sections)
 
   let zeroRadius = Length.Pixels 0.0
 
@@ -145,10 +191,15 @@ module MetroListView =
   }
 
   /// The values that the functions of a list view factory work on. The mapped
-  /// rows stay the same instance while the item array does.
+  /// rows and sections stay the same instance while the item array and the
+  /// group key do.
   type FactoryState = {
     Handlers: ListViewHandlers
-    mutable Mapped: (MetroListItem array * ListViewItem array) voption
+    mutable Mapped:
+      (MetroListItem array *
+      (MetroListItem -> string) voption *
+      ListViewItem array *
+      ListViewSection array) voption
   }
 
   // ListView owns accessibility, focus, and input fields of the row. Only
@@ -197,28 +248,51 @@ module MetroListView =
       Action<ListViewInput, Container>(fun input root -> styleRoot(input, root))
   }
 
-  // A factory maps an item array once. The mapped rows stay the same
-  // instance while the item array does, so an unchanged input does not
-  // rebuild the list.
-  let rowsFor
+  // Two group keys match when both group the same way: no grouping, or the
+  // same key function instance.
+  let sameKey
+    (
+      left: (MetroListItem -> string) voption,
+      right: (MetroListItem -> string) voption
+    ) : bool =
+    match left, right with
+    | ValueNone, ValueNone -> true
+    | ValueSome leftKey, ValueSome rightKey ->
+      obj.ReferenceEquals(leftKey, rightKey)
+    | _ -> false
+
+  // A factory maps an item array once. The mapped rows and sections stay the
+  // same instance while the item array and the group key do, so an unchanged
+  // input does not rebuild the list.
+  let mappedFor
     (state: FactoryState, props: MetroListViewProps)
-    : ListViewItem array =
+    : struct (ListViewItem array * ListViewSection array) =
     let items = props.Items
 
     match state.Mapped with
-    | ValueSome(cachedItems, cachedRows) when
+    | ValueSome(cachedItems, cachedKey, cachedRows, cachedSections) when
       obj.ReferenceEquals(items, cachedItems)
+      && sameKey(cachedKey, props.GroupKey)
       ->
-      cachedRows
+      struct (cachedRows, cachedSections)
     | _ ->
       let rows = rowsOf props
-      state.Mapped <- ValueSome(items, rows)
-      rows
+
+      let sections =
+        match props.GroupKey with
+        | ValueNone -> Array.empty
+        | ValueSome keyOfItem ->
+          let source = if isNull items then Array.empty else items
+          sectionsOf(source, rows, keyOfItem)
+
+      state.Mapped <- ValueSome(items, props.GroupKey, rows, sections)
+      struct (rows, sections)
 
   let createInput
     (state: FactoryState, props: MetroListViewProps)
     : ListViewInput =
-    let data = dataOf(props, rowsFor(state, props))
+    let struct (rows, sections) = mappedFor(state, props)
+    let data = dataOf(props, rows, sections)
 
     ListViewInput(
       Items = data.Items,
@@ -232,6 +306,7 @@ module MetroListView =
       OnClick = state.Handlers.OnClick,
       RowHeight = data.RowHeight,
       Height = data.Height,
+      Sections = data.Sections,
       AccessibilityName = data.AccessibilityName,
       ConfigureRow = state.Handlers.ConfigureRow,
       ConfigureRoot = state.Handlers.ConfigureRoot

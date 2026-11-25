@@ -47,6 +47,11 @@ type MetroListViewProps = {
   Height: Length voption
   /// Optional accessible name of the list.
   AccessibilityName: string voption
+  /// Groups rows under one non-selectable header per key when set, matching
+  /// the metrino <c>group-key</c> behavior: keys sort with the current
+  /// culture, each header shows its key, and a null or empty key files its
+  /// row under <c>"#"</c>. <c>ValueNone</c> renders one flat row list.
+  GroupKey: (MetroListItem -> string) voption
 }
 
 /// Events raised by a Metro list view.
@@ -64,9 +69,10 @@ type MetroListEvent =
 type IMetroListViewFactory =
 
   /// Returns the widget input for <paramref name="props"/>, with the callbacks
-  /// and the Metro row style of this factory. While <c>Items</c> is the same
-  /// array instance, the mapped rows are also the same instance, so an
-  /// unchanged input does not rebuild the list.
+  /// and the Metro row style of this factory. While <c>Items</c> and
+  /// <c>GroupKey</c> are the same instances, the mapped rows and sections
+  /// are also the same instances, so an unchanged input does not rebuild
+  /// the list.
   abstract CreateInput: props: MetroListViewProps -> ListViewInput
 
   /// Mounts a Metro list view under the stable <paramref name="key"/>.

@@ -171,6 +171,139 @@ let ``MetroListView.createFactory routes widget callbacks and keeps one callback
   Assert.False(activate.Multiple)
   Assert.NotNull(activate.OnClick)
 
+let private groupItems = [|
+  {
+    Id = "photos"
+    Label = "Photos"
+    Caption = ValueNone
+    Count = ValueNone
+    Disabled = false
+  }
+  {
+    Id = "mail"
+    Label = "Mail"
+    Caption = ValueNone
+    Count = ValueNone
+    Disabled = false
+  }
+  {
+    Id = "maps"
+    Label = "Maps"
+    Caption = ValueNone
+    Count = ValueNone
+    Disabled = false
+  }
+  {
+    Id = "news"
+    Label = "News"
+    Caption = ValueNone
+    Count = ValueNone
+    Disabled = false
+  }
+  {
+    Id = "mystery"
+    Label = ""
+    Caption = ValueNone
+    Count = ValueNone
+    Disabled = false
+  }
+|]
+
+let private groupOf(item: MetroListItem) : string =
+  match item.Id with
+  | "mail"
+  | "maps" -> "Work"
+  | "photos" -> "Personal"
+  | "news" -> null
+  | _ -> ""
+
+[<Fact>]
+let ``MetroListView flat props carry no sections``() =
+  let input = MetroListView.toInput(MetroListView.defaults items)
+  Assert.Equal(0, input.Sections.Length)
+  Assert.Equal(3, input.Items.Length)
+
+[<Fact>]
+let ``MetroListView GroupKey files rows into sorted sections``() =
+  let props = {
+    MetroListView.defaults groupItems with
+        GroupKey = ValueSome groupOf
+        SelectedIds = [| "mail" |]
+  }
+
+  let input = MetroListView.toInput props
+
+  // Grouped rows move to sections, so the flat row list stays empty and the
+  // selection still names the selected row.
+  Assert.Equal(0, input.Items.Length)
+  Assert.True([| "mail" |] = input.SelectedIds)
+
+  // Keys sort with the current culture: "#" before letters, then Personal
+  // before Work. The null and empty keys share the "#" section.
+  Assert.Equal(3, input.Sections.Length)
+  Assert.Equal("#", input.Sections[0].Id)
+  Assert.Equal("#", input.Sections[0].Label)
+  Assert.Equal("Personal", input.Sections[1].Id)
+  Assert.Equal("Personal", input.Sections[1].Label)
+  Assert.Equal("Work", input.Sections[2].Id)
+  Assert.Equal("Work", input.Sections[2].Label)
+
+  Assert.True(
+    [| "news"; "mystery" |] =
+      (input.Sections[0].Items |> Array.map(fun row -> row.Id))
+  )
+
+  Assert.True(
+    [| "photos" |] = (input.Sections[1].Items |> Array.map(fun row -> row.Id))
+  )
+
+  Assert.True(
+    [| "mail"; "maps" |] =
+      (input.Sections[2].Items |> Array.map(fun row -> row.Id))
+  )
+
+  // The pure mapping carries no callbacks.
+  Assert.Null(input.OnSelectionChange)
+  Assert.Null(input.OnClick)
+
+[<Fact>]
+let ``MetroListView factory caches sections while items and key match``() =
+  let events = ResizeArray<MetroListEvent>()
+  let factory = MetroListView.createFactory events.Add
+
+  let props = {
+    MetroListView.defaults groupItems with
+        GroupKey = ValueSome groupOf
+  }
+
+  let input = factory.CreateInput props
+  Assert.Equal(3, input.Sections.Length)
+  Assert.Equal(0, input.Items.Length)
+
+  let same =
+    factory.CreateInput {
+      props with
+          SelectedIds = [| "mail" |]
+    }
+
+  Assert.True(obj.ReferenceEquals(input.Sections, same.Sections))
+  Assert.True(obj.ReferenceEquals(input.Items, same.Items))
+
+  let regrouped =
+    factory.CreateInput {
+      props with
+          GroupKey = ValueSome(fun _ -> "All")
+    }
+
+  Assert.False(obj.ReferenceEquals(input.Sections, regrouped.Sections))
+  Assert.Equal(1, regrouped.Sections.Length)
+  Assert.Equal("All", regrouped.Sections[0].Id)
+  Assert.Equal(5, regrouped.Sections[0].Items.Length)
+
+  let flat = factory.CreateInput(MetroListView.defaults groupItems)
+  Assert.Equal(0, flat.Sections.Length)
+  Assert.Equal(5, flat.Items.Length)
+
 [<Fact>]
 let ``MetroListView mounts and runs the row style hook inside a build``() =
   let events = ResizeArray<MetroListEvent>()
