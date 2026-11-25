@@ -196,10 +196,12 @@ module MetroListView =
   type FactoryState = {
     Handlers: ListViewHandlers
     mutable Mapped:
-      (MetroListItem array *
-      (MetroListItem -> string) voption *
-      ListViewItem array *
-      ListViewSection array) voption
+      struct (
+        MetroListItem array *
+        (MetroListItem -> string) voption *
+        ListViewItem array *
+        ListViewSection array
+      ) voption
   }
 
   // ListView owns accessibility, focus, and input fields of the row. Only
@@ -270,7 +272,7 @@ module MetroListView =
     let items = props.Items
 
     match state.Mapped with
-    | ValueSome(cachedItems, cachedKey, cachedRows, cachedSections) when
+    | ValueSome struct (cachedItems, cachedKey, cachedRows, cachedSections) when
       obj.ReferenceEquals(items, cachedItems)
       && sameKey(cachedKey, props.GroupKey)
       ->
@@ -285,7 +287,7 @@ module MetroListView =
           let source = if isNull items then Array.empty else items
           sectionsOf(source, rows, keyOfItem)
 
-      state.Mapped <- ValueSome(items, props.GroupKey, rows, sections)
+      state.Mapped <- ValueSome struct (items, props.GroupKey, rows, sections)
       struct (rows, sections)
 
   let createInput
