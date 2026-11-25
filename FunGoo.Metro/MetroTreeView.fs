@@ -40,6 +40,16 @@ type MetroTreeViewEvent =
   | SelectionChanged of ids: string array
   | ExpandedChanged of id: string * expanded: bool
 
+[<AbstractClass>]
+type MetroTreeViewCell() =
+  inherit Cell<MetroTreeViewProps>()
+
+  abstract ContentTranslate: Anim<Point>
+
+  abstract ContentOpacity: Anim<float>
+
+  abstract View: Blob
+
 type IMetroTreeViewFactory =
 
   abstract CreateInput: props: MetroTreeViewProps -> TreeViewInput
@@ -52,6 +62,8 @@ module MetroTreeView =
   let defaultRowHeightPx: float = 36.0
   let defaultIndentPx: float = 20.0
   let indicatorWidthPx: float = 3.0
+  let slideOffsetPx: float = 12.0
+  let treeKey = "tree"
   let zeroRadius = Length.Pixels 0.0
 
   let leaf(id: string, label: string) : MetroTreeNode = {
@@ -203,6 +215,21 @@ module MetroTreeView =
     mutable Icons: Dictionary<string, string>
     mutable Mapped: (MetroTreeNode array * TreeNode array) voption
     mutable Handlers: TreeHandlers
+    OnEvent: MetroTreeViewEvent -> unit
+  }
+
+  type TreeCellState = {
+    mutable Input: MetroTreeViewProps
+    mutable LastExpanded: string array voption
+    mutable LastReducedMotion: bool
+    mutable ScopedReducedMotion: bool
+    mutable Translate: Anim<Point>
+    mutable Opacity: Anim<float>
+  }
+
+  type TreeCellContext = {
+    Shared: FactoryState
+    State: TreeCellState
   }
 
   let styleRow
@@ -299,17 +326,16 @@ module MetroTreeView =
     : Blob =
     Cell.Mount<TreeViewInput, TreeView>(key, createInput(state, props))
 
-  let createFactory
-    (onEvent: MetroTreeViewEvent -> unit)
-    : IMetroTreeViewFactory =
-    let state: FactoryState = {
+  let freshShared(onEvent: MetroTreeViewEvent -> unit) : FactoryState =
+    let shared: FactoryState = {
       Icons = Dictionary<string, string>(StringComparer.Ordinal)
       Mapped = ValueNone
       Handlers = Unchecked.defaultof<TreeHandlers>
+      OnEvent = onEvent
     }
 
     // The compiler requires delegate constructors in record fields (FS0002).
-    state.Handlers <- {
+    shared.Handlers <- {
       OnSelectionChange =
         Action<string array>(fun ids ->
           onEvent(MetroTreeViewEvent.SelectionChanged ids))
@@ -324,11 +350,135 @@ module MetroTreeView =
           styleRoot(input, root))
       CreateContent =
         Func<TreeViewInput, TreeViewRow, Blob, Blob>(fun _ row content ->
-          decorateContent(state, row, content))
+          decorateContent(shared, row, content))
     }
+
+    shared
+
+  let expandedOf(props: MetroTreeViewProps) : string array =
+    if isNull props.ExpandedIds then
+      Array.empty
+    else
+      props.ExpandedIds
+
+  let sameExpanded(previous: string array, next: string array) : bool =
+    if obj.ReferenceEquals(previous, next) then true
+    elif previous.Length <> next.Length then false
+    else (previous |> Array.sort) = (next |> Array.sort)
+
+  let initialCellState() : TreeCellState = {
+    Input = defaults(Array.empty)
+    LastExpanded = ValueNone
+    LastReducedMotion = false
+    ScopedReducedMotion = false
+    Translate = Unchecked.defaultof<Anim<Point>>
+    Opacity = Unchecked.defaultof<Anim<float>>
+  }
+
+  let snapToRest(state: TreeCellState) : unit =
+    state.Translate.Snap(Point(X = 0.0, Y = 0.0))
+    state.Opacity.Snap(1.0)
+
+  let playExpand(state: TreeCellState, theme: MetroTheme) : unit =
+    let spec = MetroMotion.forTheme(theme, MetroMotion.fast)
+
+    state.Translate.Play(
+      Point(X = 0.0, Y = -slideOffsetPx),
+      Point(X = 0.0, Y = 0.0),
+      spec
+    )
+
+    state.Opacity.Play(0.0, 1.0, spec)
+
+  let viewOf(ctx: TreeCellContext) : Blob =
+    Container(
+      TranslateAnim = ctx.State.Translate,
+      OpacityAnim = ctx.State.Opacity
+    )
+      .Children(mount(ctx.Shared, treeKey, ctx.State.Input))
+
+  let build
+    (ctx: TreeCellContext, input: MetroTreeViewProps, hostReduced: bool voption)
+    : Blob =
+    let state = ctx.State
+    state.Input <- input
+    let theme = Metro.read()
+    let windowReduced = ValueOption.defaultValue false hostReduced
+    state.ScopedReducedMotion <- theme.ReducedMotion && not windowReduced
+    state.LastReducedMotion <- theme.ReducedMotion
+    let next = expandedOf input
+
+    let changed =
+      state.LastExpanded
+      |> ValueOption.map(fun prev -> not(sameExpanded(prev, next)))
+      |> ValueOption.defaultValue false
+
+    if theme.ReducedMotion || state.LastExpanded.IsNone then
+      snapToRest state
+    elif changed then
+      let reduced =
+        state.ScopedReducedMotion
+        || ValueOption.defaultValue state.LastReducedMotion hostReduced
+
+      if reduced then
+        snapToRest state
+      else
+        playExpand(state, theme)
+
+    state.LastExpanded <- ValueSome next
+    viewOf ctx
+
+  let unmount(state: TreeCellState) : unit =
+    state.LastExpanded <- ValueNone
+    state.ScopedReducedMotion <- false
+    snapToRest state
+
+  let reducedMotionOf(host: Window) : bool voption =
+    if isNull host then
+      ValueNone
+    else
+      ValueSome(Metro.readWindow(host).ReducedMotion)
+
+  let createWith(shared: FactoryState) : MetroTreeViewCell =
+    let state = initialCellState()
+    let ctx: TreeCellContext = { Shared = shared; State = state }
+
+    let cell = {
+      new MetroTreeViewCell() with
+        override _.ContentTranslate = state.Translate
+        override _.ContentOpacity = state.Opacity
+        override _.View = viewOf ctx
+
+        override this.Build(input) : Blob =
+          build(ctx, input, reducedMotionOf this.Host)
+
+        override _.Unmounting() = unmount state
+    }
+
+    // The cell exists now: Goo ties each animation to it.
+    state.Translate <- cell.AnimateValue(Point(X = 0.0, Y = 0.0))
+    state.Opacity <- cell.AnimateValue(1.0)
+    cell
+
+  let mountCell
+    (shared: FactoryState, key: string, props: MetroTreeViewProps)
+    : Blob =
+    Cell.Mount<MetroTreeViewProps, MetroTreeViewCell>(
+      key,
+      props,
+      fun () -> createWith shared
+    )
+
+  let create(onEvent: MetroTreeViewEvent -> unit) : MetroTreeViewCell =
+    createWith(freshShared onEvent)
+
+  let createFactory
+    (onEvent: MetroTreeViewEvent -> unit)
+    : IMetroTreeViewFactory =
+    let shared = freshShared onEvent
 
     {
       new IMetroTreeViewFactory with
-        member _.CreateInput(props) = createInput(state, props)
-        member _.Mount(key, props) = mount(state, key, props)
+        member _.CreateInput(props) = createInput(shared, props)
+        member _.Mount(key, props) = mountCell(shared, key, props)
     }

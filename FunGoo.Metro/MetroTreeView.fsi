@@ -61,6 +61,24 @@ type MetroTreeViewEvent =
   /// A branch node requested expanding or collapsing.
   | ExpandedChanged of id: string * expanded: bool
 
+/// Stateful Metro tree view cell with an animated expand surface.
+/// <c>MetroTreeView.create</c> makes the cell. The type holds the surface
+/// that hosts and tests use.
+[<AbstractClass>]
+type MetroTreeViewCell =
+  inherit Cell<MetroTreeViewProps>
+
+  /// Current paint-bound content translation animation. A test reads it.
+  abstract ContentTranslate: Anim<Point>
+
+  /// Current paint-bound content opacity animation. A test reads it.
+  abstract ContentOpacity: Anim<float>
+
+  /// The tree of the current input: the animated surface wrapping the
+  /// mounted <see cref="Goo.Widgets.Data.TreeView"/>. A test reads it, and
+  /// only inside a build, where the Metro theme is readable.
+  abstract View: Blob
+
 /// Factory for Metro hierarchical tree views backed by
 /// <see cref="Goo.Widgets.Data.TreeView"/>. Create one factory per tree view,
 /// outside <c>Build</c>, so callback delegates and mapped
@@ -73,6 +91,8 @@ type IMetroTreeViewFactory =
   abstract CreateInput: props: MetroTreeViewProps -> TreeViewInput
 
   /// Mounts a Metro tree view under stable <paramref name="key"/>.
+  /// Expand and collapse changes animate the tree container surface; see
+  /// <see cref="MetroTreeView.create"/> for the motion contract.
   abstract Mount: key: string * props: MetroTreeViewProps -> Blob
 
 /// Pure mappers and factory constructors for Metro hierarchical tree views.
@@ -116,3 +136,17 @@ module MetroTreeView =
   /// host cell automatically.
   val createFactory:
     onEvent: (MetroTreeViewEvent -> unit) -> IMetroTreeViewFactory
+
+  /// Creates a tree view cell delivering events to <paramref name="onEvent"/>.
+  /// Because <see cref="TreeView"/> delivers its callbacks through
+  /// <c>InvokeInputCallback</c>, the owner rule rebuilds the host cell
+  /// automatically.
+  /// When <c>ExpandedIds</c> changes, the cell plays a short vertical slide
+  /// with a fade of the tree container surface at
+  /// <c>MetroMotion.fast</c> through <c>MetroMotion.forTheme</c>.
+  /// <see cref="TreeView"/> row hooks (<c>ConfigureRow</c>) carry no
+  /// per-row animation lifecycle, so the cell animates the container
+  /// surface instead of the changed region.
+  /// Selection-only changes and the first mount snap to rest with no
+  /// animation. Reduced motion snaps instantly with no animation.
+  val create: onEvent: (MetroTreeViewEvent -> unit) -> MetroTreeViewCell
