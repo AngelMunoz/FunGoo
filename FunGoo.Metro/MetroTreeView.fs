@@ -50,6 +50,13 @@ type MetroTreeViewCell() =
 
   abstract View: Blob
 
+  // Gives an event of this cell to the host cell, as a Goo.Widgets control
+  // does. The owner rule then rebuilds the host cell.
+  member this.Raise
+    (callback: Action<MetroTreeViewEvent>, value: MetroTreeViewEvent)
+    =
+    this.InvokeInputCallback(callback, value)
+
 type IMetroTreeViewFactory =
 
   abstract CreateInput: props: MetroTreeViewProps -> TreeViewInput
@@ -215,7 +222,8 @@ module MetroTreeView =
     mutable Icons: Dictionary<string, string>
     mutable Mapped: (MetroTreeNode array * TreeNode array) voption
     mutable Handlers: TreeHandlers
-    OnEvent: MetroTreeViewEvent -> unit
+    mutable Self: MetroTreeViewCell voption
+    EventAction: Action<MetroTreeViewEvent>
   }
 
   type TreeCellState = {
@@ -331,17 +339,30 @@ module MetroTreeView =
       Icons = Dictionary<string, string>(StringComparer.Ordinal)
       Mapped = ValueNone
       Handlers = Unchecked.defaultof<TreeHandlers>
-      OnEvent = onEvent
+      Self = ValueNone
+      EventAction = Action<MetroTreeViewEvent>(onEvent)
     }
 
     // The compiler requires delegate constructors in record fields (FS0002).
+    // Each handler gives its event to the host cell through the mounted cell,
+    // so the owner rule rebuilds the host with the new props.
     shared.Handlers <- {
       OnSelectionChange =
         Action<string array>(fun ids ->
-          onEvent(MetroTreeViewEvent.SelectionChanged ids))
+          shared.Self
+          |> ValueOption.iter(fun cell ->
+            cell.Raise(
+              shared.EventAction,
+              MetroTreeViewEvent.SelectionChanged ids
+            )))
       OnExpandedChange =
         Action<string, bool>(fun id expanded ->
-          onEvent(MetroTreeViewEvent.ExpandedChanged(id, expanded)))
+          shared.Self
+          |> ValueOption.iter(fun cell ->
+            cell.Raise(
+              shared.EventAction,
+              MetroTreeViewEvent.ExpandedChanged(id, expanded)
+            )))
       ConfigureRow =
         Action<TreeViewInput, TreeViewRow, Container>(fun input row root ->
           styleRow(input, row, root))
@@ -458,6 +479,7 @@ module MetroTreeView =
     // The cell exists now: Goo ties each animation to it.
     state.Translate <- cell.AnimateValue(Point(X = 0.0, Y = 0.0))
     state.Opacity <- cell.AnimateValue(1.0)
+    shared.Self <- ValueSome cell
     cell
 
   let mountCell

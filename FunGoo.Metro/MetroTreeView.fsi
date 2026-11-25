@@ -1,5 +1,6 @@
 namespace FunGoo.Metro
 
+open System
 open Goo
 open Goo.Widgets.Data
 
@@ -78,6 +79,12 @@ type MetroTreeViewCell =
   /// mounted <see cref="Goo.Widgets.Data.TreeView"/>. A test reads it, and
   /// only inside a build, where the Metro theme is readable.
   abstract View: Blob
+
+  /// Gives one tree event of this cell to the host cell, as a Goo.Widgets
+  /// control does. The owner rule then rebuilds the host cell, so a host
+  /// does not call <c>Rebuild</c> on itself in the event callback.
+  member Raise:
+    callback: Action<MetroTreeViewEvent> * value: MetroTreeViewEvent -> unit
 
 /// Factory for Metro hierarchical tree views backed by
 /// <see cref="Goo.Widgets.Data.TreeView"/>. Create one factory per tree view,

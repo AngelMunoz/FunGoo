@@ -118,3 +118,70 @@ let ``Selecting without expanding starts no animation``() =
   Assert.False(cell.ContentOpacity.Running)
   Assert.False(cell.ContentTranslate.Running)
   Assert.Equal(1.0, cell.ContentOpacity.Value, 3)
+
+[<Fact>]
+let ``Collapsing and expanding through the widget callback rebuilds the host``
+  ()
+  =
+  let treeNodes = nodes()
+  let mutable selected: string array = Array.empty
+  let mutable expanded: string array = [| "root" |]
+  let mutable lastExpanded: string array = Array.empty
+
+  // The host holds the expanded state, like the gallery: each build reads it
+  // and the event handler updates it.
+  let factory =
+    MetroTreeView.createFactory(function
+      | MetroTreeViewEvent.SelectionChanged ids -> selected <- ids
+      | MetroTreeViewEvent.ExpandedChanged(id, isExp) ->
+        expanded <- MetroTreeView.applyExpanded(expanded, id, isExp))
+
+  let root =
+    CaptureCell.create(fun () ->
+      lastExpanded <- expanded
+
+      factory.Mount(
+        "tree",
+        {
+          MetroTreeView.defaults treeNodes with
+              SelectedIds = selected
+              ExpandedIds = expanded
+        }
+      ))
+
+  use host = createHost(800, 600)
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
+
+  Assert.Equal<string array>([| "root" |], lastExpanded)
+
+  // The mounted widget holds the same cached delegates the factory hands
+  // out, so invoking them is the widget callback path.
+  let widgetInput() =
+    factory.CreateInput {
+      MetroTreeView.defaults treeNodes with
+          SelectedIds = selected
+          ExpandedIds = expanded
+    }
+
+  let buildsBefore = root.Builds
+  (widgetInput()).OnExpandedChange.Invoke("root", false)
+  pumpFrames(host, 2)
+
+  Assert.Empty(expanded)
+  Assert.True(root.Builds > buildsBefore)
+  Assert.Empty(lastExpanded)
+
+  let buildsAfterCollapse = root.Builds
+  (widgetInput()).OnExpandedChange.Invoke("root", true)
+  pumpFrames(host, 2)
+
+  Assert.Equal<string array>([| "root" |], expanded)
+  Assert.True(root.Builds > buildsAfterCollapse)
+  Assert.Equal<string array>([| "root" |], lastExpanded)
+
+  (widgetInput()).OnSelectionChange.Invoke([| "a" |])
+  pumpFrames(host, 2)
+  Assert.Equal<string array>([| "a" |], selected)

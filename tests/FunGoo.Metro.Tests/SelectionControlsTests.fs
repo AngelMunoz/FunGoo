@@ -345,13 +345,32 @@ let ``MetroTreeView caches mapped TreeNode arrays and callback delegates with ze
   |]
 
   let mutable selected: string array = Array.empty
-  let mutable expanded: string array = Array.empty
+  let mutable expanded: string array = [| "root" |]
 
   let factory =
     MetroTreeView.createFactory(function
       | MetroTreeViewEvent.SelectionChanged ids -> selected <- ids
       | MetroTreeViewEvent.ExpandedChanged(id, isExp) ->
         expanded <- MetroTreeView.applyExpanded(expanded, id, isExp))
+
+  // The host holds the expanded state, like the gallery: each build reads it,
+  // and the tests below drive it through the widget callback path.
+  let root =
+    CaptureCell.create(fun () ->
+      factory.Mount(
+        "tree",
+        {
+          MetroTreeView.defaults nodes with
+              SelectedIds = selected
+              ExpandedIds = expanded
+        }
+      ))
+
+  use host = createHost(800, 600)
+  let window = Window(Root = root)
+  Metro.attach(window, darkConfig)
+  window.Attach(host) |> ignore
+  pumpFrames(host, 2)
 
   let props = {
     MetroTreeView.defaults nodes with
@@ -383,11 +402,22 @@ let ``MetroTreeView caches mapped TreeNode arrays and callback delegates with ze
   let allocated = GC.GetAllocatedBytesForCurrentThread() - beforeBytes
   Assert.True(allocated <= 64L, $"Expected <= 64 B, allocated {allocated} B.")
 
-  input1.OnExpandedChange.Invoke("root", true)
-  Assert.Equal<string array>([| "root" |], expanded)
+  // The mounted widget holds these same delegates, so invoking them is the
+  // widget callback path: the owner rule rebuilds the host with the new
+  // expanded state.
+  let buildsBefore = root.Builds
   input1.OnExpandedChange.Invoke("root", false)
+  pumpFrames(host, 1)
+
   Assert.Empty(expanded)
+  Assert.True(root.Builds > buildsBefore)
+
+  input1.OnExpandedChange.Invoke("root", true)
+  pumpFrames(host, 1)
+  Assert.Equal<string array>([| "root" |], expanded)
+
   input1.OnSelectionChange.Invoke([| "child-1" |])
+  pumpFrames(host, 1)
   Assert.Equal<string array>([| "child-1" |], selected)
 
 [<Fact>]
