@@ -327,6 +327,10 @@ type MetroFlipTileCell =
   /// The number of builds of this flip tile cell. A test reads it.
   abstract Builds: int
 
+  /// Paint-bound scale animation of the face container. The flip shrinks it
+  /// to zero, swaps the side, and grows it back. A test reads it.
+  abstract ScaleAnim: Anim<float>
+
   /// Gives one click of this cell to the host cell, as a Goo.Widgets control
   /// does. The owner rule then rebuilds the host cell, so a host does not
   /// call <c>Rebuild</c> on itself in the click callback.

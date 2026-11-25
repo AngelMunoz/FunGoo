@@ -15,6 +15,9 @@ let private flags =
 
 let private entriesMethod = typeof<Style>.GetMethod("Entries", flags)
 
+let private updateTreeMethod =
+  typeof<Window>.GetMethod("UpdateTree", flags, null, [| typeof<float> |], null)
+
 type private StyleSample = {
   FieldName: string
   A: float32
@@ -908,10 +911,55 @@ let ``MetroCycleTile cycles faces on a window timer and MetroFlipTile flips on c
   Assert.Equal(AccessibilityRole.Button, flipBtn.Accessibility.Role)
   Assert.Equal("Mail", flipBtn.Accessibility.Name)
 
-  // A click flips the tile and reaches the host callback.
+  // Ticks the motion pump like the motion tests do: the headless host
+  // render alone does not advance paint animations.
+  let tickFlip() : unit =
+    updateTreeMethod.Invoke(window, [| box 0.016 |]) |> ignore
+    host.RenderFrame(0.016)
+
+  // A click starts a shrink: the side swaps only when the shrink
+  // completes, and the click still reaches the host callback exactly once.
   flipBtn.OnClick.Invoke()
-  pumpFrames(host, 1)
-  Assert.True(flipCell.Flipped)
+  Assert.Equal(1, flipClicks)
+
+  // Tick until the scale moves off rest, then check the shrink is running
+  // while the side still shows the front.
+  let mutable shrinkGuard = 0
+
+  while flipCell.ScaleAnim.Value >= 1.0 && shrinkGuard < 200 do
+    shrinkGuard <- shrinkGuard + 1
+    tickFlip()
+
+  Assert.False(flipCell.Flipped)
+  Assert.True(flipCell.ScaleAnim.Running)
+  Assert.True(flipCell.ScaleAnim.Value < 1.0)
+
+  // The old slide is gone: the face still shows the front mid-shrink
+  // instead of swapping up front.
+  let mutable shrinkingBlob: Blob = null
+  capture.DuringBuild(host, fun () -> shrinkingBlob <- flipCell.View)
+  Assert.Equal("Mail", (shrinkingBlob :?> Button).Accessibility.Name)
+
+  let waitForFlipEnd expected =
+    let mutable guard = 0
+
+    let pending() : bool =
+      flipCell.Flipped <> expected || flipCell.ScaleAnim.Running
+
+    while pending() && guard < 400 do
+      guard <- guard + 1
+      tickFlip()
+
+    if flipCell.Flipped <> expected then
+      failwith(
+        sprintf
+          "The flip did not settle. Flipped=%b Running=%b Value=%f"
+          flipCell.Flipped
+          flipCell.ScaleAnim.Running
+          flipCell.ScaleAnim.Value
+      )
+
+  waitForFlipEnd true
   Assert.Equal(1, flipClicks)
 
   let mutable flippedBlob: Blob = null
@@ -924,28 +972,41 @@ let ``MetroCycleTile cycles faces on a window timer and MetroFlipTile flips on c
   pumpFrames(host, 2)
   Assert.True(flipCell.Flipped)
 
-  // A props change to the other side flips the tile back.
+  // A props change to the other side starts a shrink: the side swaps when
+  // the shrink completes.
   flipInput <- { flipInput with Flipped = false }
   capture.Rebuild()
-  pumpFrames(host, 2)
-  Assert.False(flipCell.Flipped)
+  pumpFrames(host, 1)
+  Assert.True(flipCell.Flipped)
+  Assert.True(flipCell.ScaleAnim.Running)
+  waitForFlipEnd false
 
   // A props change to the back face flips forward again.
   flipInput <- { flipInput with Flipped = true }
   capture.Rebuild()
-  pumpFrames(host, 2)
-  Assert.True(flipCell.Flipped)
+  pumpFrames(host, 1)
+  Assert.False(flipCell.Flipped)
+  Assert.True(flipCell.ScaleAnim.Running)
 
-  // Reduced motion still flips, resting the animation.
+  // A second props change during the shrink restarts cleanly toward the
+  // latest target instead of wedging between sides.
+  flipInput <- { flipInput with Flipped = false }
+  capture.Rebuild()
+  Assert.True(flipCell.ScaleAnim.Running)
+  waitForFlipEnd false
+
+  // Reduced motion swaps instantly with the scale at rest.
   host.UpdatePreferences(
     PlatformPreferences(Theme = SystemTheme.Dark, ReducedMotion = Nullable true)
   )
 
   pumpFrames(host, 2)
-  flipInput <- { flipInput with Flipped = false }
+  flipInput <- { flipInput with Flipped = true }
   capture.Rebuild()
   pumpFrames(host, 2)
-  Assert.False(flipCell.Flipped)
+  Assert.True(flipCell.Flipped)
+  Assert.False(flipCell.ScaleAnim.Running)
+  Assert.Equal(1.0, flipCell.ScaleAnim.Value, 3)
 
 [<Fact>]
 let ``A timer action of a cell rebuilds the cell through the owner rule``() =

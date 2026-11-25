@@ -1499,6 +1499,8 @@ type MetroFlipTileCell() =
   /// The number of builds of this flip tile cell. A test reads it.
   abstract Builds: int
 
+  abstract ScaleAnim: Anim<float>
+
   // Gives a click of the host to the host cell, as a Goo.Widgets control
   // does. The owner rule then rebuilds the host cell.
   member this.Raise(callback: Action) = this.InvokeInputCallback(callback)
@@ -1512,14 +1514,19 @@ module MetroFlipTile =
     mutable AttachedHost: Window voption
     mutable Flipped: bool
     mutable BuiltFlipped: bool
+    mutable FlipTarget: bool
+    mutable FlipShrinking: bool
+    mutable FlipSubscribed: bool
+    mutable FlipHandler: Action<MotionCompletionReason>
     mutable IsMounted: bool
     mutable LastReducedMotion: bool
     mutable ScopedReducedMotion: bool
     mutable Builds: int
-    // Slots for the two animation values. `create` fills them after the cell
-    // exists.
+    // Slots for the three animation values. `create` fills them after the
+    // cell exists.
     mutable Translate: Anim<Point>
     mutable Opacity: Anim<float>
+    mutable Scale: Anim<float>
   }
 
   /// The values that the functions of a flip tile cell work on.
@@ -1575,12 +1582,17 @@ module MetroFlipTile =
     AttachedHost = ValueNone
     Flipped = false
     BuiltFlipped = false
+    FlipTarget = false
+    FlipShrinking = false
+    FlipSubscribed = false
+    FlipHandler = Unchecked.defaultof<Action<MotionCompletionReason>>
     IsMounted = false
     LastReducedMotion = false
     ScopedReducedMotion = false
     Builds = 0
     Translate = Unchecked.defaultof<Anim<Point>>
     Opacity = Unchecked.defaultof<Anim<float>>
+    Scale = Unchecked.defaultof<Anim<float>>
   }
 
   /// <c>true</c> when a scope or the host window asks for reduced motion.
@@ -1590,39 +1602,33 @@ module MetroFlipTile =
         |> ValueOption.map(fun w -> Metro.readWindow(w).ReducedMotion)
         |> ValueOption.defaultValue state.LastReducedMotion)
 
-  /// Puts the face at rest: no translation and fully opaque.
+  // Puts the face at rest: full scale, no translation, fully opaque.
   let snapToRest(state: FlipTileState) : unit =
     state.Translate.Snap(TileInternals.zeroPoint)
     state.Opacity.Snap(1.0)
+    state.Scale.Snap(1.0)
 
-  /// Plays the tile flip motion: a short vertical slide with a fade, as the
-  /// live tile face change does.
-  let playFlip(state: FlipTileState) : unit =
-    state.Translate.Play(
-      Point(X = 0.0, Y = 24.0),
-      TileInternals.zeroPoint,
-      MetroMotion.normal
-    )
+  // Requests one side with a scale shrink/grow flip, or with a snap under
+  // reduced motion. The shrink completion swaps the side and grows back, so
+  // a request during the shrink only moves the target and restarts cleanly.
+  let requestFlip(state: FlipTileState, target: bool) : unit =
+    state.FlipTarget <- target
 
-    state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
-
-  /// Shows one side with the flip motion, or with a snap under reduced
-  /// motion.
-  let showSide(state: FlipTileState, flipped: bool) : unit =
-    if state.Flipped <> flipped then
-      state.Flipped <- flipped
-
-      if isReducedMotion state then
-        snapToRest state
-      else
-        playFlip state
+    if isReducedMotion state then
+      state.FlipShrinking <- false
+      state.Flipped <- target
+      snapToRest state
+    elif state.Flipped <> target || state.FlipShrinking then
+      state.FlipShrinking <- true
+      state.Scale.Play(1.0, 0.0, MetroMotion.fast)
 
   /// Stores the input. `build` adopts a changed `Flipped` value, because only
   /// a build reads the theme for the reduced-motion snap.
   let inputChanged(ctx: FlipTileContext, input: MetroFlipTileInput) : unit =
     ctx.State.Input <- input
 
-  /// Subscribes the handler to the preferences of the host window.
+  // Subscribes the handler to the preferences of the host window, and the
+  // flip completion handler to the scale animation.
   let mounted(ctx: FlipTileContext, attachment: HostAttachment) : unit =
     let state = ctx.State
     state.IsMounted <- true
@@ -1631,12 +1637,22 @@ module MetroFlipTile =
     attachment.Host
     |> ValueOption.iter(fun w -> w.add_PreferencesChanged attachment.Handler)
 
-  /// Unsubscribes the handler and puts the face at rest.
+    if not state.FlipSubscribed && not(isNull state.Scale) then
+      state.FlipSubscribed <- true
+      state.Scale.add_Completed(state.FlipHandler)
+
+  // Unsubscribes the handlers, drops a pending flip, and puts the face at
+  // rest.
   let unmount
     (ctx: FlipTileContext, handler: Action<PlatformPreferences>)
     : unit =
     let state = ctx.State
     state.IsMounted <- false
+    state.FlipShrinking <- false
+
+    if state.FlipSubscribed && not(isNull state.Scale) then
+      state.FlipSubscribed <- false
+      state.Scale.remove_Completed(state.FlipHandler)
 
     state.AttachedHost
     |> ValueOption.iter(fun w -> w.remove_PreferencesChanged handler)
@@ -1646,11 +1662,12 @@ module MetroFlipTile =
     snapToRest state
     TiltEngine.snapToRest ctx.Tilt
 
-  /// Stops the flip animation under reduced motion. The host window calls the
-  /// handler of its preferences after `UpdatePreferences`, so the cell rests
-  /// without waiting for its next build.
+  // Stops the flip animation under reduced motion. The host window calls the
+  // handler of its preferences after `UpdatePreferences`, so the cell rests
+  // without waiting for its next build.
   let syncMotion(ctx: FlipTileContext) : unit =
     if isReducedMotion ctx.State then
+      ctx.State.FlipShrinking <- false
       snapToRest ctx.State
 
     TiltEngine.sync(
@@ -1720,8 +1737,7 @@ module MetroFlipTile =
         FlexGrow = 1.0,
         Width = Length.Percent 100.0,
         Height = Length.Percent 100.0,
-        TranslateAnim = state.Translate,
-        OpacityAnim = state.Opacity
+        ScaleAnim = state.Scale
       )
 
     TileFaceContent.render {
@@ -1767,8 +1783,8 @@ module MetroFlipTile =
     TiltEngine.applyToBlob(ctx.Tilt, tileBtn)
     tileBtn.Children(faceContainer)
 
-  /// Reads the theme, adopts a changed `Flipped` value, stops the flip
-  /// animation under reduced motion, then builds the tree.
+  // Reads the theme, starts a flip for a changed `Flipped` value, rests the
+  // face under reduced motion, then builds the tree.
   let build
     (ctx: FlipTileContext, input: MetroFlipTileInput, hostReduced: bool voption)
     : Blob =
@@ -1785,10 +1801,7 @@ module MetroFlipTile =
     state.LastReducedMotion <- theme.ReducedMotion
 
     if flipChanged then
-      state.Flipped <- input.Flipped
-
-    if flipChanged && not theme.ReducedMotion then
-      playFlip state
+      requestFlip(state, input.Flipped)
     elif theme.ReducedMotion then
       snapToRest state
 
@@ -1831,12 +1844,19 @@ module MetroFlipTile =
 
     // One delegate for the life of the cell. It flips the tile, then gives
     // each click to the host cell, so the owner rule rebuilds the host. The
-    // tile owns the click callback, so Goo rebuilds the tile as well.
+    // tile owns the click callback, so Goo rebuilds the tile as well. A
+    // click during the shrink reverses the pending target and restarts.
     let click =
       Action(fun () ->
         self
         |> ValueOption.iter(fun cell ->
-          showSide(state, not state.Flipped)
+          let target =
+            if state.FlipShrinking then
+              not state.FlipTarget
+            else
+              not state.Flipped
+
+          requestFlip(state, target)
           cell.Raise(onClickAction)))
 
     let keys = [|
@@ -1856,12 +1876,23 @@ module MetroFlipTile =
       Action<PlatformPreferences>(fun _ ->
         self |> ValueOption.iter(fun _ -> syncMotion context))
 
+    // One handler for the life of the cell. The shrink completion swaps the
+    // side and grows back; completions outside the shrink phase are ignored.
+    let onFlipCompleted =
+      Action<MotionCompletionReason>(fun _ ->
+        if state.FlipShrinking then
+          state.FlipShrinking <- false
+          state.Flipped <- state.FlipTarget
+          state.Scale.Play(0.0, 1.0, MetroMotion.fast)
+          self |> ValueOption.iter(fun cell -> cell.Rebuild()))
+
     let cell = {
       new MetroFlipTileCell() with
         override _.Flipped = state.Flipped
         override _.View = view(context, state.Input, Metro.read())
         override _.TiltState = TiltEngine.snapshot tilt
         override _.Builds = state.Builds
+        override _.ScaleAnim = state.Scale
 
         override this.Mounted() =
           mounted(context, attachmentOf(this.Host, onPreferencesChanged))
@@ -1877,6 +1908,10 @@ module MetroFlipTile =
     // The cell exists now: Goo ties each animation to it.
     state.Translate <- cell.AnimateValue(TileInternals.zeroPoint)
     state.Opacity <- cell.AnimateValue(1.0)
+    state.Scale <- cell.AnimateValue(1.0)
+    state.FlipHandler <- onFlipCompleted
+    state.FlipSubscribed <- true
+    state.Scale.add_Completed(onFlipCompleted)
     TiltEngine.attach(tilt, cell)
     self <- ValueSome cell
     cell
