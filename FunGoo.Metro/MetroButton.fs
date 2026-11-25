@@ -186,7 +186,10 @@ module MetroButton =
         BackgroundColor = visuals.Background,
         Color = visuals.Foreground,
         FontFamily = theme.FontFamily,
-        FontSize = Length.Pixels(14.0 * theme.TextScaleFactor),
+        FontSize =
+          Length.Pixels(
+            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+          ),
         FontWeight = visuals.FontWeight,
         HoverStyle = visuals.HoverStyle,
         ActiveStyle = visuals.ActiveStyle,

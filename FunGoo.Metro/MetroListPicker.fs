@@ -242,7 +242,10 @@ module ListPickerInternals =
         Content = label,
         Color = fg,
         FontFamily = theme.FontFamily,
-        FontSize = Length.Pixels(14.0 * theme.TextScaleFactor),
+        FontSize =
+          Length.Pixels(
+            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+          ),
         FontWeight = (if selected then 600.0 else 400.0),
         TextWrap = TextWrap.NoWrap,
         TextTrimming = TextTrimming.Ellipsis
@@ -350,7 +353,11 @@ module ListPickerInternals =
             Content = titleText,
             Color = p.Foreground,
             FontFamily = theme.FontFamily,
-            FontSize = Length.Pixels(16.0 * theme.TextScaleFactor),
+            FontSize =
+              Length.Pixels(
+                MetroTypography.size MetroTextRole.Medium
+                * theme.TextScaleFactor
+              ),
             FontWeight = 600.0
           ),
           Button(
@@ -576,7 +583,10 @@ module ListPickerInternals =
            else
              p.Foreground),
         FontFamily = theme.FontFamily,
-        FontSize = Length.Pixels(14.0 * theme.TextScaleFactor),
+        FontSize =
+          Length.Pixels(
+            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+          ),
         FontWeight = 400.0,
         TextWrap = TextWrap.NoWrap,
         TextTrimming = TextTrimming.Ellipsis
@@ -607,7 +617,11 @@ module ListPickerInternals =
             Content = hdr,
             Color = p.ForegroundSecondary,
             FontFamily = theme.FontFamily,
-            FontSize = Length.Pixels(12.0 * theme.TextScaleFactor),
+            FontSize =
+              Length.Pixels(
+                MetroTypography.size MetroTextRole.Caption
+                * theme.TextScaleFactor
+              ),
             FontWeight = 600.0
           )
         ))

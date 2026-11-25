@@ -135,7 +135,11 @@ module MetroInfoBar =
               Content = title,
               Color = p.Foreground,
               FontFamily = theme.FontFamily,
-              FontSize = Length.Pixels(14.0 * theme.TextScaleFactor),
+              FontSize =
+                Length.Pixels(
+                  MetroTypography.size MetroTextRole.Body
+                  * theme.TextScaleFactor
+                ),
               FontWeight = 600.0,
               LineHeight = 1.3
             )
@@ -147,7 +151,11 @@ module MetroInfoBar =
             Content = msgText,
             Color = p.ForegroundSecondary,
             FontFamily = theme.FontFamily,
-            FontSize = Length.Pixels(12.0 * theme.TextScaleFactor),
+            FontSize =
+              Length.Pixels(
+                MetroTypography.size MetroTextRole.Caption
+                * theme.TextScaleFactor
+              ),
             FontWeight = 400.0,
             LineHeight = 1.4
           )

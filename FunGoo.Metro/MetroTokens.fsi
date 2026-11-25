@@ -99,6 +99,8 @@ module MetroTypography =
   /// Returns the <see cref="MetroTypeSpec"/> for the requested <see cref="MetroTextRole"/>.
   val spec: role: MetroTextRole -> MetroTypeSpec
 
+  val internal size: role: MetroTextRole -> float
+
 /// Metro 4 px base spacing scale in logical pixels.
 [<RequireQualifiedAccess>]
 module MetroSpacing =

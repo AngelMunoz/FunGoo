@@ -183,7 +183,11 @@ module AppBarPartInternals =
           FontFamily = theme.FontFamily,
           FontSize =
             Length.Pixels(
-              (if args.MenuItem then 14.0 else 12.0) * theme.TextScaleFactor
+              (if args.MenuItem then
+                 MetroTypography.size MetroTextRole.Body
+               else
+                 MetroTypography.size MetroTextRole.Caption)
+              * theme.TextScaleFactor
             ),
           FontWeight = 400.0,
           TextWrap = TextWrap.NoWrap

@@ -359,7 +359,10 @@ module LongListInternals =
         Content = labelText,
         Color = p.Foreground,
         FontFamily = theme.FontFamily,
-        FontSize = Length.Pixels(14.0 * theme.TextScaleFactor),
+        FontSize =
+          Length.Pixels(
+            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+          ),
         FontWeight = 400.0,
         TextWrap = TextWrap.NoWrap,
         TextTrimming = TextTrimming.Ellipsis
@@ -374,7 +377,11 @@ module LongListInternals =
             Content = caption,
             Color = p.ForegroundSecondary,
             FontFamily = theme.FontFamily,
-            FontSize = Length.Pixels(12.0 * theme.TextScaleFactor),
+            FontSize =
+              Length.Pixels(
+                MetroTypography.size MetroTextRole.Caption
+                * theme.TextScaleFactor
+              ),
             FontWeight = 400.0,
             TextWrap = TextWrap.NoWrap,
             TextTrimming = TextTrimming.Ellipsis
@@ -505,7 +512,11 @@ module LongListInternals =
           Content = upper,
           Color = tileFg,
           FontFamily = theme.FontFamily,
-          FontSize = Length.Pixels(20.0 * theme.TextScaleFactor),
+          FontSize =
+            Length.Pixels(
+              MetroTypography.size MetroTextRole.Subtitle
+              * theme.TextScaleFactor
+            ),
           FontWeight = 300.0,
           TextWrap = TextWrap.NoWrap
         )

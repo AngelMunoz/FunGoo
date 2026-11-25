@@ -42,7 +42,9 @@ module MetroTextBox =
     let theme = Metro.read()
     let p = theme.Palette
     let a = theme.Accent
-    let scaledFont = 14.0 * theme.TextScaleFactor
+
+    let scaledFont =
+      MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
 
     let hasError =
       props.Error
@@ -125,7 +127,9 @@ module MetroToggleSwitch =
     let theme = Metro.read()
     let p = theme.Palette
     let a = theme.Accent
-    let scaledFont = 14.0 * theme.TextScaleFactor
+
+    let scaledFont =
+      MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
 
     let onLabel = if isNull props.OnLabel then "On" else props.OnLabel
     let offLabel = if isNull props.OffLabel then "Off" else props.OffLabel
@@ -292,7 +296,10 @@ module MetroCheckBox =
         CheckedBorderColor = Nullable checkedBorder,
         MarkColor = Nullable a.OnAccent,
         LabelColor = Nullable p.Foreground,
-        LabelFontSize = Nullable(14.0 * theme.TextScaleFactor),
+        LabelFontSize =
+          Nullable(
+            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+          ),
         DisabledOpacity = Nullable(if theme.HighContrast then 1.0 else 0.4),
         TransitionMs =
           Nullable(MetroTheme.effectiveMs(theme, MetroTiming.fastMs)),
@@ -411,7 +418,10 @@ module MetroSlider =
           Nullable(if theme.HighContrast then p.Foreground else p.Border),
         LabelColor = Nullable p.Foreground,
         ValueColor = Nullable p.ForegroundSecondary,
-        LabelFontSize = Nullable(14.0 * theme.TextScaleFactor),
+        LabelFontSize =
+          Nullable(
+            MetroTypography.size MetroTextRole.Body * theme.TextScaleFactor
+          ),
         FocusOutlineColor = Nullable p.Foreground,
         DisabledOpacity = Nullable(if theme.HighContrast then 1.0 else 0.4)
       )

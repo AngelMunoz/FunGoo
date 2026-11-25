@@ -281,7 +281,11 @@ module LoopingInternals =
               Content = secondary,
               Color = fg,
               FontFamily = theme.FontFamily,
-              FontSize = Length.Pixels(11.0 * theme.TextScaleFactor),
+              FontSize =
+                Length.Pixels(
+                  MetroTypography.size MetroTextRole.Badge
+                  * theme.TextScaleFactor
+                ),
               FontWeight = 400.0,
               TextWrap = TextWrap.NoWrap,
               TextTrimming = TextTrimming.Ellipsis

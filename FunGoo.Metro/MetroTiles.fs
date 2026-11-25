@@ -408,7 +408,10 @@ module MetroIconicTile =
           Content = title,
           Color = accent.OnAccent,
           FontFamily = theme.FontFamily,
-          FontSize = Length.Pixels(12.0 * theme.TextScaleFactor),
+          FontSize =
+            Length.Pixels(
+              MetroTypography.size MetroTextRole.Caption * theme.TextScaleFactor
+            ),
           FontWeight = 400.0,
           TextWrap = TextWrap.NoWrap,
           TextTrimming = TextTrimming.Ellipsis
@@ -768,7 +771,11 @@ module MetroLiveTile =
             Content = activeTitle,
             Color = accent.OnAccent,
             FontFamily = theme.FontFamily,
-            FontSize = Length.Pixels(12.0 * theme.TextScaleFactor),
+            FontSize =
+              Length.Pixels(
+                MetroTypography.size MetroTextRole.Caption
+                * theme.TextScaleFactor
+              ),
             FontWeight = 400.0,
             TextWrap = TextWrap.NoWrap,
             TextTrimming = TextTrimming.Ellipsis

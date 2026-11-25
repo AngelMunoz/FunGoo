@@ -187,6 +187,8 @@ module MetroTypography =
     | MetroTextRole.Caption -> captionSpec
     | MetroTextRole.Badge -> badgeSpec
 
+  let internal size(role: MetroTextRole) : float = (spec role).FontSize
+
 [<RequireQualifiedAccess>]
 module MetroSpacing =
   let unit = 4.0
