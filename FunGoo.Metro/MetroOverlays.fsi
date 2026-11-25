@@ -211,6 +211,21 @@ type MetroContentDialogCell =
     action: MetroContentDialogAction ->
       unit
 
+/// Data-only callbacks and content for <see cref="MetroContentDialog.build"/>:
+/// the three dialog actions plus the body renderer. One record keeps the four
+/// behavior parameters named at the call site.
+[<Struct; NoComparison>]
+type MetroContentDialogHandlers = {
+  /// Invoked when the user activates the primary action button.
+  OnPrimary: unit -> unit
+  /// Invoked when the user activates the secondary action button.
+  OnSecondary: unit -> unit
+  /// Invoked when the user dismisses the dialog via Escape or backdrop click.
+  OnDismiss: unit -> unit
+  /// Renders the dialog body content below the header.
+  RenderContent: unit -> Blob
+}
+
 /// Full-width Metro content dialog builders and stateful animated cell
 /// constructors backed by <see cref="Portal"/> and a modal focus scope.
 [<RequireQualifiedAccess>]
@@ -224,14 +239,11 @@ module MetroContentDialog =
   /// open and close transitions.
   val transitionSpec: Func<float, float, float, Simulation>
 
-  /// Builds a stateless full-width Metro modal dialog <see cref="Blob"/>,
-  /// returning a hidden container when closed.
+  /// Builds a stateless full-width Metro modal dialog <see cref="Blob"/> for
+  /// <paramref name="props"/> and the callbacks and content in
+  /// <paramref name="handlers"/>, returning a hidden container when closed.
   val build:
-    props: MetroContentDialogProps *
-    onPrimary: (unit -> unit) *
-    onSecondary: (unit -> unit) *
-    onDismiss: (unit -> unit) *
-    renderContent: (unit -> Blob) ->
+    props: MetroContentDialogProps * handlers: MetroContentDialogHandlers ->
       Blob
 
   /// Creates a stateful animated <see cref="MetroContentDialogCell"/> that

@@ -14,22 +14,22 @@ type DemoState = {
 }
 
 let playEnter(state: DemoState, theme: MetroTheme) : unit =
-  Continuum.playEnter(
-    theme,
-    state.Translate,
-    state.Opacity,
-    Continuum.defaultEnterDelta
-  )
+  Continuum.playEnter {
+    Theme = theme
+    Translate = state.Translate
+    Opacity = state.Opacity
+    Delta = Continuum.defaultEnterDelta
+  }
 
   state.Status <- "Entered (130 px, -70 px -> 0, 0)"
 
 let playExit(state: DemoState, theme: MetroTheme) : unit =
-  Continuum.playExit(
-    theme,
-    state.Translate,
-    state.Opacity,
-    Continuum.defaultExitDelta
-  )
+  Continuum.playExit {
+    Theme = theme
+    Translate = state.Translate
+    Opacity = state.Opacity
+    Delta = Continuum.defaultExitDelta
+  }
 
   state.Status <- "Exited (0, 0 -> 225 px, 73 px)"
 

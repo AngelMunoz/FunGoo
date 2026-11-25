@@ -48,6 +48,14 @@ type MetroSettingsFlyoutCell() =
   member this.Raise(callback: Action) = this.InvokeInputCallback(callback)
 
 [<Struct; NoComparison>]
+type MetroContentDialogHandlers = {
+  OnPrimary: unit -> unit
+  OnSecondary: unit -> unit
+  OnDismiss: unit -> unit
+  RenderContent: unit -> Blob
+}
+
+[<Struct; NoComparison>]
 type MetroContentDialogAction =
   | Primary
   | Secondary
@@ -894,13 +902,8 @@ module MetroContentDialog =
   let transitionSpec = OverlayInternals.dialogSpec
 
   let build
-    (
-      props: MetroContentDialogProps,
-      onPrimary: unit -> unit,
-      onSecondary: unit -> unit,
-      onDismiss: unit -> unit,
-      renderContent: unit -> Blob
-    ) : Blob =
+    (props: MetroContentDialogProps, handlers: MetroContentDialogHandlers)
+    : Blob =
     if not props.Open then
       Container(Display = Display.None)
     else
@@ -916,9 +919,9 @@ module MetroContentDialog =
         OverlayInternals.dialogBand(
           theme,
           props,
-          onPrimary,
-          onSecondary,
-          renderContent
+          handlers.OnPrimary,
+          handlers.OnSecondary,
+          handlers.RenderContent
         )
 
       let portal =
@@ -934,7 +937,8 @@ module MetroContentDialog =
         )
 
       if props.Dismissible then
-        portal.OnDismiss <- Action<PopupDismissReason>(fun _ -> onDismiss())
+        portal.OnDismiss <-
+          Action<PopupDismissReason>(fun _ -> handlers.OnDismiss())
 
       portal.Add(band)
       portal

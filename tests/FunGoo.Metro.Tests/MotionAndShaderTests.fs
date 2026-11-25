@@ -465,7 +465,14 @@ let ``Continuum measures deltas and ticks Anim in EmbeddedWindowHost``() =
   pumpFrames(host, 2)
 
   let normalTheme = makeTheme false
-  Continuum.playEnter(normalTheme, probe.Translate, probe.Opacity, measured)
+
+  Continuum.playEnter {
+    Theme = normalTheme
+    Translate = probe.Translate
+    Opacity = probe.Opacity
+    Delta = measured
+  }
+
   Assert.True(probe.Translate.Running)
   Assert.True(probe.Opacity.Running)
 
@@ -486,12 +493,12 @@ let ``Continuum measures deltas and ticks Anim in EmbeddedWindowHost``() =
   Assert.Equal(1.0, probe.Opacity.Value, 6)
 
   // Exit flight to defaultExitDelta.
-  Continuum.playExit(
-    normalTheme,
-    probe.Translate,
-    probe.Opacity,
-    Continuum.defaultExitDelta
-  )
+  Continuum.playExit {
+    Theme = normalTheme
+    Translate = probe.Translate
+    Opacity = probe.Opacity
+    Delta = Continuum.defaultExitDelta
+  }
 
   pumpMotionFrames(window, 3, 0.016)
   Assert.True(probe.Translate.Value.X > 0.0)
@@ -506,7 +513,14 @@ let ``Continuum measures deltas and ticks Anim in EmbeddedWindowHost``() =
 
   // ReducedMotion lands immediately on the first tick.
   let reducedTheme = makeTheme true
-  Continuum.playEnter(reducedTheme, probe.Translate, probe.Opacity, measured)
+
+  Continuum.playEnter {
+    Theme = reducedTheme
+    Translate = probe.Translate
+    Opacity = probe.Opacity
+    Delta = measured
+  }
+
   pumpMotionFrames(window, 1, 0.016)
   Assert.False(probe.Translate.Running)
   Assert.False(probe.Opacity.Running)

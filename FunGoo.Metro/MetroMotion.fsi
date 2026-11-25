@@ -73,16 +73,32 @@ module PeriodicSimulation =
   /// period in seconds. Another period throws <c>ArgumentOutOfRangeException</c>.
   val create: periodSeconds: float -> Simulation
 
+/// Short-lived argument carrier for <see cref="MetroMotion.cubicBezier"/>: the
+/// duration in milliseconds plus the two interior control points. One record
+/// keeps the five scalar parameters named at the call site.
+[<Struct; NoComparison>]
+type MetroCubicBezierArgs = {
+  /// Duration of the motion in milliseconds (converted to seconds inside).
+  DurationMs: float
+  /// The x of the first interior control point, from <c>0.0</c> to <c>1.0</c>.
+  X1: float
+  /// The y of the first interior control point.
+  Y1: float
+  /// The x of the second interior control point, from <c>0.0</c> to <c>1.0</c>.
+  X2: float
+  /// The y of the second interior control point.
+  Y2: float
+}
+
 /// Metro easing simulation factories, pre-cached motion specs, stagger helpers,
 /// and reduced-motion adaptation.
 [<RequireQualifiedAccess>]
 module MetroMotion =
 
-  /// Creates a reusable cubic Bezier simulation factory for the given duration
-  /// in milliseconds and control points.
+  /// Creates a reusable cubic Bezier simulation factory for the duration and
+  /// control points in <paramref name="args"/>.
   val cubicBezier:
-    durationMs: float * x1: float * y1: float * x2: float * y2: float ->
-      Func<float, float, float, Simulation>
+    args: MetroCubicBezierArgs -> Func<float, float, float, Simulation>
 
   /// Creates a reusable exponential ease-out simulation factory for the given
   /// duration in milliseconds and exponent.
@@ -142,6 +158,22 @@ type ContinuumDelta = {
   OffsetY: float
 }
 
+/// Play arguments shared by <see cref="Continuum.playEnter"/> and
+/// <see cref="Continuum.playExit"/>: the theme plus the two paint-bound
+/// animations and the flight offset. One record type serves both directions.
+/// A plain (reference) record because <c>Anim</c> values are references.
+[<NoComparison>]
+type MetroContinuumPlayArgs = {
+  /// Theme selecting the motion spec and reduced-motion behavior.
+  Theme: MetroTheme
+  /// Paint-bound translation animation of the flying element.
+  Translate: Anim<Point>
+  /// Paint-bound opacity animation of the flying element.
+  Opacity: Anim<float>
+  /// Flight offset: entrance target on enter, exit target on exit.
+  Delta: ContinuumDelta
+}
+
 /// Metro Continuum shared-element flight helpers.
 [<RequireQualifiedAccess>]
 module Continuum =
@@ -157,25 +189,15 @@ module Continuum =
   val measureDelta:
     origin: ElementRect * destination: ElementRect -> ContinuumDelta
 
-  /// Plays a Continuum entrance animation on <paramref name="translate"/> and
-  /// <paramref name="opacity"/>, respecting
+  /// Plays a Continuum entrance animation on the <c>Translate</c> and
+  /// <c>Opacity</c> in <paramref name="args"/>, respecting
   /// <see cref="MetroTheme.ReducedMotion"/>.
-  val playEnter:
-    theme: MetroTheme *
-    translate: Anim<Point> *
-    opacity: Anim<float> *
-    delta: ContinuumDelta ->
-      unit
+  val playEnter: args: MetroContinuumPlayArgs -> unit
 
-  /// Plays a Continuum exit animation on <paramref name="translate"/> and
-  /// <paramref name="opacity"/>, respecting
+  /// Plays a Continuum exit animation on the <c>Translate</c> and
+  /// <c>Opacity</c> in <paramref name="args"/>, respecting
   /// <see cref="MetroTheme.ReducedMotion"/>.
-  val playExit:
-    theme: MetroTheme *
-    translate: Anim<Point> *
-    opacity: Anim<float> *
-    delta: ContinuumDelta ->
-      unit
+  val playExit: args: MetroContinuumPlayArgs -> unit
 
 /// 2D transform and opacity fallback approximations for Metro 3D transitions
 /// when the perspective shader effect is unavailable.

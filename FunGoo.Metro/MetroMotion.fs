@@ -3,7 +3,7 @@ namespace FunGoo.Metro
 open System
 open Goo
 
-/// The arguments of a cubic Bezier simulation.
+// The arguments of a cubic Bezier simulation.
 [<NoComparison; NoEquality>]
 type CubicBezierArgs = {
   DurationSeconds: float
@@ -15,7 +15,7 @@ type CubicBezierArgs = {
   Y2: float
 }
 
-/// The arguments of an exponential ease-out simulation.
+// The arguments of an exponential ease-out simulation.
 [<NoComparison; NoEquality>]
 type ExponentialEaseArgs = {
   DurationSeconds: float
@@ -338,40 +338,49 @@ module PeriodicSimulation =
         override _.Done(_elapsed: float) : bool = false
     }
 
+[<Struct; NoComparison>]
+type MetroCubicBezierArgs = {
+  DurationMs: float
+  X1: float
+  Y1: float
+  X2: float
+  Y2: float
+}
+
 [<RequireQualifiedAccess>]
 module MetroMotion =
 
   let instant = Motion.Tween(0.0)
 
   let cubicBezier
-    (durationMs: float, x1: float, y1: float, x2: float, y2: float)
+    (args: MetroCubicBezierArgs)
     : Func<float, float, float, Simulation> =
-    if not(Double.IsFinite durationMs) || durationMs < 0.0 then
-      raise(ArgumentOutOfRangeException(nameof durationMs))
+    if not(Double.IsFinite args.DurationMs) || args.DurationMs < 0.0 then
+      raise(ArgumentOutOfRangeException(nameof args.DurationMs))
 
-    if not(Double.IsFinite x1) || x1 < 0.0 || x1 > 1.0 then
-      raise(ArgumentOutOfRangeException(nameof x1))
+    if not(Double.IsFinite args.X1) || args.X1 < 0.0 || args.X1 > 1.0 then
+      raise(ArgumentOutOfRangeException(nameof args.X1))
 
-    if not(Double.IsFinite y1) then
-      raise(ArgumentOutOfRangeException(nameof y1))
+    if not(Double.IsFinite args.Y1) then
+      raise(ArgumentOutOfRangeException(nameof args.Y1))
 
-    if not(Double.IsFinite x2) || x2 < 0.0 || x2 > 1.0 then
-      raise(ArgumentOutOfRangeException(nameof x2))
+    if not(Double.IsFinite args.X2) || args.X2 < 0.0 || args.X2 > 1.0 then
+      raise(ArgumentOutOfRangeException(nameof args.X2))
 
-    if not(Double.IsFinite y2) then
-      raise(ArgumentOutOfRangeException(nameof y2))
+    if not(Double.IsFinite args.Y2) then
+      raise(ArgumentOutOfRangeException(nameof args.Y2))
 
-    let durationSeconds = durationMs / 1000.0
+    let durationSeconds = args.DurationMs / 1000.0
 
     Func<float, float, float, Simulation>(fun fromValue toValue _velocity ->
       CubicBezierSimulation.create {
         DurationSeconds = durationSeconds
         FromValue = fromValue
         ToValue = toValue
-        X1 = x1
-        Y1 = y1
-        X2 = x2
-        Y2 = y2
+        X1 = args.X1
+        Y1 = args.Y1
+        X2 = args.X2
+        Y2 = args.Y2
       })
 
   let exponentialOut
@@ -394,10 +403,22 @@ module MetroMotion =
       })
 
   let decelerate(durationMs: float) : Func<float, float, float, Simulation> =
-    cubicBezier(durationMs, 0.1, 0.9, 0.2, 1.0)
+    cubicBezier {
+      DurationMs = durationMs
+      X1 = 0.1
+      Y1 = 0.9
+      X2 = 0.2
+      Y2 = 1.0
+    }
 
   let pageGlide(durationMs: float) : Func<float, float, float, Simulation> =
-    cubicBezier(durationMs, 0.25, 0.46, 0.45, 0.94)
+    cubicBezier {
+      DurationMs = durationMs
+      X1 = 0.25
+      Y1 = 0.46
+      X2 = 0.45
+      Y2 = 0.94
+    }
 
   let fast = decelerate MetroTiming.fastMs
   let normal = decelerate MetroTiming.normalMs
@@ -437,6 +458,14 @@ module MetroMotion =
 [<Struct>]
 type ContinuumDelta = { OffsetX: float; OffsetY: float }
 
+[<NoComparison>]
+type MetroContinuumPlayArgs = {
+  Theme: MetroTheme
+  Translate: Anim<Point>
+  Opacity: Anim<float>
+  Delta: ContinuumDelta
+}
+
 [<RequireQualifiedAccess>]
 module Continuum =
 
@@ -450,43 +479,31 @@ module Continuum =
     OffsetY = origin.Y - destination.Y
   }
 
-  let playEnter
-    (
-      theme: MetroTheme,
-      translate: Anim<Point>,
-      opacity: Anim<float>,
-      delta: ContinuumDelta
-    ) : unit =
-    if isNull translate then
-      raise(ArgumentNullException(nameof translate))
+  let playEnter(args: MetroContinuumPlayArgs) : unit =
+    if isNull args.Translate then
+      raise(ArgumentNullException(nameof args.Translate))
 
-    if isNull opacity then
-      raise(ArgumentNullException(nameof opacity))
+    if isNull args.Opacity then
+      raise(ArgumentNullException(nameof args.Opacity))
 
-    let spec = MetroMotion.forTheme(theme, MetroMotion.continuum)
-    let startPoint = Point(X = delta.OffsetX, Y = delta.OffsetY)
+    let spec = MetroMotion.forTheme(args.Theme, MetroMotion.continuum)
+    let startPoint = Point(X = args.Delta.OffsetX, Y = args.Delta.OffsetY)
     let endPoint = Point(X = 0.0, Y = 0.0)
-    translate.Play(startPoint, endPoint, spec)
-    opacity.Play(0.0, 1.0, spec)
+    args.Translate.Play(startPoint, endPoint, spec)
+    args.Opacity.Play(0.0, 1.0, spec)
 
-  let playExit
-    (
-      theme: MetroTheme,
-      translate: Anim<Point>,
-      opacity: Anim<float>,
-      delta: ContinuumDelta
-    ) : unit =
-    if isNull translate then
-      raise(ArgumentNullException(nameof translate))
+  let playExit(args: MetroContinuumPlayArgs) : unit =
+    if isNull args.Translate then
+      raise(ArgumentNullException(nameof args.Translate))
 
-    if isNull opacity then
-      raise(ArgumentNullException(nameof opacity))
+    if isNull args.Opacity then
+      raise(ArgumentNullException(nameof args.Opacity))
 
-    let spec = MetroMotion.forTheme(theme, MetroMotion.continuum)
+    let spec = MetroMotion.forTheme(args.Theme, MetroMotion.continuum)
     let startPoint = Point(X = 0.0, Y = 0.0)
-    let endPoint = Point(X = delta.OffsetX, Y = delta.OffsetY)
-    translate.Play(startPoint, endPoint, spec)
-    opacity.Play(1.0, 0.0, spec)
+    let endPoint = Point(X = args.Delta.OffsetX, Y = args.Delta.OffsetY)
+    args.Translate.Play(startPoint, endPoint, spec)
+    args.Opacity.Play(1.0, 0.0, spec)
 
 [<RequireQualifiedAccess>]
 module MetroFallbackMotion =

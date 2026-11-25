@@ -855,10 +855,12 @@ let ``MetroAppBar MetroSettingsFlyout and MetroContentDialog wire commands porta
                   SecondaryText = ValueSome "Cancel"
                   Dismissible = dialogDismissible
             },
-            (fun () -> primaryClicks <- primaryClicks + 1),
-            (fun () -> secondaryClicks <- secondaryClicks + 1),
-            (fun () -> dialogDismissed <- dialogDismissed + 1),
-            fun () -> MetroText.body "Dialog body"
+            {
+              OnPrimary = fun () -> primaryClicks <- primaryClicks + 1
+              OnSecondary = fun () -> secondaryClicks <- secondaryClicks + 1
+              OnDismiss = fun () -> dialogDismissed <- dialogDismissed + 1
+              RenderContent = fun () -> MetroText.body "Dialog body"
+            }
           )
         ))
 
