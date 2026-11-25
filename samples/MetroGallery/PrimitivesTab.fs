@@ -117,8 +117,6 @@ let viewboxStamp() : Blob =
 let view
   (state: PrimitivesState, viewboxFactory: unit -> MetroViewboxCell)
   : Blob =
-  let theme = Metro.read()
-
   let iconAndAvatarRow =
     Container(
       FlexDirection = FlexDirection.Row,
@@ -226,13 +224,10 @@ let view
         BackgroundColor = col
       )
         .Children(
-          Text(
-            Content = lbl,
-            Color = Color.Rgb(255, 255, 255),
-            FontFamily = theme.FontFamily,
-            FontSize = Length.Pixels 12.0,
-            FontWeight = 700.0
-          )
+          MetroText.build {
+            MetroText.defaults(lbl, MetroTextRole.Caption) with
+                Tone = MetroTextTone.Custom(Color.Rgb(255, 255, 255))
+          }
         )
       :> Blob)
 

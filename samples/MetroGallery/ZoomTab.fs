@@ -64,7 +64,7 @@ type ZoomContext = {
 type TileLabel = {
   Key: string
   Label: string
-  FontSize: float
+  Role: MetroTextRole
 }
 
 /// Applies one zoom request. The zoom cell gives each request to this tab
@@ -127,15 +127,11 @@ let tileButton(label: TileLabel, onClick: unit -> unit) : Blob =
       Accessibility(Role = AccessibilityRole.Button, Name = label.Label)
   )
     .Children(
-      Text(
-        Content = label.Label,
-        Color = p.Foreground,
-        FontFamily = theme.FontFamily,
-        FontSize = Length.Pixels(label.FontSize * theme.TextScaleFactor),
-        FontWeight = 300.0,
-        TextWrap = TextWrap.NoWrap,
-        TextTrimming = TextTrimming.Ellipsis
-      )
+      MetroText.build {
+        MetroText.defaults(label.Label, label.Role) with
+            Wrap = TextWrap.NoWrap
+            Trimming = TextTrimming.Ellipsis
+      }
     )
 
 /// The detail level: one column of tiles for each group.
@@ -167,7 +163,7 @@ let detailView(ctx: ZoomContext) : Blob =
           {
             Key = $"tile-{group}-{name}"
             Label = name
-            FontSize = 14.0
+            Role = MetroTextRole.Body
           },
           fun () -> selectTile(ctx, group, name)
         )
@@ -193,7 +189,7 @@ let overviewView(ctx: ZoomContext) : Blob =
         {
           Key = $"group-tile-{group}"
           Label = group
-          FontSize = 28.0
+          Role = MetroTextRole.Header
         },
         fun () -> selectGroup(ctx, group)
       )
