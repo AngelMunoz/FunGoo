@@ -44,7 +44,7 @@ Each commit of the re-shape and each new control passes gate 9.
    - `Theme.ResolveDefaults()` resets `BorderWidth = 0.0` to `1.0`. Use `BorderWidth = 2.0` on the Metro `Goo.Widgets.Theme` (matching Metro's 2 px control borders) and explicit `0.0` borders on borderless containers.
    - `HoverColor`, `PressedColor`, `ActiveColor`, and quiet semantic fills have no fallback in `ResolveDefaults()` and must be populated explicitly.
 3. **Typography:**
-   - Use system sans-serif fallback (`""` / platform sans-serif) for v1. Custom bundled font evaluation via `FontSource` is deferred.
+   - The default UI family is Selawik, embedded under the SIL Open Font License (`FunGoo.Metro/Fonts`): light (300), regular (400), and bold (700) registered through `FontSource` when a theme attaches. A custom `FontFamily` in the config still overrides the default.
    - `Goo.Widgets.Typography` lacks `Hero` (56 px) and `Title` (42 px) roles and uses one heading weight; `FunGoo.Metro` ships `MetroText` for the complete 10-role Metro type ramp with weights `300`, `400`, and `700`.
 4. **Motion and 3D Perspective:**
    - `Style.TransitionEasing` supports only `Linear`, `EaseIn`, `EaseOut`, and `EaseInOut`.
@@ -316,8 +316,8 @@ Exceptions of gate 9 after the re-shape:
 
 ## Future Follow-Ups (After the Planned PR Set)
 
-- Decide whether to wire live 3D perspective transitions into `MetroPivot`, `MetroLiveTile` (FlipTile), and `MetroContentDialog` (Swivel). CI compiles the `metro_perspective` shader and packs it in the `FunGoo.Metro` package, so check-in of a precompiled artifact and local SDK installs are no longer needed for shipping.
-- Evaluate bundled humanist light-weight sans-serif font (for example, Selawik) via `FontSource`.
+- Decide whether to wire the live 3D perspective flip transition into `MetroLiveTile` (FlipTile). The `MetroPivot` turnstile and the `MetroContentDialog` swivel already run through the perspective shader with 2D fallbacks. CI compiles the `metro_perspective` shader and packs it in the `FunGoo.Metro` package, so check-in of a precompiled artifact and local SDK installs are no longer needed for shipping.
+- Evaluate semilight and semibold Selawik weights if a future type role maps to them (the current ramp uses 300, 400, and 700 only).
 
 ## Verification Gates (Required Per Commit)
 

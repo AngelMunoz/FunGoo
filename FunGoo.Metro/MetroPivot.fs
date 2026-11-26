@@ -26,6 +26,12 @@ type MetroPivotCell() =
 
   abstract ContentOpacity: Anim<float>
 
+  abstract Mode: MetroTiltMode
+
+  abstract IsShaderAttached: bool
+
+  abstract ProgressAnim: Anim<float>
+
   abstract View: Blob
 
   // Gives a selection of the host to the host cell, as a Goo.Widgets control
@@ -89,6 +95,9 @@ module MetroPivot =
 
   // State of a Pivot cell. One mutable field per concern.
   type PivotState = {
+    // Optional 3D perspective effect for the turnstile transition. ValueNone
+    // keeps the 2D slide.
+    Effect: ShaderEffect voption
     HeaderScrollHandle: ElementHandle
     ActiveTabHandle: ElementHandle
     mutable Subscribed: bool
@@ -102,10 +111,14 @@ module MetroPivot =
     mutable SwipePointerId: int64
     mutable SwipeStartX: float
     mutable SwipeStartY: float
-    // Slots for the two animation values. `create` fills them after the cell
-    // exists.
+    // True while the content panel carries the 3D effect. The cell detaches
+    // the effect when the turnstile settles.
+    mutable ShaderAttached: bool
+    // Slots for the animation values. `createWithEffect` fills them after the
+    // cell exists.
     mutable Translate: Anim<Point>
     mutable Opacity: Anim<float>
+    mutable Progress: Anim<float>
   }
 
   // The delegates of a Pivot cell. `create` makes them once.
@@ -132,7 +145,8 @@ module MetroPivot =
     Delegates: PivotDelegates
   }
 
-  let initialState() : PivotState = {
+  let initialState(effect: ShaderEffect voption) : PivotState = {
+    Effect = effect
     HeaderScrollHandle = ElementHandle()
     ActiveTabHandle = ElementHandle()
     Subscribed = false
@@ -152,17 +166,26 @@ module MetroPivot =
     SwipePointerId = 0L
     SwipeStartX = 0.0
     SwipeStartY = 0.0
+    ShaderAttached = false
     Translate = Unchecked.defaultof<Anim<Point>>
     Opacity = Unchecked.defaultof<Anim<float>>
+    Progress = Unchecked.defaultof<Anim<float>>
   }
 
   let itemsOf(input: MetroPivotInput) : MetroPivotItem array =
     if isNull input.Items then Array.empty else input.Items
 
-  /// Puts the content at rest: no translation and fully opaque.
+  /// Puts the content at rest: no translation and fully opaque, with the 3D
+  /// effect detached and reset to identity.
   let snapToRest(state: PivotState) : unit =
     state.Translate.Snap(PivotInternals.zeroPoint)
     state.Opacity.Snap(1.0)
+    state.Progress.Snap(1.0)
+    state.ShaderAttached <- false
+
+    state.Effect
+    |> ValueOption.iter(fun eff ->
+      MetroPerspective.applyParams(eff, MetroPerspective.identity))
 
   let selectIndex
     (state: PivotState, select: Action<string>, targetIdx: int)
@@ -331,21 +354,45 @@ module MetroPivot =
       if reducedMotion then
         snapToRest state
       else
-        let dir =
-          PivotInternals.transitionDirection(
-            state.LastSelectedIndex,
-            nextIdx,
-            items.Length,
-            input.Loop
+        match state.Effect with
+        | ValueSome eff ->
+          state.ShaderAttached <- true
+          state.Translate.Snap(PivotInternals.zeroPoint)
+          state.Opacity.Snap(1.0)
+
+          // A switch during the turnstile continues from the current value,
+          // so no frame renders at p = 0 mid-flight. Fresh starts begin at 0.
+          let resume =
+            if state.Progress.Running then state.Progress.Value else 0.0
+
+          MetroPerspective.applyParams(
+            eff,
+            MetroPerspective.turnstileIn(resume)
           )
 
-        state.Translate.Play(
-          Point(X = dir * PivotInternals.slideDistancePx, Y = 0.0),
-          PivotInternals.zeroPoint,
-          MetroMotion.normal
-        )
+          if state.Progress.Running then
+            // Play would snap back to the start value.
+            state.Progress.To(1.0, MetroMotion.normal)
+          else
+            state.Progress.Play(0.0, 1.0, MetroMotion.normal)
+        | ValueNone ->
+          state.ShaderAttached <- false
 
-        state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
+          let dir =
+            PivotInternals.transitionDirection(
+              state.LastSelectedIndex,
+              nextIdx,
+              items.Length,
+              input.Loop
+            )
+
+          state.Translate.Play(
+            Point(X = dir * PivotInternals.slideDistancePx, Y = 0.0),
+            PivotInternals.zeroPoint,
+            MetroMotion.normal
+          )
+
+          state.Opacity.Play(0.0, 1.0, MetroMotion.normal)
     elif state.LastSelectedId.IsNone then
       state.PendingHeaderPan <- true
       snapToRest state
@@ -493,6 +540,7 @@ module MetroPivot =
 
     let contentPanel =
       Container(
+        Key = "pivot-content",
         FlexDirection = FlexDirection.Column,
         FlexGrow = 1.0,
         Width = Length.Percent 100.0,
@@ -509,6 +557,10 @@ module MetroPivot =
 
     if selectedIdx >= 0 && selectedIdx < items.Length then
       contentPanel.Add(ctx.RenderContent items[selectedIdx].Id)
+
+    if state.ShaderAttached then
+      state.Effect
+      |> ValueOption.iter(fun eff -> contentPanel.ShaderEffect <- eff)
 
     let root =
       Container(
@@ -544,7 +596,10 @@ module MetroPivot =
     state.LastReducedMotion <- theme.ReducedMotion
 
     if
-      theme.ReducedMotion && (state.Translate.Running || state.Opacity.Running)
+      theme.ReducedMotion
+      && (state.Translate.Running
+          || state.Opacity.Running
+          || state.Progress.Running)
     then
       snapToRest state
 
@@ -558,10 +613,13 @@ module MetroPivot =
     else
       ValueSome(Metro.readWindow(host).ReducedMotion)
 
-  let create
-    (onSelect: string -> unit, renderContent: string -> Blob)
-    : MetroPivotCell =
-    let state = initialState()
+  let createWithEffect
+    (
+      effect: ShaderEffect voption,
+      onSelect: string -> unit,
+      renderContent: string -> Blob
+    ) : MetroPivotCell =
+    let state = initialState effect
 
     // The slot of the cell: the selection delegate is made before the cell
     // exists.
@@ -587,6 +645,15 @@ module MetroPivot =
         override _.ContentTranslate = state.Translate
         override _.ContentOpacity = state.Opacity
 
+        override _.Mode =
+          if state.Effect.IsSome then
+            MetroTiltMode.Perspective3D
+          else
+            MetroTiltMode.Fallback2D
+
+        override _.IsShaderAttached = state.ShaderAttached
+        override _.ProgressAnim = state.Progress
+
         override _.View = buildTree(context, state.Input, Metro.read())
 
         override _.Mounted() = mounted context
@@ -603,8 +670,42 @@ module MetroPivot =
     // The cell exists now: Goo ties each animation to it.
     state.Translate <- cell.AnimateValue(PivotInternals.zeroPoint)
     state.Opacity <- cell.AnimateValue(1.0)
+
+    match state.Effect with
+    | ValueSome eff ->
+      MetroPerspective.applyParams(eff, MetroPerspective.identity)
+
+      let progress =
+        cell.Animate(
+          0.0,
+          fun p ->
+            MetroPerspective.applyParams(eff, MetroPerspective.turnstileIn(p))
+        )
+
+      // Detaching the 3D effect when the turnstile settles runs from the
+      // motion pump, not a Blob callback, so the cell rebuilds itself once.
+      progress.add_Completed(
+        Action<MotionCompletionReason>(fun _ ->
+          if state.ShaderAttached then
+            state.ShaderAttached <- false
+            MetroPerspective.applyParams(eff, MetroPerspective.identity)
+            cell.Rebuild())
+      )
+
+      state.Progress <- progress
+    | ValueNone -> state.Progress <- cell.AnimateValue(0.0)
+
     self <- ValueSome cell
     cell
+
+  let create
+    (onSelect: string -> unit, renderContent: string -> Blob)
+    : MetroPivotCell =
+    createWithEffect(
+      MetroPerspective.tryCreateDefault(),
+      onSelect,
+      renderContent
+    )
 
   let createFactory
     (onSelect: string -> unit, renderContent: string -> Blob)

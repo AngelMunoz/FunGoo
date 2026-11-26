@@ -32,6 +32,8 @@
     <Compile Include="RtlTests.fs" />
     <Compile Include="PrimitivesAndLayoutTests.fs" />
     <Compile Include="TileRebuildCeilingTests.fs" />
+    <Compile Include="PivotShaderTests.fs" />
+    <Compile Include="MetroFontTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

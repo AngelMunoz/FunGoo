@@ -27,7 +27,7 @@ module MetroConfig =
   let defaultConfig: MetroConfig = {
     Mode = MetroMode.System
     Accent = MetroAccentKind.Blue
-    FontFamily = ""
+    FontFamily = MetroFont.family
     MonoFontFamily = "monospace"
     TileUnit = 150.0
   }
@@ -366,7 +366,14 @@ module Metro =
 
       apply(attachment, prefs, systemAccentChanged)
 
+    /// Registers the embedded Selawik weights once for the life of the
+    /// attachment set. The registry cache keeps the sources alive while any
+    /// window uses them, so an attachment never unregisters them.
+    let ensureFonts() : unit = MetroFont.ensureRegistered() |> ignore
+
     let create(window: Window, initialConfig: MetroConfig) : IMetroAttachment =
+      ensureFonts()
+
       let state: AttachmentState = {
         Config = initialConfig
         WidgetAttached = false

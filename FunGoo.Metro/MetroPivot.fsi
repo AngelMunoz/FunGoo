@@ -47,9 +47,24 @@ type MetroPivotCell =
   /// Current paint-bound content opacity animation. A test reads it.
   abstract ContentOpacity: Anim<float>
 
+  /// Active transition rendering path (<see cref="MetroTiltMode.Perspective3D"/>
+  /// when the perspective shader is available; otherwise
+  /// <see cref="MetroTiltMode.Fallback2D"/>). A test reads it.
+  abstract Mode: MetroTiltMode
+
+  /// <c>true</c> while a 3D <see cref="ShaderEffect"/> is currently attached
+  /// to the content panel. A test reads it.
+  abstract IsShaderAttached: bool
+
+  /// Normalized turnstile progress animation (<c>0.0</c> to <c>1.0</c>) that
+  /// drives the 3D shader parameters. A test reads it.
+  abstract ProgressAnim: Anim<float>
+
   /// The tree of the current input: the title, the horizontal header strip,
-  /// and the active content panel. A test reads it, and only inside a build,
-  /// where the Metro theme is readable.
+  /// and the active content panel under key <c>"pivot-content"</c>. While a
+  /// 3D turnstile runs, the content panel carries the <see cref="ShaderEffect"/>.
+  /// A test reads it, and only inside a build, where the Metro theme is
+  /// readable.
   abstract View: Blob
 
   /// Gives one selection of this cell to the host cell, as a Goo.Widgets
@@ -76,9 +91,20 @@ module MetroPivot =
   /// <c>Build</c>. A callback that <paramref name="renderContent"/> creates
   /// belongs to this cell, so the owner rule rebuilds this cell and not the
   /// caller. Such a callback must rebuild the caller cell when it changes the
-  /// state of the caller cell.
+  /// state of the caller cell. The selection transition runs the 3D turnstile
+  /// through the embedded perspective shader when available, or the 2D slide
+  /// when the shader is absent or reduced motion is active.
   val create:
     onSelect: (string -> unit) * renderContent: (string -> Blob) ->
+      MetroPivotCell
+
+  /// Creates a <see cref="MetroPivotCell"/> with an explicit optional
+  /// <see cref="ShaderEffect"/>. Tests use this to exercise both the 3D
+  /// turnstile and the 2D slide transition paths.
+  val createWithEffect:
+    effect: ShaderEffect voption *
+    onSelect: (string -> unit) *
+    renderContent: (string -> Blob) ->
       MetroPivotCell
 
   /// Creates a reusable cell factory for <see cref="MetroPivotCell"/>. Cache

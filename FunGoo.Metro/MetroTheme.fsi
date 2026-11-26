@@ -34,7 +34,7 @@ type MetroConfig = {
   CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module MetroConfig =
 
-  /// Default Metro configuration: system mode, Metro Blue accent, system sans-serif font,
+  /// Default Metro configuration: system mode, Metro Blue accent, Selawik UI font,
   /// <c>"monospace"</c> mono font, and a 150 px tile unit.
   val defaultConfig: MetroConfig
 

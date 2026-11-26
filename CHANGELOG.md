@@ -22,6 +22,8 @@
 - **Metro:** Accent surfaces use a white foreground for every accent color: tile text and icons, the checked toggle switch thumb, accent buttons, and selected accent fills read white on the accent color.
 - **Metro:** Metro controls mirror in right-to-left layouts: Hub and Panorama sections reverse with mirrored peek padding, the SemanticZoom zoom toggle docks to the inline end, WrapPanel items flow right to left, and Pivot headers, TabView, and the PersonPicture presence badge render under an RTL ancestor.
 - **Metro:** The release pipeline now compiles the Metro perspective shader and ships it embedded in the `FunGoo.Metro` package, so consumers get the 3D perspective effect without installing shader SDKs.
+- **Metro:** Pivot selection transitions now turn in 3D perspective when the compiled shader is available, falling back to the existing slide under reduced motion or without the shader.
+- **Metro:** The default Metro typeface is now Selawik, bundled with the package under the SIL Open Font License: light, regular, and bold weights cover the 300, 400, and 700 roles of the type ramp, and attaching a theme registers them automatically while a custom `FontFamily` still overrides the default.
 
 ### Fixed
 
