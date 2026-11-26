@@ -7,7 +7,6 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 open FunGoo.Mvu
-open MetroGallery.GalleryStore
 open MetroGallery.Pages
 
 /// The named scenes of the gallery: the factory of each scene for a getter of
@@ -19,8 +18,11 @@ type ScenesFactory =
 [<Struct; NoComparison>]
 type GalleryStart = { Tab: string; Mode: MetroMode }
 
-/// The model of the gallery shell: the active tab, the mode, the accent, and
-/// the open states of the app bar, the settings flyout, and the dialog.
+/// The model of the gallery shell: the active tab, the mode, the accent, the
+/// open states of the app bar, the settings flyout, and the dialog, and the
+/// hub values. The input sections own their fields; the shell mirrors only
+/// the cross-page read (the slider value behind the hub progress) and the hub
+/// counters.
 [<Struct; NoComparison>]
 type GalleryModel = {
   ActiveTab: string
@@ -29,6 +31,10 @@ type GalleryModel = {
   AppBarExpanded: bool
   SettingsOpen: bool
   DialogOpen: bool
+  TileTaps: int
+  MailCount: int
+  LastAction: string
+  SliderValue: float
 }
 
 /// One message of the gallery shell. Each callback of the shell posts one
@@ -42,6 +48,9 @@ type GalleryMsg =
   | DialogOpenChanged of isOpen: bool
   | DialogResolved of confirmed: bool
   | CommandInvoked of id: string
+  | TileOpened of id: string
+  | MailOpened
+  | SliderCommitted of value: float
   | Stop
 
 /// The gallery: a Pivot with the pages, an app bar, a settings flyout, and a
@@ -88,11 +97,14 @@ type GalleryCell
   /// The mounted selection tab, for the headless check.
   abstract SelectionTab: SelectionTab.SelectionTabCell voption
 
-  /// The mounted inputs tab, for the headless check.
-  abstract InputsTab: InputsTab.InputsTabCell voption
+  /// The mounted act section, for the headless check.
+  abstract ActSection: InputPage.ActSectionCell voption
 
-  /// The mounted date and time tab, for the headless check.
-  abstract DateTimeTab: DateTimeTab.DateTimeTabCell voption
+  /// The mounted enter section, for the headless check.
+  abstract EnterSection: InputPage.EnterSectionCell voption
+
+  /// The mounted pick section, for the headless check.
+  abstract PickSection: InputPage.PickSectionCell voption
 
   /// The mounted overlays tab, for the headless check.
   abstract OverlaysTab: OverlaysTab.OverlaysTabCell voption
@@ -144,13 +156,13 @@ let hubStart: GalleryStart = { Tab = "hub"; Mode = MetroMode.Dark }
 /// The factories of the cells that the gallery mounts. `create` makes them
 /// once, so that each mount reuses its factory.
 type GalleryFactories = {
-  ControlsTab: unit -> Cell
+  ActSection: unit -> Cell
+  EnterSection: unit -> Cell
+  PickSection: unit -> Cell
   FlipViewTab: unit -> Cell
   ListsTab: unit -> Cell
   SelectionTab: unit -> Cell
   ZoomTab: unit -> Cell
-  InputsTab: unit -> Cell
-  DateTimeTab: unit -> Cell
   OverlaysTab: unit -> Cell
   NotificationsTab: unit -> Cell
   NavigationTab: unit -> Cell
@@ -167,8 +179,6 @@ type GalleryFactories = {
 /// The environment of the Elmish program of the shell: the values that
 /// `update` and `view` work on.
 type ShellEnv = {
-  /// The values that the controls tab writes and that the hub reads.
-  Store: GalleryStore
   /// Applies a mode to the host window.
   ApplyMode: MetroMode -> unit
   /// Applies an accent to the host window.
@@ -211,34 +221,6 @@ let pivotItems = [|
   { Id = "motion"; Header = "motion" }
 |]
 
-/// A store with the first values of the gallery.
-let initialStore() : GalleryStore = {
-  TileTapCount = 0
-  MailCount = 12
-  LastAction = "Ready"
-  SliderValue = 65.0
-  TextValue = "Modern UI"
-  SecretValue = "metro123"
-  ToggleEnabled = true
-  CheckAccepted = true
-  RadioChoice = "compact"
-  TogglePressed = false
-}
-
-/// Sets each value of the store back to its first value. The last action
-/// becomes "State reset".
-let resetStore(store: GalleryStore) : unit =
-  store.TileTapCount <- 0
-  store.MailCount <- 12
-  store.LastAction <- "State reset"
-  store.SliderValue <- 65.0
-  store.TextValue <- "Modern UI"
-  store.SecretValue <- "metro123"
-  store.ToggleEnabled <- true
-  store.CheckAccepted <- true
-  store.RadioChoice <- "compact"
-  store.TogglePressed <- false
-
 /// The next mode of the theme command.
 let nextModeOf(mode: MetroMode) : MetroMode =
   match mode with
@@ -255,6 +237,10 @@ let init(start: GalleryStart) : GalleryModel * Cmd<GalleryMsg> =
     AppBarExpanded = false
     SettingsOpen = false
     DialogOpen = false
+    TileTaps = 0
+    MailCount = 12
+    LastAction = "Ready"
+    SliderValue = 65.0
   },
   Cmd.none
 
@@ -294,15 +280,19 @@ let secondaryCommands = [|
   }
 |]
 
-/// Sets the mode, the store, and the open states back to their first values.
+/// Sets the hub values and the open states back to their first values. The
+/// input sections keep their models: a reset returns the shell home.
 let reset(env: ShellEnv, model: GalleryModel) : GalleryModel =
-  resetStore env.Store
   env.RequestHubRebuild()
 
   {
     model with
         ActiveTab = "hub"
         AppBarExpanded = false
+        TileTaps = 0
+        MailCount = 12
+        LastAction = "State reset"
+        SliderValue = 65.0
   }
 
 /// Applies one command of the app bar.
@@ -313,9 +303,13 @@ let applyCommand
   | "theme" ->
     let next = nextModeOf model.Mode
     env.ApplyMode next
-    env.Store.LastAction <- $"Mode -> {next}"
     env.RequestHubRebuild()
-    { model with Mode = next }
+
+    {
+      model with
+          Mode = next
+          LastAction = $"Mode -> {next}"
+    }
   | "settings" -> {
       model with
           SettingsOpen = true
@@ -329,6 +323,23 @@ let applyCommand
     }
   | "reset" -> reset(env, model)
   | _ -> model
+
+/// The hub action text for one opened tile. The count already includes the
+/// tap.
+let tileAction(taps: int, id: string) : string =
+  match id with
+  | "live" -> $"Live tile tapped ({taps})"
+  | "cycle" -> $"Cycle tile tapped ({taps})"
+  | "flip" -> $"Flip tile tapped ({taps})"
+  | _ -> $"Opened {id}"
+
+/// The hub values of the shell model for <paramref name="model"/>.
+let hubDataOf(model: GalleryModel) : HubPage.HubData = {
+  TileTaps = model.TileTaps
+  MailCount = model.MailCount
+  LastAction = model.LastAction
+  SliderValue = model.SliderValue
+}
 
 /// Applies one message to the model of the shell. The handlers that touch the
 /// window or the hub run on the post thread of the Elmish loop.
@@ -348,12 +359,38 @@ let update
   | SettingsOpenChanged isOpen -> { model with SettingsOpen = isOpen }, Cmd.none
   | DialogOpenChanged isOpen -> { model with DialogOpen = isOpen }, Cmd.none
   | DialogResolved confirmed ->
-    env.Store.LastAction <-
-      (if confirmed then "Dialog confirmed" else "Dialog cancelled")
-
     env.RequestHubRebuild()
-    { model with DialogOpen = false }, Cmd.none
+
+    {
+      model with
+          DialogOpen = false
+          LastAction =
+            if confirmed then "Dialog confirmed" else "Dialog cancelled"
+    },
+    Cmd.none
   | CommandInvoked id -> applyCommand(env, model, id), Cmd.none
+  | TileOpened id ->
+    env.RequestHubRebuild()
+
+    {
+      model with
+          TileTaps = model.TileTaps + 1
+          LastAction = tileAction(model.TileTaps + 1, id)
+    },
+    Cmd.none
+  | MailOpened ->
+    env.RequestHubRebuild()
+
+    {
+      model with
+          TileTaps = model.TileTaps + 1
+          MailCount = model.MailCount + 1
+          LastAction = "Opened Mail tile"
+    },
+    Cmd.none
+  | SliderCommitted value ->
+    env.RequestHubRebuild()
+    { model with SliderValue = value }, Cmd.none
   | Stop -> model, Cmd.none
 
 /// The input of the Pivot.
@@ -566,14 +603,13 @@ let program
 let create
   (getWindow: unit -> Window voption, start: GalleryStart)
   : GalleryCell =
-  let store = initialStore()
-
   // The mounted cells, for the headless check of the gallery.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
   let mutable selectionTabRef: SelectionTab.SelectionTabCell voption = ValueNone
   let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
-  let mutable inputsTabRef: InputsTab.InputsTabCell voption = ValueNone
-  let mutable dateTimeTabRef: DateTimeTab.DateTimeTabCell voption = ValueNone
+  let mutable actRef: InputPage.ActSectionCell voption = ValueNone
+  let mutable enterRef: InputPage.EnterSectionCell voption = ValueNone
+  let mutable pickRef: InputPage.PickSectionCell voption = ValueNone
   let mutable overlaysTabRef: OverlaysTab.OverlaysTabCell voption = ValueNone
 
   let mutable notificationsTabRef: NotificationsTab.NotificationsTabCell voption =
@@ -597,6 +633,13 @@ let create
 
   let dispatchMsg(msg: GalleryMsg) : unit = dispatchSlot msg
 
+  // Posts one action to the host window. The section cells share it: each
+  // section `MvuCell` posts its messages through the same window.
+  let post(action: unit -> unit) : bool =
+    getWindow()
+    |> ValueOption.map(fun window -> window.Post(fun () -> action()))
+    |> ValueOption.defaultValue false
+
   // The environment, filled below. The callbacks made before it read it
   // through this slot.
   let mutable envSlot: ShellEnv voption = ValueNone
@@ -610,9 +653,9 @@ let create
     getWindow()
     |> ValueOption.iter(fun window -> Metro.setAccent(window, accent))
 
-  // The sections of the hub read the store, but an equal input does not
-  // rebuild the hub. The messages that change these values rebuild the hub
-  // here.
+  // The hub reads the shell model through a getter on each build, but a
+  // shell rebuild with an equal Pivot input does not rebuild the hub. The
+  // messages that change the hub values rebuild the mounted hub here.
   let requestHubRebuild() =
     if (envOf().Latest.ActiveTab) = "hub" then
       hubRef |> ValueOption.iter(fun hub -> hub.Rebuild())
@@ -647,7 +690,26 @@ let create
     cell
 
   let factories: GalleryFactories = {
-    ControlsTab = fun () -> ControlsTab.create store
+    ActSection =
+      fun () ->
+        let section = InputPage.createActSection post
+        actRef <- ValueSome section
+        section :> Cell
+    EnterSection =
+      fun () ->
+        let section =
+          InputPage.createEnterSection(
+            post,
+            fun value -> dispatchMsg(SliderCommitted value)
+          )
+
+        enterRef <- ValueSome section
+        section :> Cell
+    PickSection =
+      fun () ->
+        let section = InputPage.createPickSection post
+        pickRef <- ValueSome section
+        section :> Cell
     FlipViewTab = FlipViewTab.create
     ListsTab = ListsTab.create
     SelectionTab =
@@ -659,16 +721,6 @@ let create
       fun () ->
         let tab = ZoomTab.create()
         zoomTabRef <- ValueSome tab
-        tab :> Cell
-    InputsTab =
-      fun () ->
-        let tab = InputsTab.create()
-        inputsTabRef <- ValueSome tab
-        tab :> Cell
-    DateTimeTab =
-      fun () ->
-        let tab = DateTimeTab.create()
-        dateTimeTabRef <- ValueSome tab
         tab :> Cell
     OverlaysTab =
       fun () ->
@@ -692,10 +744,12 @@ let create
         tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
-    LiveTile = MetroLiveTile.createFactory(fun () -> HubPage.tapLiveTile store)
+    LiveTile =
+      MetroLiveTile.createFactory(fun () -> dispatchMsg(TileOpened "live"))
     CycleTile =
-      MetroCycleTile.createFactory(fun () -> HubPage.tapCycleTile store)
-    FlipTile = MetroFlipTile.createFactory(fun () -> HubPage.tapFlipTile store)
+      MetroCycleTile.createFactory(fun () -> dispatchMsg(TileOpened "cycle"))
+    FlipTile =
+      MetroFlipTile.createFactory(fun () -> dispatchMsg(TileOpened "flip"))
     SettingsFlyout = flyoutFactory
     ContentDialog = dialogFactory
   }
@@ -704,12 +758,14 @@ let create
     OpenTab = (fun id -> dispatchMsg(TabSelected id))
     OpenSettings = (fun () -> dispatchMsg(SettingsOpenChanged true))
     OpenDialog = (fun () -> dispatchMsg(DialogOpenChanged true))
+    TileOpened = (fun id -> dispatchMsg(TileOpened id))
+    MailOpened = (fun () -> dispatchMsg MailOpened)
   }
 
   let hubFactory() : MetroHubCell =
     let cell =
       HubPage.createHub(
-        store,
+        (fun () -> hubDataOf(envOf().Latest)),
         callbacks,
         (factories.LiveTile, factories.CycleTile, factories.FlipTile)
       )
@@ -729,10 +785,9 @@ let create
 
   let inputPageFactory() : Cell =
     InputPage.create {
-      Controls = factories.ControlsTab
-      Inputs = factories.InputsTab
-      DateTime = factories.DateTimeTab
-      Selection = factories.SelectionTab
+      Act = factories.ActSection
+      Enter = factories.EnterSection
+      Pick = factories.PickSection
     }
 
   let collectionsPageFactory() : Cell =
@@ -740,6 +795,7 @@ let create
       Lists = factories.ListsTab
       FlipView = factories.FlipViewTab
       Zoom = factories.ZoomTab
+      Selection = factories.SelectionTab
     }
 
   let navigatePageFactory() : Cell =
@@ -763,7 +819,6 @@ let create
   let firstModel, _ = init start
 
   let env: ShellEnv = {
-    Store = store
     ApplyMode = applyMode
     ApplyAccent = applyAccent
     RequestHubRebuild = requestHubRebuild
@@ -781,11 +836,6 @@ let create
 
   envSlot <- ValueSome env
 
-  let post(action: unit -> unit) : bool =
-    getWindow()
-    |> ValueOption.map(fun window -> window.Post(fun () -> action()))
-    |> ValueOption.defaultValue false
-
   let cell = {
     new GalleryCell(post, Stop, program env, start) with
       override _.ActiveTab = (envOf().Latest.ActiveTab)
@@ -796,8 +846,9 @@ let create
       override _.Pivot = pivotRef
       override _.SelectionTab = selectionTabRef
       override _.ZoomTab = zoomTabRef
-      override _.InputsTab = inputsTabRef
-      override _.DateTimeTab = dateTimeTabRef
+      override _.ActSection = actRef
+      override _.EnterSection = enterRef
+      override _.PickSection = pickRef
       override _.OverlaysTab = overlaysTabRef
       override _.NotificationsTab = notificationsTabRef
       override _.NavigationTab = navigationTabRef

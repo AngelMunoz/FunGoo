@@ -3,7 +3,16 @@ module MetroGallery.Pages.HubPage
 open Goo
 open FunGoo.Children
 open FunGoo.Metro
-open MetroGallery.GalleryStore
+
+/// The hub values owned by the shell model: the tile taps, the mail count,
+/// the last action, and the slider value that the hub shows as progress. The
+/// sections own their fields; the shell mirrors only this cross-page read.
+type HubData = {
+  TileTaps: int
+  MailCount: int
+  LastAction: string
+  SliderValue: float
+}
 
 /// The callbacks of the hub: the hub owns no shell state, so each action
 /// reaches the shell through one of these callbacks.
@@ -11,6 +20,8 @@ type HubCallbacks = {
   OpenTab: string -> unit
   OpenSettings: unit -> unit
   OpenDialog: unit -> unit
+  TileOpened: string -> unit
+  MailOpened: unit -> unit
 }
 
 /// The factories of the cycling tiles of the start section.
@@ -108,39 +119,29 @@ let flipBack: MetroLiveTileFace = {
   AccentOverride = ValueSome(Color.Rgb(0, 80, 239))
 }
 
-/// Writes the action of one iconic tile of the hub. The Hub cell builds the
+/// Notifies the shell that one iconic tile opened. The Hub cell builds the
 /// tile, so it owns the callback of the tile: the owner rule rebuilds the
-/// Hub cell, and its sections read the store again.
-let openTile(store: GalleryStore, tile: string) : unit =
-  store.TileTapCount <- store.TileTapCount + 1
-  store.LastAction <- $"Opened {tile}"
+/// Hub cell, and its sections read the shell model again.
+let openTile(cb: HubCallbacks, tile: string) : unit = cb.TileOpened tile
 
-/// Increments the Mail tile count and total tile taps.
-let openMailTile(store: GalleryStore) : unit =
-  store.MailCount <- store.MailCount + 1
-  openTile(store, "Mail tile")
+/// Notifies the shell that the Mail tile opened.
+let openMailTile(cb: HubCallbacks) : unit = cb.MailOpened()
 
-/// Writes the action of the live tile. The live tile gives each click to the
-/// Hub cell through `InvokeInputCallback`, so the owner rule rebuilds the
-/// Hub cell.
-let tapLiveTile(store: GalleryStore) : unit =
-  store.TileTapCount <- store.TileTapCount + 1
-  store.LastAction <- $"Live tile tapped ({store.TileTapCount})"
+/// Notifies the shell that the live tile was tapped. The live tile gives
+/// each click to the Hub cell through `InvokeInputCallback`, so the owner
+/// rule rebuilds the Hub cell.
+let tapLiveTile(cb: HubCallbacks) : unit = cb.TileOpened "live"
 
-/// Writes the action of the cycle tile.
-let tapCycleTile(store: GalleryStore) : unit =
-  store.TileTapCount <- store.TileTapCount + 1
-  store.LastAction <- $"Cycle tile tapped ({store.TileTapCount})"
+/// Notifies the shell that the cycle tile was tapped.
+let tapCycleTile(cb: HubCallbacks) : unit = cb.TileOpened "cycle"
 
-/// Writes the action of the flip tile.
-let tapFlipTile(store: GalleryStore) : unit =
-  store.TileTapCount <- store.TileTapCount + 1
-  store.LastAction <- $"Flip tile tapped ({store.TileTapCount})"
+/// Notifies the shell that the flip tile was tapped.
+let tapFlipTile(cb: HubCallbacks) : unit = cb.TileOpened "flip"
 
 /// The start section of the hub: the live tile and six iconic tiles.
 let startTiles
   (
-    store: GalleryStore,
+    data: HubData,
     cb: HubCallbacks,
     liveFactory: unit -> MetroLiveTileCell,
     cycleFactory: unit -> MetroCycleTileCell,
@@ -174,10 +175,10 @@ let startTiles
         MetroIconicTile.build(
           {
             MetroIconicTile.defaults("Mail", "mail") with
-                Count = ValueSome store.MailCount
+                Count = ValueSome data.MailCount
                 Size = MetroTileSize.Medium
           },
-          fun () -> openMailTile store
+          fun () -> openMailTile cb
         )
       ),
       MetroTilt.mount(
@@ -188,7 +189,7 @@ let startTiles
                 Size = MetroTileSize.Small
                 AccentOverride = ValueSome(Color.Rgb(0, 163, 0))
           },
-          fun () -> openTile(store, "Calendar")
+          fun () -> openTile(cb, "Calendar")
         )
       ),
       MetroTilt.mount(
@@ -199,7 +200,7 @@ let startTiles
                 Size = MetroTileSize.Small
                 AccentOverride = ValueSome(Color.Rgb(250, 104, 0))
           },
-          fun () -> openTile(store, "Music")
+          fun () -> openTile(cb, "Music")
         )
       ),
       MetroTilt.mount(
@@ -210,7 +211,7 @@ let startTiles
                 Size = MetroTileSize.Small
                 AccentOverride = ValueSome(Color.Rgb(162, 0, 255))
           },
-          fun () -> openTile(store, "Photos")
+          fun () -> openTile(cb, "Photos")
         )
       ),
       MetroTilt.mount(
@@ -239,18 +240,18 @@ let startTiles
 
 /// The status section of the hub: the last action, the slider value as a
 /// progress bar, and two buttons.
-let statusSection(store: GalleryStore, cb: HubCallbacks) : Blob =
+let statusSection(data: HubData, cb: HubCallbacks) : Blob =
   Container(FlexDirection = FlexDirection.Column, Gap = Length.Pixels 16.0)
     .Children(
       MetroText.subtitle "Glance and go",
       MetroText.secondary
-        $"Last action: {store.LastAction}. Tile taps: {store.TileTapCount}.",
+        $"Last action: {data.LastAction}. Tile taps: {data.TileTaps}.",
       MetroText.caption "LIVE PROGRESS",
       Container()
         .Children(
           MetroProgressBar.build(
             "hub-det-bar",
-            MetroProgressBar.determinate(store.SliderValue / 100.0)
+            MetroProgressBar.determinate(data.SliderValue / 100.0)
           )
         ),
       Container(
@@ -290,7 +291,7 @@ let principlesSection() : Blob =
 /// own `Build`, so it owns the callbacks of the section.
 let hubSection
   (
-    store: GalleryStore,
+    getData: unit -> HubData,
     cb: HubCallbacks,
     tileFactories: TileFactories,
     sectionId: string
@@ -298,17 +299,18 @@ let hubSection
   match sectionId with
   | "start" ->
     let liveFactory, cycleFactory, flipFactory = tileFactories
-    startTiles(store, cb, liveFactory, cycleFactory, flipFactory)
-  | "status" -> statusSection(store, cb)
+    startTiles(getData(), cb, liveFactory, cycleFactory, flipFactory)
+  | "status" -> statusSection(getData(), cb)
   | _ -> principlesSection()
 
 /// Creates the hub cell of the gallery. The cell renders each section through
-/// `hubSection`.
+/// `hubSection`. The data getter reads the shell model on each build, so a
+/// mirrored slider commit shows on the hub after one hub rebuild.
 let createHub
-  (store: GalleryStore, cb: HubCallbacks, tileFactories: TileFactories)
+  (getData: unit -> HubData, cb: HubCallbacks, tileFactories: TileFactories)
   : MetroHubCell =
   MetroHub.create(fun sectionId ->
-    hubSection(store, cb, tileFactories, sectionId))
+    hubSection(getData, cb, tileFactories, sectionId))
 
 /// Mounts the hub of the gallery: the full-bleed `MetroHub` itself.
 let mountHub(hubFactory: unit -> MetroHubCell) : Blob =

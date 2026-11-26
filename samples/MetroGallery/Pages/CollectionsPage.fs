@@ -4,12 +4,14 @@ open Goo
 open FunGoo.Children
 open FunGoo.Metro
 
-/// The tab cells of the temporary collections page. A later batch replaces
-/// this composition with the final grouped sections.
+/// The tab cells of the temporary collections page. The tree view moved here
+/// from the selection tab when its picker half joined the input page. A later
+/// batch replaces this composition with the final grouped sections.
 type CollectionsPageCells = {
   Lists: unit -> Cell
   FlipView: unit -> Cell
   Zoom: unit -> Cell
+  Selection: unit -> Cell
 }
 
 /// One captioned section of the temporary page: a caption in the type ramp,
@@ -41,6 +43,7 @@ let create(cells: CollectionsPageCells) : Cell = {
           MetroText.title "collections",
           section("LISTS", "collections-lists", cells.Lists),
           section("FLIP VIEW", "collections-flip-view", cells.FlipView),
+          section("TREE VIEW", "collections-tree", cells.Selection),
           section("SEMANTIC ZOOM", "collections-zoom", cells.Zoom)
         )
 }

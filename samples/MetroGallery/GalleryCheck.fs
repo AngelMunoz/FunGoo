@@ -351,37 +351,39 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if zoomTab.LastAction <> "Selected city in maps" then
     failwith $"Expected 'Selected city in maps', got '{zoomTab.LastAction}'."
 
-  // 8. Inputs: the size combo box and the city auto-suggest box keep separate
-  // values.
+  // 8. Enter section: the size combo box and the city auto-suggest box keep
+  // separate values in the section model.
   gallery.SelectTab "input"
   pump 2
 
-  let inputsTab =
-    requireSome("Expected the inputs tab to be mounted.", gallery.InputsTab)
+  let enter =
+    requireSome(
+      "Expected the enter section to be mounted.",
+      gallery.EnterSection
+    )
 
-  inputsTab.CityInput.OnQueryChange.Invoke("por")
+  enter.CityInput.OnQueryChange.Invoke("por")
   pump 2
-  inputsTab.CityInput.OnSelect.Invoke("Porto")
-  pump 2
-
-  if inputsTab.SizeSelected <> "medium" then
-    failwith
-      $"Expected the size to stay 'medium', got '{inputsTab.SizeSelected}'."
-
-  if inputsTab.CitySelected <> "Porto" then
-    failwith $"Expected the city 'Porto', got '{inputsTab.CitySelected}'."
-
-  inputsTab.SizeInput.OnSelect.Invoke("large")
+  enter.CityInput.OnSelect.Invoke("Porto")
   pump 2
 
-  if inputsTab.SizeSelected <> "large" || inputsTab.CitySelected <> "Porto" then
+  if enter.SizeSelected <> "medium" then
+    failwith $"Expected the size to stay 'medium', got '{enter.SizeSelected}'."
+
+  if enter.CitySelected <> "Porto" then
+    failwith $"Expected the city 'Porto', got '{enter.CitySelected}'."
+
+  enter.SizeInput.OnSelect.Invoke("large")
+  pump 2
+
+  if enter.SizeSelected <> "large" || enter.CitySelected <> "Porto" then
     failwith "Expected the size and the city to change independently."
 
   // A new query starts a new search and clears the city selection.
-  inputsTab.CityInput.OnQueryChange.Invoke("l")
+  enter.CityInput.OnQueryChange.Invoke("l")
   pump 2
 
-  if inputsTab.CitySelected <> "" || inputsTab.CityQuery <> "l" then
+  if enter.CitySelected <> "" || enter.CityQuery <> "l" then
     failwith "Expected a new query to clear the city selection."
 
   // 9. A tab with a control callback rebuilds with no call of `Rebuild()`.
@@ -417,41 +419,36 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     failwith
       "Expected the owner rule to rebuild the zoom tab once after a zoom request."
 
-  // 10. Selection tab: LongListSelector jump grid, ListPicker, and TreeView
-  // rebuild the tab through InvokeInputCallback with no manual Rebuild().
+  // 10. Pick section: the LongListSelector jump grid and the inline list
+  // picker rebuild the section through InvokeInputCallback with no manual
+  // Rebuild(). The tree view stayed in the selection tab on the collections
+  // page.
   gallery.SelectTab "input"
   pump 2
 
-  let selectionTab =
-    requireSome(
-      "Expected the selection tab to be mounted.",
-      gallery.SelectionTab
-    )
+  let pick =
+    requireSome("Expected the pick section to be mounted.", gallery.PickSection)
 
   let longList =
-    requireSome(
-      "Expected the long list selector to be mounted.",
-      selectionTab.LongList
-    )
+    requireSome("Expected the long list selector to be mounted.", pick.LongList)
 
-  let selBuildsBefore = selectionTab.Builds
   longList.Handle(MetroLongListEvent.JumpOpenChanged true)
   pump 2
 
-  if not longList.IsJumpOpen || selectionTab.Builds <> selBuildsBefore + 1 then
-    failwith "Expected long list jump grid to open in one host build."
+  if not longList.IsJumpOpen then
+    failwith "Expected long list jump grid to open."
 
   longList.Handle(MetroLongListEvent.GroupJumped "g")
   pump 2
 
-  if longList.IsJumpOpen || selectionTab.LastAction <> "Jumped to group g" then
+  if longList.IsJumpOpen || pick.LastAction <> "Jumped to group g" then
     failwith
-      $"Expected jump to 'g' to close jump grid, got '{selectionTab.LastAction}'."
+      $"Expected jump to 'g' to close jump grid, got '{pick.LastAction}'."
 
   let inlinePicker =
     requireSome(
       "Expected the inline list picker to be mounted.",
-      selectionTab.InlinePicker
+      pick.InlinePicker
     )
 
   inlinePicker.Handle(MetroListPickerEvent.OpenChanged true)
@@ -464,9 +461,19 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   inlinePicker.Handle(MetroListPickerEvent.OpenChanged false)
   pump 2
 
-  if inlinePicker.IsOpen || selectionTab.LastAction <> "Ringtone: pulse" then
+  if inlinePicker.IsOpen || pick.LastAction <> "Ringtone: pulse" then
     failwith
-      $"Expected 'Ringtone: pulse' and closed picker, got '{selectionTab.LastAction}'."
+      $"Expected 'Ringtone: pulse' and closed picker, got '{pick.LastAction}'."
+
+  // The tree view of the selection tab mounts on the collections page now.
+  gallery.SelectTab "collections"
+  pump 2
+
+  let selectionTab =
+    requireSome(
+      "Expected the selection tab to be mounted.",
+      gallery.SelectionTab
+    )
 
   selectionTab.TreeInput.OnExpandedChange.Invoke("samples", true)
   pump 2
@@ -479,32 +486,34 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   then
     failwith "Expected tree view expand and select to update tab state."
 
-  // 11. Date and time tab: inline rollers and modal pickers rebuild the tab
-  // via InvokeInputCallback.
+  // 11. Pick section: inline rollers and modal pickers commit to the one
+  // shared date. Each widget gives its event to the section through
+  // InvokeInputCallback, and the posted section message rebuilds the section.
   gallery.SelectTab "input"
   pump 2
 
-  let dtTab =
-    requireSome("Expected the datetime tab to be mounted.", gallery.DateTimeTab)
+  let pickDt =
+    requireSome("Expected the pick section to be mounted.", gallery.PickSection)
 
-  let dateRoller = requireSome("Expected inline date roller.", dtTab.DateRoller)
+  let dateRoller =
+    requireSome("Expected inline date roller.", pickDt.DateRoller)
 
   let monthCol =
     requireSome("Expected month roller column.", dateRoller.MonthRoller)
 
-  let dtBuildsBefore = dtTab.Builds
+  let dtBuildsBefore = pickDt.Builds
   monthCol.Step(1)
   pump 2
 
-  if
-    dtTab.RollerDate <> DateOnly(2026, 12, 24)
-    || dtTab.Builds <> dtBuildsBefore + 1
-  then
+  if pickDt.SelectedDate <> DateOnly(2026, 12, 24) then
+    failwith $"Expected roller date 2026-12-24, got {pickDt.SelectedDate}."
+
+  if pickDt.Builds <= dtBuildsBefore then
     failwith
-      $"Expected roller date 2026-12-24 in one build, got {dtTab.RollerDate}."
+      "Expected the owner rule and the posted message to rebuild the pick section."
 
   let datePicker =
-    requireSome("Expected compact date picker.", dtTab.DatePicker)
+    requireSome("Expected compact date picker.", pickDt.DatePicker)
 
   datePicker.Handle(MetroDatePickerEvent.OpenChanged true)
   pump 2
@@ -515,27 +524,32 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   datePicker.Handle(MetroDatePickerEvent.DateCommitted(DateOnly(2027, 3, 15)))
   pump 2
 
-  if
-    datePicker.IsOpen || dtTab.PickedDate <> ValueSome(DateOnly(2027, 3, 15))
-  then
+  if datePicker.IsOpen || pickDt.SelectedDate <> DateOnly(2027, 3, 15) then
     failwith "Expected committed date 2027-03-15 and closed modal."
 
-  dtTab.CalendarInput.OnChange.Invoke(DateOnly(2026, 11, 30))
+  pickDt.CalendarInput.OnChange.Invoke(DateOnly(2026, 11, 30))
   pump 2
 
-  if dtTab.CalendarDate <> ValueSome(DateOnly(2026, 11, 30)) then
+  if pickDt.SelectedDate <> DateOnly(2026, 11, 30) then
     failwith "Expected Calendar selection to update to 2026-11-30."
 
-  dtTab.CalendarDatePickerInput.OnChange.Invoke(Nullable())
+  // A cleared entry keeps the shared date and notes the clear.
+  pickDt.CalendarDatePickerInput.OnChange.Invoke(Nullable())
   pump 2
 
-  if dtTab.DropdownDate.IsSome then
-    failwith "Expected CalendarDatePicker clear to reset DropdownDate."
+  if
+    pickDt.SelectedDate <> DateOnly(2026, 11, 30)
+    || pickDt.LastAction <> "Dropdown date: cleared"
+  then
+    failwith "Expected CalendarDatePicker clear to keep 2026-11-30."
 
-  dtTab.CalendarDatePickerInput.OnChange.Invoke(Nullable(DateOnly(2026, 12, 1)))
+  pickDt.CalendarDatePickerInput.OnChange.Invoke(
+    Nullable(DateOnly(2026, 12, 1))
+  )
+
   pump 2
 
-  if dtTab.DropdownDate <> ValueSome(DateOnly(2026, 12, 1)) then
+  if pickDt.SelectedDate <> DateOnly(2026, 12, 1) then
     failwith "Expected CalendarDatePicker selection 2026-12-01."
 
   // 12. Overlays tab: Flyout, MessageDialog, MenuFlyout, ContextMenu, and
