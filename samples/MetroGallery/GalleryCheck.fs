@@ -302,27 +302,27 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   gallery.SelectTab "collections"
   pump 2
 
-  let zoomTab =
+  let zoomPage =
     requireSome(
-      "Expected the semantic zoom tab to be mounted.",
-      gallery.ZoomTab
+      "Expected the collections page to be mounted.",
+      gallery.CollectionsPage
     )
 
   let zoomCell =
     requireSome(
       "Expected the semantic zoom cell to be mounted.",
-      zoomTab.ZoomCell
+      zoomPage.ZoomCell
     )
 
   zoomCell.Handle(MetroSemanticZoomEvent.ZoomOut)
   pump 2
 
-  if not zoomTab.ZoomedOut || not zoomCell.IsZoomedOut then
+  if not zoomPage.ZoomedOut || not zoomCell.IsZoomedOut then
     failwith "Expected the zoom toggle to zoom out."
 
   let groupTile =
     requireButton(
-      zoomTab.LastOverview,
+      zoomPage.LastOverview,
       "group-tile-maps",
       "Expected the group tile of 'maps'."
     )
@@ -332,15 +332,15 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   groupTile.OnClick.Invoke()
   pump 2
 
-  if zoomTab.ZoomedOut || zoomCell.IsZoomedOut then
+  if zoomPage.ZoomedOut || zoomCell.IsZoomedOut then
     failwith "Expected a group tile to zoom in."
 
-  if zoomTab.LastAction <> "Zoomed in on maps" then
-    failwith $"Expected 'Zoomed in on maps', got '{zoomTab.LastAction}'."
+  if zoomPage.ZoomAction <> "Zoomed in on maps" then
+    failwith $"Expected 'Zoomed in on maps', got '{zoomPage.ZoomAction}'."
 
   let detailTile =
     requireButton(
-      zoomTab.LastDetail,
+      zoomPage.LastDetail,
       "tile-maps-city",
       "Expected the detail tile 'city' of 'maps'."
     )
@@ -348,8 +348,8 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   detailTile.OnClick.Invoke()
   pump 2
 
-  if zoomTab.LastAction <> "Selected city in maps" then
-    failwith $"Expected 'Selected city in maps', got '{zoomTab.LastAction}'."
+  if zoomPage.ZoomAction <> "Selected city in maps" then
+    failwith $"Expected 'Selected city in maps', got '{zoomPage.ZoomAction}'."
 
   // 8. Enter section: the size combo box and the city auto-suggest box keep
   // separate values in the section model.
@@ -386,38 +386,39 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if enter.CitySelected <> "" || enter.CityQuery <> "l" then
     failwith "Expected a new query to clear the city selection."
 
-  // 9. A tab with a control callback rebuilds with no call of `Rebuild()`.
-  // The zoom cell gives each zoom request to the tab through
+  // 9. A page with a control callback rebuilds with no call of `Rebuild()`.
+  // The zoom cell gives each zoom request to the page through
   // `InvokeInputCallback`, as a Goo.Widgets control gives the callback of
-  // its input. The owner rule then rebuilds the tab. No handler of the zoom
-  // tab calls `Rebuild()`, and no handler of the three tabs with a widget
-  // input calls it. A Goo.Widgets control has no public member that starts
-  // the callback of its input, thus the check drives the zoom cell.
+  // its input. The owner rule then rebuilds the page. No handler of the
+  // zoom section calls `Rebuild()`, and no handler of the three sections
+  // with a widget input calls it. A Goo.Widgets control has no public
+  // member that starts the callback of its input, thus the check drives
+  // the zoom cell.
   gallery.SelectTab "collections"
   pump 2
 
-  let zoomTabAgain =
+  let zoomPageAgain =
     requireSome(
-      "Expected the semantic zoom tab to be mounted.",
-      gallery.ZoomTab
+      "Expected the collections page to be mounted.",
+      gallery.CollectionsPage
     )
 
   let zoomCellAgain =
     requireSome(
       "Expected the semantic zoom cell to be mounted.",
-      zoomTabAgain.ZoomCell
+      zoomPageAgain.ZoomCell
     )
 
-  let buildsBefore = zoomTabAgain.Builds
+  let buildsBefore = zoomPageAgain.Builds
   zoomCellAgain.Handle(MetroSemanticZoomEvent.ZoomOut)
   pump 2
 
-  if not zoomTabAgain.ZoomedOut then
-    failwith "Expected the zoom request to zoom the tab out."
+  if not zoomPageAgain.ZoomedOut then
+    failwith "Expected the zoom request to zoom the page out."
 
-  if zoomTabAgain.Builds <> buildsBefore + 1 then
+  if zoomPageAgain.Builds <> buildsBefore + 1 then
     failwith
-      "Expected the owner rule to rebuild the zoom tab once after a zoom request."
+      "Expected the owner rule to rebuild the collections page once after a zoom request."
 
   // 10. Pick section: the LongListSelector jump grid and the inline list
   // picker rebuild the section through InvokeInputCallback with no manual
@@ -465,26 +466,27 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     failwith
       $"Expected 'Ringtone: pulse' and closed picker, got '{pick.LastAction}'."
 
-  // The tree view of the selection tab mounts on the collections page now.
+  // The tree view of the retired selection tab mounts on the collections
+  // page now.
   gallery.SelectTab "collections"
   pump 2
 
-  let selectionTab =
+  let treePage =
     requireSome(
-      "Expected the selection tab to be mounted.",
-      gallery.SelectionTab
+      "Expected the collections page to be mounted.",
+      gallery.CollectionsPage
     )
 
-  selectionTab.TreeInput.OnExpandedChange.Invoke("samples", true)
+  treePage.TreeInput.OnExpandedChange.Invoke("samples", true)
   pump 2
-  selectionTab.TreeInput.OnSelectionChange.Invoke([| "gallery" |])
+  treePage.TreeInput.OnSelectionChange.Invoke([| "gallery" |])
   pump 2
 
   if
-    selectionTab.SelectedTreeIds <> [| "gallery" |]
-    || not(selectionTab.ExpandedTreeIds |> Array.contains "samples")
+    treePage.SelectedTreeIds <> [| "gallery" |]
+    || not(treePage.ExpandedTreeIds |> Array.contains "samples")
   then
-    failwith "Expected tree view expand and select to update tab state."
+    failwith "Expected tree view expand and select to update page state."
 
   // 11. Pick section: inline rollers and modal pickers commit to the one
   // shared date. Each widget gives its event to the section through
@@ -635,12 +637,13 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     failwith
       $"Expected closed tip with 'Teaching tip action: Got It', got '{notifTab.LastAction}'."
 
-  // 14. Navigation tab: SplitView, TabView, BreadcrumbBar, AppBar parts, and
-  // Panorama mount and deliver callbacks cleanly.
+  // 14. Navigate page, move section: Pivot, SplitView, TabView,
+  // BreadcrumbBar, AppBar parts, and Panorama mount and deliver callbacks
+  // cleanly.
   gallery.SelectTab "navigate"
   pump 2
 
-  let navTab = requireSome("Expected navigation tab.", gallery.NavigationTab)
+  let navTab = requireSome("Expected navigate page.", gallery.NavigatePage)
 
   navTab.TabBarInput.OnAdd.Invoke()
   pump 2
@@ -669,13 +672,13 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     failwith
       $"Expected Panorama title parallax -35.0, got {pan.TitleTranslate.Value.X}."
 
-  // 15. Primitives & Layout tab: Icon, PersonPicture, Image, RichTextBlock,
-  // Expander, VariableSizedWrapGrid, WrapPanel, Viewbox, and ScrollViewer
-  // mount and switch modes cleanly.
+  // 15. Navigate page, arrange section: Icon, PersonPicture, Image,
+  // RichTextBlock, Expander, VariableSizedWrapGrid, WrapPanel, Viewbox, and
+  // ScrollViewer mount and switch modes cleanly.
   gallery.SelectTab "navigate"
   pump 2
 
-  let primTab = requireSome("Expected primitives tab.", gallery.PrimitivesTab)
+  let primTab = requireSome("Expected navigate page.", gallery.NavigatePage)
 
   if not primTab.ExpanderOpen then
     failwith "Expected primitives expander open initially."
@@ -690,7 +693,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     || primTab.GridOrientation <> MetroWrapOrientation.Vertical
     || primTab.ViewboxStretch <> MetroStretch.Fill
   then
-    failwith "Expected PrimitivesTab state updates to apply cleanly."
+    failwith "Expected arrange state updates to apply cleanly."
 
   // The responsive viewbox cell of the primitives tab mounted and scales its
   // content.

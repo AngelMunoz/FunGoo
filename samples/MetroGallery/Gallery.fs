@@ -91,11 +91,8 @@ type GalleryCell
   /// The mounted Pivot, for the headless check.
   abstract Pivot: MetroPivotCell voption
 
-  /// The mounted semantic zoom tab, for the headless check.
-  abstract ZoomTab: ZoomTab.ZoomTabCell voption
-
-  /// The mounted selection tab, for the headless check.
-  abstract SelectionTab: SelectionTab.SelectionTabCell voption
+  /// The mounted collections page, for the headless check.
+  abstract CollectionsPage: CollectionsPage.CollectionsPageCell voption
 
   /// The mounted act section, for the headless check.
   abstract ActSection: InputPage.ActSectionCell voption
@@ -112,11 +109,8 @@ type GalleryCell
   /// The mounted notifications tab, for the headless check.
   abstract NotificationsTab: NotificationsTab.NotificationsTabCell voption
 
-  /// The mounted navigation tab, for the headless check.
-  abstract NavigationTab: NavigationTab.NavigationTabCell voption
-
-  /// The mounted primitives and layout tab, for the headless check.
-  abstract PrimitivesTab: PrimitivesTab.PrimitivesTabCell voption
+  /// The mounted navigate page, for the headless check.
+  abstract NavigatePage: NavigatePage.NavigatePageCell voption
 
   /// The mounted settings flyout, for the headless check.
   abstract SettingsFlyout: MetroSettingsFlyoutCell voption
@@ -159,14 +153,8 @@ type GalleryFactories = {
   ActSection: unit -> Cell
   EnterSection: unit -> Cell
   PickSection: unit -> Cell
-  FlipViewTab: unit -> Cell
-  ListsTab: unit -> Cell
-  SelectionTab: unit -> Cell
-  ZoomTab: unit -> Cell
   OverlaysTab: unit -> Cell
   NotificationsTab: unit -> Cell
-  NavigationTab: unit -> Cell
-  PrimitivesTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
@@ -605,20 +593,17 @@ let create
   : GalleryCell =
   // The mounted cells, for the headless check of the gallery.
   let mutable pivotRef: MetroPivotCell voption = ValueNone
-  let mutable selectionTabRef: SelectionTab.SelectionTabCell voption = ValueNone
-  let mutable zoomTabRef: ZoomTab.ZoomTabCell voption = ValueNone
+
+  let mutable collectionsPageRef: CollectionsPage.CollectionsPageCell voption =
+    ValueNone
+
+  let mutable navigatePageRef: NavigatePage.NavigatePageCell voption = ValueNone
   let mutable actRef: InputPage.ActSectionCell voption = ValueNone
   let mutable enterRef: InputPage.EnterSectionCell voption = ValueNone
   let mutable pickRef: InputPage.PickSectionCell voption = ValueNone
   let mutable overlaysTabRef: OverlaysTab.OverlaysTabCell voption = ValueNone
 
   let mutable notificationsTabRef: NotificationsTab.NotificationsTabCell voption =
-    ValueNone
-
-  let mutable navigationTabRef: NavigationTab.NavigationTabCell voption =
-    ValueNone
-
-  let mutable primitivesTabRef: PrimitivesTab.PrimitivesTabCell voption =
     ValueNone
 
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
@@ -710,18 +695,6 @@ let create
         let section = InputPage.createPickSection post
         pickRef <- ValueSome section
         section :> Cell
-    FlipViewTab = FlipViewTab.create
-    ListsTab = ListsTab.create
-    SelectionTab =
-      fun () ->
-        let tab = SelectionTab.create()
-        selectionTabRef <- ValueSome tab
-        tab :> Cell
-    ZoomTab =
-      fun () ->
-        let tab = ZoomTab.create()
-        zoomTabRef <- ValueSome tab
-        tab :> Cell
     OverlaysTab =
       fun () ->
         let tab = OverlaysTab.create()
@@ -731,16 +704,6 @@ let create
       fun () ->
         let tab = NotificationsTab.create()
         notificationsTabRef <- ValueSome tab
-        tab :> Cell
-    NavigationTab =
-      fun () ->
-        let tab = NavigationTab.create()
-        navigationTabRef <- ValueSome tab
-        tab :> Cell
-    PrimitivesTab =
-      fun () ->
-        let tab = PrimitivesTab.create()
-        primitivesTabRef <- ValueSome tab
         tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
@@ -791,18 +754,14 @@ let create
     }
 
   let collectionsPageFactory() : Cell =
-    CollectionsPage.create {
-      Lists = factories.ListsTab
-      FlipView = factories.FlipViewTab
-      Zoom = factories.ZoomTab
-      Selection = factories.SelectionTab
-    }
+    let page = CollectionsPage.create()
+    collectionsPageRef <- ValueSome page
+    page :> Cell
 
   let navigatePageFactory() : Cell =
-    NavigatePage.create {
-      Navigation = factories.NavigationTab
-      Primitives = factories.PrimitivesTab
-    }
+    let page = NavigatePage.create()
+    navigatePageRef <- ValueSome page
+    page :> Cell
 
   let dialogsPageFactory() : Cell =
     DialogsPage.create {
@@ -844,15 +803,13 @@ let create
       override _.SettingsOpen = (envOf().Latest.SettingsOpen)
       override _.DialogOpen = (envOf().Latest.DialogOpen)
       override _.Pivot = pivotRef
-      override _.SelectionTab = selectionTabRef
-      override _.ZoomTab = zoomTabRef
+      override _.CollectionsPage = collectionsPageRef
+      override _.NavigatePage = navigatePageRef
       override _.ActSection = actRef
       override _.EnterSection = enterRef
       override _.PickSection = pickRef
       override _.OverlaysTab = overlaysTabRef
       override _.NotificationsTab = notificationsTabRef
-      override _.NavigationTab = navigationTabRef
-      override _.PrimitivesTab = primitivesTabRef
       override _.SettingsFlyout = flyoutRef
       override _.ContentDialog = dialogRef
       override _.Builds = (envOf().Builds)

@@ -10,14 +10,8 @@
     <Compile Include="ContinuumDemo.fs" />
     <Compile Include="StaggerDemo.fs" />
     <Compile Include="MotionTab.fs" />
-    <Compile Include="FlipViewTab.fs" />
-    <Compile Include="ListsTab.fs" />
-    <Compile Include="SelectionTab.fs" />
-    <Compile Include="ZoomTab.fs" />
     <Compile Include="OverlaysTab.fs" />
     <Compile Include="NotificationsTab.fs" />
-    <Compile Include="NavigationTab.fs" />
-    <Compile Include="PrimitivesTab.fs" />
     <Compile Include="Pages\HubPage.fs" />
     <Compile Include="Pages\InputPage.fs" />
     <Compile Include="Pages\CollectionsPage.fs" />
