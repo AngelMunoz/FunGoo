@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <Compile Include="GalleryStore.fs" />
-    <Compile Include="TypographyTab.fs" />
+    <Compile Include="Pages\TypePage.fs" />
     <Compile Include="ContinuumDemo.fs" />
     <Compile Include="StaggerDemo.fs" />
     <Compile Include="MotionTab.fs" />
@@ -22,6 +22,12 @@
     <Compile Include="NotificationsTab.fs" />
     <Compile Include="NavigationTab.fs" />
     <Compile Include="PrimitivesTab.fs" />
+    <Compile Include="Pages\HubPage.fs" />
+    <Compile Include="Pages\InputPage.fs" />
+    <Compile Include="Pages\CollectionsPage.fs" />
+    <Compile Include="Pages\NavigatePage.fs" />
+    <Compile Include="Pages\DialogsPage.fs" />
+    <Compile Include="Pages\MotionPage.fs" />
     <Compile Include="Gallery.fs" />
     <Compile Include="GalleryCheck.fs" />
     <Compile Include="Program.fs" />
@@ -31,11 +37,13 @@
     <ProjectReference Include="..\..\FunGoo\FunGoo.fsproj" />
     <ProjectReference Include="..\..\FunGoo.Widgets\FunGoo.Widgets.fsproj" />
     <ProjectReference Include="..\..\FunGoo.Metro\FunGoo.Metro.fsproj" />
+    <ProjectReference Include="..\..\FunGoo.Mvu\FunGoo.Mvu.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Goo" Version="0.31.0" />
     <PackageReference Include="Goo.Widgets" Version="0.22.2" />
+    <PackageReference Include="Elmish" Version="5.0.2" />
   </ItemGroup>
 
 </Project>

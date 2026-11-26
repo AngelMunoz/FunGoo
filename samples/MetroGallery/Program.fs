@@ -5,22 +5,15 @@ open System.Collections.Generic
 open Goo
 open FunGoo.Metro
 
-/// Gallery tabs that also register as named `goo render` scenes, in name order.
+/// Gallery pages that also register as named `goo render` scenes, in name order.
 let sceneTabs = [|
-  "controls"
-  "datetime"
-  "flip-view"
-  "inputs"
-  "lists"
+  "collections"
+  "dialogs"
+  "hub"
+  "input"
   "motion"
-  "navigation"
-  "notifications"
-  "overlays"
-  "overview"
-  "primitives"
-  "selection"
-  "typography"
-  "zoom"
+  "navigate"
+  "type"
 |]
 
 /// Maps the window theme preference onto a Metro appearance mode.
@@ -64,7 +57,7 @@ let main(args: string array) : int =
 
     let mutable windowSlot: Window voption = ValueNone
 
-    let gallery = Gallery.create((fun () -> windowSlot), Gallery.overviewStart)
+    let gallery = Gallery.create((fun () -> windowSlot), Gallery.hubStart)
 
     let window =
       Window(

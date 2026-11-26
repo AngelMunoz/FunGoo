@@ -135,7 +135,7 @@ let requireButton(tree: Blob, key: string, message: string) : Button =
 /// named scenes for a getter of the window. The check returns the exit code.
 let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   let mutable windowSlot: Window voption = ValueNone
-  let gallery = Gallery.create((fun () -> windowSlot), Gallery.overviewStart)
+  let gallery = Gallery.create((fun () -> windowSlot), Gallery.hubStart)
   let root = CheckRoot.create gallery
   use host = headlessHost()
   host.Resize(1280, 800, 1280, 800)
@@ -171,63 +171,51 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 1. Click a real Pivot tab header. The Pivot gives the selection to the
   // gallery cell through `InvokeInputCallback`, so the owner rule rebuilds
-  // the gallery cell. The handler of the selection has no `Rebuild()` call.
+  // the gallery cell, and the posted Elmish message rebuilds it again once
+  // the loop applies the message. The handler of the selection has no
+  // `Rebuild()` call.
   let pivot = requireSome("Expected the Pivot to be mounted.", gallery.Pivot)
 
   // The view of a cell is readable only inside a build.
   let mutable pivotTree: Blob = null
   root.DuringBuild(host, fun () -> pivotTree <- pivot.View)
 
-  let typographyTab =
+  let typeTab =
     requireButton(
       pivotTree,
-      "pivot-tab-typography",
-      "Expected the Pivot tab 'pivot-tab-typography'."
+      "pivot-tab-type",
+      "Expected the Pivot tab 'pivot-tab-type'."
     )
 
   let buildsBefore = gallery.Builds
-  typographyTab.OnClick.Invoke()
+  typeTab.OnClick.Invoke()
   pump 2
 
-  if gallery.ActiveTab <> "typography" then
+  if gallery.ActiveTab <> "type" then
     failwith
-      $"Expected tab click to switch activeTab to 'typography', got '{gallery.ActiveTab}'."
+      $"Expected tab click to switch activeTab to 'type', got '{gallery.ActiveTab}'."
 
-  if gallery.Builds <> buildsBefore + 1 then
-    failwith
-      "Expected the owner rule to rebuild the gallery once after a tab click."
+  if gallery.Builds < buildsBefore + 1 then
+    failwith "Expected the gallery to rebuild after a tab click."
 
-  // 2. Exercise remaining Pivot tabs across two full roundtrips to ensure
-  // unmounted tab cells remount cleanly with fresh instances.
+  // 2. Exercise remaining Pivot pages across two full roundtrips to ensure
+  // unmounted page cells remount cleanly with fresh instances.
   for tab in
     [|
-      "controls"
-      "flip-view"
-      "lists"
-      "selection"
-      "zoom"
+      "input"
+      "collections"
+      "navigate"
+      "dialogs"
       "motion"
-      "overview"
-      "inputs"
-      "datetime"
-      "overlays"
-      "notifications"
-      "navigation"
-      "primitives"
-      "controls"
-      "flip-view"
-      "lists"
-      "selection"
-      "zoom"
-      "typography"
+      "type"
+      "hub"
+      "input"
+      "collections"
+      "navigate"
+      "dialogs"
       "motion"
-      "overview"
-      "inputs"
-      "datetime"
-      "overlays"
-      "notifications"
-      "navigation"
-      "primitives"
+      "type"
+      "hub"
     |] do
     gallery.SelectTab tab
     pump 2
@@ -311,7 +299,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     failwith "Expected ContentDialog close transition to animate."
 
   // 7. Semantic zoom: the toggle zooms out, and a group tile zooms back in.
-  gallery.SelectTab "zoom"
+  gallery.SelectTab "collections"
   pump 2
 
   let zoomTab =
@@ -365,7 +353,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 8. Inputs: the size combo box and the city auto-suggest box keep separate
   // values.
-  gallery.SelectTab "inputs"
+  gallery.SelectTab "input"
   pump 2
 
   let inputsTab =
@@ -403,7 +391,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   // tab calls `Rebuild()`, and no handler of the three tabs with a widget
   // input calls it. A Goo.Widgets control has no public member that starts
   // the callback of its input, thus the check drives the zoom cell.
-  gallery.SelectTab "zoom"
+  gallery.SelectTab "collections"
   pump 2
 
   let zoomTabAgain =
@@ -431,7 +419,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 10. Selection tab: LongListSelector jump grid, ListPicker, and TreeView
   // rebuild the tab through InvokeInputCallback with no manual Rebuild().
-  gallery.SelectTab "selection"
+  gallery.SelectTab "input"
   pump 2
 
   let selectionTab =
@@ -493,7 +481,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 11. Date and time tab: inline rollers and modal pickers rebuild the tab
   // via InvokeInputCallback.
-  gallery.SelectTab "datetime"
+  gallery.SelectTab "input"
   pump 2
 
   let dtTab =
@@ -552,7 +540,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 12. Overlays tab: Flyout, MessageDialog, MenuFlyout, ContextMenu, and
   // Tooltip mount and route callbacks cleanly.
-  gallery.SelectTab "overlays"
+  gallery.SelectTab "dialogs"
   pump 2
 
   let ovTab = requireSome("Expected overlays tab.", gallery.OverlaysTab)
@@ -590,7 +578,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 13. Notifications tab: InfoBar, ToastHost, and TeachingTip mount and
   // deliver callbacks cleanly.
-  gallery.SelectTab "notifications"
+  gallery.SelectTab "dialogs"
   pump 2
 
   let notifTab =
@@ -635,7 +623,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
 
   // 14. Navigation tab: SplitView, TabView, BreadcrumbBar, AppBar parts, and
   // Panorama mount and deliver callbacks cleanly.
-  gallery.SelectTab "navigation"
+  gallery.SelectTab "navigate"
   pump 2
 
   let navTab = requireSome("Expected navigation tab.", gallery.NavigationTab)
@@ -670,7 +658,7 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   // 15. Primitives & Layout tab: Icon, PersonPicture, Image, RichTextBlock,
   // Expander, VariableSizedWrapGrid, WrapPanel, Viewbox, and ScrollViewer
   // mount and switch modes cleanly.
-  gallery.SelectTab "primitives"
+  gallery.SelectTab "navigate"
   pump 2
 
   let primTab = requireSome("Expected primitives tab.", gallery.PrimitivesTab)

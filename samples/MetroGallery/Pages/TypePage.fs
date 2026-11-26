@@ -1,4 +1,4 @@
-module MetroGallery.TypographyTab
+module MetroGallery.Pages.TypePage
 
 open Goo
 open FunGoo.Children
@@ -19,7 +19,7 @@ module Content =
     MetroTextRole.Badge, "Badge 11 px Bold Uppercase"
   |]
 
-/// One row of the tab: the size and the weight of a text role, then a sample
+/// One row of the page: the size and the weight of a text role, then a sample
 /// of the role.
 let sampleRow(index: int, sample: MetroTextRole * string) : Blob =
   let role, sampleText = sample
@@ -36,7 +36,8 @@ let sampleRow(index: int, sample: MetroTextRole * string) : Blob =
       MetroText.build(MetroText.defaults(sampleText, role))
     )
 
-/// The typography tab: a scrollable column with one row for each text role.
+/// The type page: the page title, then a scrollable column with one row for
+/// each text role in ramp order.
 let view() : Blob =
   let col =
     Container(
@@ -53,6 +54,8 @@ let view() : Blob =
           Length.Pixels 0.0
         )
     )
+
+  col.Add(MetroText.title "type")
 
   for i = 0 to Content.samples.Length - 1 do
     col.Add(sampleRow(i, Content.samples[i]))
