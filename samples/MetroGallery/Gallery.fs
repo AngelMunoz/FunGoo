@@ -751,7 +751,12 @@ let create
     page :> Cell
 
   let dialogsPageFactory() : Cell =
-    let page = DialogsPage.create()
+    let page =
+      DialogsPage.create {
+        OpenDialog = (fun () -> dispatchMsg(DialogOpenChanged true))
+        OpenSettings = (fun () -> dispatchMsg(SettingsOpenChanged true))
+      }
+
     dialogsPageRef <- ValueSome page
     page :> Cell
 

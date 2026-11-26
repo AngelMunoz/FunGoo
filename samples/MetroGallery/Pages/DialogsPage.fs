@@ -115,6 +115,30 @@ type DialogsFactories = {
   TeachingTip: unit -> MetroTeachingTipCell
 }
 
+/// The shell surfaces that stay mounted in the shell: the content dialog
+/// and the settings flyout. The page owns no shell state: each launch button
+/// reaches the shell through one of these callbacks.
+type ShellCallbacks = {
+  OpenDialog: unit -> unit
+  OpenSettings: unit -> unit
+}
+
+/// One launch row for the two shell surfaces: a button that opens the shell
+/// content dialog and one that opens the shell settings flyout. New use of
+/// MetroButton as a launcher, per the gallery repetition rule.
+let shellRow(cb: ShellCallbacks) : Blob =
+  Container(
+    Key = "dialogs-shell-row",
+    FlexDirection = FlexDirection.Row,
+    FlexWrap = FlexWrap.Wrap,
+    Gap = Length.Pixels 12.0,
+    AlignItems = AlignItems.Center
+  )
+    .Children(
+      MetroButton.accent("Open Content Dialog", cb.OpenDialog),
+      MetroButton.standard("Open Settings Flyout", cb.OpenSettings)
+    )
+
 /// One titled section of the page: a subheader in the type ramp, then the
 /// content.
 let section(title: string, content: Blob) : Blob =
@@ -176,10 +200,13 @@ let flyoutBody(onQuickApply: unit -> unit) : Blob =
       MetroButton.accent("Apply Filter", onQuickApply)
     )
 
-/// The surfaces of the page: the flyout, the message dialog, and the tooltip
-/// in one column, and the menu flyout and the context menu in the other. The
-/// sizes, the order, and the demo data match the retired overlays tab.
-let surfaces(state: DialogsState, factories: DialogsFactories) : Blob =
+/// The surfaces of the page: one launch row for the two shell surfaces,
+/// then the flyout, the message dialog, and the tooltip in one column, and
+/// the menu flyout and the context menu in the other. The sizes, the order,
+/// and the demo data match the retired overlays tab.
+let surfaces
+  (state: DialogsState, factories: DialogsFactories, cb: ShellCallbacks)
+  : Blob =
   let theme = Metro.read()
   let p = theme.Palette
 
@@ -333,6 +360,7 @@ let surfaces(state: DialogsState, factories: DialogsFactories) : Blob =
         "Anchored flyouts, full-bleed message dialogs with multi-command \
          footers, nested menu flyouts, right-click context menus, and sharp \
          Metro tooltips.",
+      shellRow cb,
       Container(
         FlexDirection = FlexDirection.Row,
         Width = Length.Percent 100.0,
@@ -540,9 +568,12 @@ let notices(state: DialogsState, factories: DialogsFactories) : Blob =
         .Children(infoCol, toastAndTipCol)
     )
 
-/// The page: the title, the surfaces, the notices, and the last action. The
-/// shell keeps the content dialog and the settings flyout.
-let view(state: DialogsState, factories: DialogsFactories) : Blob =
+/// The page: the title, the surfaces with one launch row for the shell
+/// surfaces, the notices, and the last action. The shell keeps the content
+/// dialog and the settings flyout.
+let view
+  (state: DialogsState, factories: DialogsFactories, cb: ShellCallbacks)
+  : Blob =
   Container(
     FlexDirection = FlexDirection.Column,
     FlexGrow = 1.0,
@@ -559,7 +590,7 @@ let view(state: DialogsState, factories: DialogsFactories) : Blob =
   )
     .Children(
       MetroText.title "dialogs",
-      section("SURFACES", surfaces(state, factories)),
+      section("SURFACES", surfaces(state, factories, cb)),
       section("NOTICES", notices(state, factories)),
       MetroText.caption state.LastAction
     )
@@ -567,8 +598,9 @@ let view(state: DialogsState, factories: DialogsFactories) : Blob =
 /// Creates the dialogs page. The page owns the open states, the toasts, and
 /// the tip state. Callbacks of mounted cells write the state, and the owner
 /// rule rebuilds the page; callbacks made before the page exists rebuild it
-/// through the slot.
-let create() : DialogsPageCell =
+/// through the slot. The shell launch row reaches the shell through
+/// <paramref name="cb"/>; the page keeps no shell state.
+let create(cb: ShellCallbacks) : DialogsPageCell =
   let state: DialogsState = {
     FlyoutAnchor = ElementHandle()
     MenuAnchor = ElementHandle()
@@ -693,7 +725,7 @@ let create() : DialogsPageCell =
 
       override _.Build() : Blob =
         state.Builds <- state.Builds + 1
-        view(state, factories)
+        view(state, factories, cb)
   }
 
   self <- ValueSome page
