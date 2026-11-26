@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          submodules: true
 
       - name: Extract Release Data
         id: extract
@@ -67,33 +68,21 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false'
         run: dotnet tool restore
 
-      - name: Install shader SDKs (Slang 2026.16 + Vulkan SDK 1.4.357.0)
+      - name: Install shader toolchain (from the pinned Goo submodule)
         if: steps.check_tag.outputs.exists == 'false'
         run: |
           set -euo pipefail
-          SDK_ROOT="$RUNNER_TEMP/shader-sdks"
-          mkdir -p "$SDK_ROOT"
-          curl -sSL -o "$SDK_ROOT/slang.tar.gz" https://github.com/shader-slang/slang/releases/download/v2026.16/slang-2026.16-linux-x86_64-glibc-2.27.tar.gz
-          mkdir -p "$SDK_ROOT/slang"
-          tar -xzf "$SDK_ROOT/slang.tar.gz" -C "$SDK_ROOT/slang"
-          git clone --depth 1 --branch vulkan-sdk-1.4.357.0 https://github.com/KhronosGroup/SPIRV-Tools.git "$SDK_ROOT/SPIRV-Tools"
-          test "$(git -C "$SDK_ROOT/SPIRV-Tools" rev-parse HEAD)" = "9a49b0883b9b635689a85b5647dbfcb223268151"
-          git init "$SDK_ROOT/SPIRV-Tools/external/spirv-headers"
-          git -C "$SDK_ROOT/SPIRV-Tools/external/spirv-headers" remote add origin https://github.com/KhronosGroup/SPIRV-Headers.git
-          git -C "$SDK_ROOT/SPIRV-Tools/external/spirv-headers" fetch --depth 1 origin 29981f65241605e08b0ede4cfeb999fe3b723c6a
-          git -C "$SDK_ROOT/SPIRV-Tools/external/spirv-headers" checkout --detach FETCH_HEAD
-          cmake -S "$SDK_ROOT/SPIRV-Tools" -B "$SDK_ROOT/SPIRV-Tools-build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPIRV_SKIP_TESTS=ON -DSPIRV_WERROR=OFF
-          cmake --build "$SDK_ROOT/SPIRV-Tools-build" --target spirv-val --parallel 2
-          mkdir -p "$SDK_ROOT/vulkan/bin"
-          install -Dm755 "$SDK_ROOT/SPIRV-Tools-build/tools/spirv-val" "$SDK_ROOT/vulkan/bin/spirv-val"
-          SLANG_BIN="$(dirname "$(find "$SDK_ROOT/slang" -name slangc -type f | head -n 1)")"
-          VULKAN_BIN="$SDK_ROOT/vulkan/bin"
-          echo "SLANG_SDK=$SLANG_BIN/.." >> $GITHUB_ENV
-          echo "VULKAN_SDK=$(dirname "$VULKAN_BIN")" >> $GITHUB_ENV
-          echo "$SLANG_BIN" >> $GITHUB_PATH
-          echo "$VULKAN_BIN" >> $GITHUB_PATH
-          slangc -version
-          spirv-val --version | grep -F "SPIRV-Tools v2026.3 vulkan-sdk-1.4.357.0"
+          TOOL_ENV="$RUNNER_TEMP/shader-toolchain.env"
+          bash Goo/.github/scripts/install-shader-toolchain-linux-x64.sh "$RUNNER_TEMP/shader-toolchain" | tee "$TOOL_ENV"
+          SLANG_SDK="$(sed -n 's/^SLANG_SDK=//p' "$TOOL_ENV" | tail -n 1)"
+          VULKAN_SDK="$(sed -n 's/^VULKAN_SDK=//p' "$TOOL_ENV" | tail -n 1)"
+          test -n "$SLANG_SDK" && test -n "$VULKAN_SDK"
+          echo "SLANG_SDK=$SLANG_SDK" >> $GITHUB_ENV
+          echo "VULKAN_SDK=$VULKAN_SDK" >> $GITHUB_ENV
+          echo "$SLANG_SDK/bin" >> $GITHUB_PATH
+          echo "$VULKAN_SDK/bin" >> $GITHUB_PATH
+          "$SLANG_SDK/bin/slangc" -version
+          "$VULKAN_SDK/bin/spirv-val" --version
 
       - name: Restore dependencies
         if: steps.check_tag.outputs.exists == 'false'

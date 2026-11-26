@@ -307,7 +307,7 @@ Exceptions of gate 9 after the re-shape:
    goo render samples/MetroGallery/MetroGallery.fsproj --list
    goo render samples/MetroGallery/MetroGallery.fsproj --scene controls --theme light --size 1200x800 --out controls-light.png
    ```
-5. Shader compilation in CI. The release workflow installs Slang `2026.16` and builds `spirv-val` from SPIRV-Tools branch `vulkan-sdk-1.4.357.0` at commit `9a49b088` (the packaged LunarG `spirv-val` reports an RC build string and fails the Goo validator check; see `Goo/.github/scripts/install-shader-toolchain-linux-x64.sh`), builds with `-p:CompileMetroShaders=true`, packs `FunGoo.Metro` with the compiled `.goo-effect` shader embedded, and probes the packed package from a clean SDK-free consumer that asserts `MetroPerspective.isEmbeddedShaderAvailable`. A local machine without the SDKs still builds and tests without the shader:
+5. Shader compilation in CI. The release workflow checks out the pinned Goo submodule and runs `Goo/.github/scripts/install-shader-toolchain-linux-x64.sh`, so the Slang and SPIRV-Tools versions follow the Goo release that the submodule records and keep no copy in FunGoo (the packaged LunarG `spirv-val` reports an RC build string and fails the Goo validator check). It then builds with `-p:CompileMetroShaders=true`, packs `FunGoo.Metro` with the compiled `.goo-effect` shader embedded, and probes the packed package from a clean SDK-free consumer that asserts `MetroPerspective.isEmbeddedShaderAvailable`. A local machine without the SDKs still builds and tests without the shader:
    - Build and test with:
      ```sh
      dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj -p:CompileMetroShaders=true
