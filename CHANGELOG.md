@@ -21,6 +21,7 @@
 - **Metro:** Metro primitives and layout: MetroIcon, MetroBorder, MetroExpander, MetroImage, MetroPersonPicture, MetroRichTextBlock, MetroScrollViewer, MetroWrapPanel, MetroVariableSizedWrapGrid, and MetroViewbox with Uniform, Fill, UniformToFill, and None stretch modes.
 - **Metro:** Accent surfaces use a white foreground for every accent color: tile text and icons, the checked toggle switch thumb, accent buttons, and selected accent fills read white on the accent color.
 - **Metro:** Metro controls mirror in right-to-left layouts: Hub and Panorama sections reverse with mirrored peek padding, the SemanticZoom zoom toggle docks to the inline end, WrapPanel items flow right to left, and Pivot headers, TabView, and the PersonPicture presence badge render under an RTL ancestor.
+- **Metro:** The release pipeline now compiles the Metro perspective shader and ships it embedded in the `FunGoo.Metro` package, so consumers get the 3D perspective effect without installing shader SDKs.
 
 ### Fixed
 

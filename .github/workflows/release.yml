@@ -67,13 +67,41 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false'
         run: dotnet tool restore
 
+      - name: Install shader SDKs (Slang 2026.16 + Vulkan SDK 1.4.357.0)
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$RUNNER_TEMP/shader-sdks"
+          mkdir -p "$SDK_ROOT"
+          curl -sSL -o "$SDK_ROOT/slang.tar.gz" https://github.com/shader-slang/slang/releases/download/v2026.16/slang-2026.16-linux-x86_64-glibc-2.27.tar.gz
+          mkdir -p "$SDK_ROOT/slang"
+          tar -xzf "$SDK_ROOT/slang.tar.gz" -C "$SDK_ROOT/slang"
+          git clone --depth 1 --branch vulkan-sdk-1.4.357.0 https://github.com/KhronosGroup/SPIRV-Tools.git "$SDK_ROOT/SPIRV-Tools"
+          test "$(git -C "$SDK_ROOT/SPIRV-Tools" rev-parse HEAD)" = "9a49b0883b9b635689a85b5647dbfcb223268151"
+          git init "$SDK_ROOT/SPIRV-Tools/external/spirv-headers"
+          git -C "$SDK_ROOT/SPIRV-Tools/external/spirv-headers" remote add origin https://github.com/KhronosGroup/SPIRV-Headers.git
+          git -C "$SDK_ROOT/SPIRV-Tools/external/spirv-headers" fetch --depth 1 origin 29981f65241605e08b0ede4cfeb999fe3b723c6a
+          git -C "$SDK_ROOT/SPIRV-Tools/external/spirv-headers" checkout --detach FETCH_HEAD
+          cmake -S "$SDK_ROOT/SPIRV-Tools" -B "$SDK_ROOT/SPIRV-Tools-build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPIRV_SKIP_TESTS=ON -DSPIRV_WERROR=OFF
+          cmake --build "$SDK_ROOT/SPIRV-Tools-build" --target spirv-val --parallel 2
+          mkdir -p "$SDK_ROOT/vulkan/bin"
+          install -Dm755 "$SDK_ROOT/SPIRV-Tools-build/tools/spirv-val" "$SDK_ROOT/vulkan/bin/spirv-val"
+          SLANG_BIN="$(dirname "$(find "$SDK_ROOT/slang" -name slangc -type f | head -n 1)")"
+          VULKAN_BIN="$SDK_ROOT/vulkan/bin"
+          echo "SLANG_SDK=$SLANG_BIN/.." >> $GITHUB_ENV
+          echo "VULKAN_SDK=$(dirname "$VULKAN_BIN")" >> $GITHUB_ENV
+          echo "$SLANG_BIN" >> $GITHUB_PATH
+          echo "$VULKAN_BIN" >> $GITHUB_PATH
+          slangc -version
+          spirv-val --version | grep -F "SPIRV-Tools v2026.3 vulkan-sdk-1.4.357.0"
+
       - name: Restore dependencies
         if: steps.check_tag.outputs.exists == 'false'
         run: dotnet restore
 
       - name: Build
         if: steps.check_tag.outputs.exists == 'false'
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore -p:CompileMetroShaders=true
 
       - name: Pack
         if: steps.check_tag.outputs.exists == 'false'
@@ -81,6 +109,39 @@ jobs:
           dotnet pack --configuration Release --no-build --output nupkgs FunGoo/FunGoo.fsproj
           dotnet pack --configuration Release --no-build --output nupkgs FunGoo.Widgets/FunGoo.Widgets.fsproj
           dotnet pack --configuration Release --no-build --output nupkgs FunGoo.Mvu/FunGoo.Mvu.fsproj
+          dotnet pack --configuration Release --no-build --output nupkgs -p:CompileMetroShaders=true FunGoo.Metro/FunGoo.Metro.fsproj
+
+      - name: Consumer probe (Metro embedded shader, no SDK)
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          unset SLANG_SDK
+          unset VULKAN_SDK
+          PATH="$(echo "$PATH" | tr ':' '\n' | grep -viE 'slang|vulkan|shader-sdks' | paste -sd: -)"
+          if command -v slangc >/dev/null 2>&1; then echo "slangc still on PATH"; exit 1; fi
+          if command -v spirv-val >/dev/null 2>&1; then echo "spirv-val still on PATH"; exit 1; fi
+          PROBE="$RUNNER_TEMP/metro-consumer"
+          rm -rf "$PROBE"
+          dotnet new console -lang "F#" -o "$PROBE" --no-restore
+          METRO_NUPKG="$(ls "$GITHUB_WORKSPACE/nupkgs"/FunGoo.Metro.*.nupkg | head -n 1)"
+          METRO_VERSION="$(basename "$METRO_NUPKG" | sed -E 's/^FunGoo\.Metro\.(.*)\.nupkg$/\1/')"
+          echo "Probing FunGoo.Metro $METRO_VERSION from $METRO_NUPKG"
+          dotnet add "$PROBE" package FunGoo.Metro --version "$METRO_VERSION" --source "$GITHUB_WORKSPACE/nupkgs" --source https://api.nuget.org/v3/index.json
+          cat > "$PROBE/Program.fs" <<'EOF'
+          open FunGoo.Metro
+
+          printfn "isEmbeddedShaderAvailable=%b" MetroPerspective.isEmbeddedShaderAvailable
+
+          if not MetroPerspective.isEmbeddedShaderAvailable then
+              eprintfn "FAIL: Metro embedded shader is missing from the packed nupkg."
+              exit 1
+          EOF
+          dotnet build "$PROBE" -v:n 2>&1 | tee "$RUNNER_TEMP/metro-consumer-build.log"
+          if grep -iE 'ShaderEffectTool|GooShaderEffect' "$RUNNER_TEMP/metro-consumer-build.log"; then
+            echo "FAIL: consumer build invoked the shader toolchain."
+            exit 1
+          fi
+          dotnet run --project "$PROBE" --no-build
 
       - name: NuGet login (trusted publishing)
         if: steps.check_tag.outputs.exists == 'false'

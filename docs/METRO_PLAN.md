@@ -307,17 +307,16 @@ Exceptions of gate 9 after the re-shape:
    goo render samples/MetroGallery/MetroGallery.fsproj --list
    goo render samples/MetroGallery/MetroGallery.fsproj --scene controls --theme light --size 1200x800 --out controls-light.png
    ```
-5. Optional shader compilation. The machine used on 2026-11-22 has no `SLANG_SDK` and no `VULKAN_SDK`, so it cannot compile the perspective shader:
-   - Requires Slang `2026.16` (`SLANG_SDK`) and Vulkan SDK `1.4.357.0` (`VULKAN_SDK`) — see `Goo/docs/platform-preflight.md`.
+5. Shader compilation in CI. The release workflow installs Slang `2026.16` and builds `spirv-val` from SPIRV-Tools branch `vulkan-sdk-1.4.357.0` at commit `9a49b088` (the packaged LunarG `spirv-val` reports an RC build string and fails the Goo validator check; see `Goo/.github/scripts/install-shader-toolchain-linux-x64.sh`), builds with `-p:CompileMetroShaders=true`, packs `FunGoo.Metro` with the compiled `.goo-effect` shader embedded, and probes the packed package from a clean SDK-free consumer that asserts `MetroPerspective.isEmbeddedShaderAvailable`. A local machine without the SDKs still builds and tests without the shader:
    - Build and test with:
      ```sh
      dotnet test tests/FunGoo.Metro.Tests/FunGoo.Metro.Tests.fsproj -p:CompileMetroShaders=true
      ```
-   - To ship the precompiled binary to machines without the shader SDKs, copy the generated `.goo-effect` artifact from `FunGoo.Metro/obj/` to `FunGoo.Metro/Shaders/metro_perspective.goo-effect`.
+   - Without the SDKs the embedded shader is absent and `MetroPerspectiveEffect` falls back to 2D transforms.
 
 ## Future Follow-Ups (After the Planned PR Set)
 
-- Decide whether to check in precompiled `FunGoo.Metro/Shaders/metro_perspective.goo-effect` and wire live 3D perspective transitions into `MetroPivot`, `MetroLiveTile` (FlipTile), and `MetroContentDialog` (Swivel). This needs a machine with the Slang and Vulkan SDKs.
+- Decide whether to wire live 3D perspective transitions into `MetroPivot`, `MetroLiveTile` (FlipTile), and `MetroContentDialog` (Swivel). CI compiles the `metro_perspective` shader and packs it in the `FunGoo.Metro` package, so check-in of a precompiled artifact and local SDK installs are no longer needed for shipping.
 - Evaluate bundled humanist light-weight sans-serif font (for example, Selawik) via `FontSource`.
 
 ## Verification Gates (Required Per Commit)
