@@ -29,6 +29,7 @@ let ``MetroSemanticZoom view shows one view and a zoom toggle``() =
     }
     ScaleAnim = scale
     OpacityAnim = alpha
+    ToggleHandle = ElementHandle()
   }
 
   let mutable build: unit -> Blob = fun () -> Container()

@@ -8,24 +8,6 @@ open FunGoo.Children
 open FunGoo.Metro
 open FunGoo.Metro.Tests.TestHost
 
-let private linearSrgb(channel: float32) : float =
-  let c = float channel
-
-  if c <= 0.04045 then
-    c / 12.92
-  else
-    Math.Pow((c + 0.055) / 1.055, 2.4)
-
-let private luminance(color: Color) : float =
-  0.2126 * linearSrgb color.R
-  + 0.7152 * linearSrgb color.G
-  + 0.0722 * linearSrgb color.B
-
-let private contrastRatio(first: Color, second: Color) : float =
-  let l1 = luminance first + 0.05
-  let l2 = luminance second + 0.05
-  if l1 >= l2 then l1 / l2 else l2 / l1
-
 /// State of the dual theme probe. One mutable field per concern.
 type private DualThemeState = {
   mutable Builds: int
@@ -203,17 +185,8 @@ let ``All 21 named Metro accents match exact hex values and contrast``() =
     Assert.Equal(Color.Parse lightHex, resolved.Light)
     Assert.Equal(Color.Parse darkHex, resolved.Dark)
 
-    let whiteContrast = contrastRatio(Color.White, resolved.Base)
-    let blackContrast = contrastRatio(Color.Black, resolved.Base)
-
-    let expectedOnAccent =
-      if whiteContrast >= blackContrast then
-        Color.White
-      else
-        Color.Black
-
-    Assert.Equal(expectedOnAccent, resolved.OnAccent)
-    Assert.True(contrastRatio(resolved.OnAccent, resolved.Base) >= 3.0)
+    // Metro rule: an accent surface always uses a white foreground.
+    Assert.Equal(Color.White, resolved.OnAccent)
 
 [<Fact>]
 let ``MetroAccent resolve handles System fallback and Custom colors``() =
@@ -247,7 +220,7 @@ let ``MetroAccent resolve handles System fallback and Custom colors``() =
   Assert.Equal(Color.White, darkCustom.OnAccent)
 
   let brightCustom = MetroAccent.fromColor(Color.Rgb(240, 230, 120))
-  Assert.Equal(Color.Black, brightCustom.OnAccent)
+  Assert.Equal(Color.White, brightCustom.OnAccent)
 
 [<Fact>]
 let ``Metro attach bridges sharp zero-radius flat theme to Goo Widgets``() =

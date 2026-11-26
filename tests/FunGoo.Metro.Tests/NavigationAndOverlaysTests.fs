@@ -701,6 +701,7 @@ let ``MetroIconicTile and MetroLiveTile enforce Metro visuals cycling and cleanu
   Assert.Equal(0.0f, requireEntry(iconicBtn, "BorderRadius").A)
   Assert.Equal(0, boxShadowCount iconicBtn)
   assertColorEqual(customColor, requireEntry(iconicBtn, "BackgroundColor"))
+  assertColorEqual(Color.White, requireEntry(iconicBtn, "Color"))
 
   Assert.Equal(
     0.97f,

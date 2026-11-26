@@ -34,6 +34,9 @@ type MetroSemanticZoomState = {
   ScaleAnim: Anim<float>
   /// Paint-bound opacity of the active view during a zoom transition.
   OpacityAnim: Anim<float>
+  /// Handle attached to the zoom toggle button in the top end corner. A test
+  /// or host reads its geometry to verify end-side placement.
+  ToggleHandle: ElementHandle
 }
 
 /// Stateful Metro SemanticZoom cell: a zoomed-in detail view and a zoomed-out

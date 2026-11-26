@@ -102,34 +102,6 @@ let private readNodeLength(node: obj, fieldName: string) : float =
 
   Convert.ToDouble(raw)
 
-let private readStyleEntriesField
-  (node: obj, fieldName: string)
-  : StyleSample array =
-  let entries = node.GetType().GetField(fieldName, flags).GetValue(node)
-
-  if isNull entries then
-    Array.empty
-  else
-    let entriesType = entries.GetType()
-
-    let count =
-      entriesType.GetProperty("Count", flags).GetValue(entries) :?> int
-
-    let atMethod = entriesType.GetMethod("At", flags)
-
-    Array.init count (fun i ->
-      let e = atMethod.Invoke(entries, [| box i |])
-      let et = e.GetType()
-
-      {
-        FieldName = et.GetField("Field", flags).GetValue(e).ToString()
-        A = et.GetField("A", flags).GetValue(e) :?> float32
-        B = et.GetField("B", flags).GetValue(e) :?> float32
-        C = et.GetField("C", flags).GetValue(e) :?> float32
-        D = et.GetField("D", flags).GetValue(e) :?> float32
-        Payload = et.GetField("Payload", flags).GetValue(e)
-      })
-
 let private boxShadowCount(style: Style) : int =
   let payload = requireEntry(style, "BoxShadows").Payload
 
@@ -698,6 +670,8 @@ let ``Metro inputs configure sharp Metro styling semantics and callbacks``() =
   let onStateText = childAt(onSwitchBtn, 1) :?> Text
   Assert.Equal("On", onStateText.Content)
   assertColorEqual(blue.Base, requireEntry(onTrack, "BackgroundColor"))
+  let onThumb = childAt(onTrack, 0) :?> Container
+  assertColorEqual(Color.White, requireEntry(onThumb, "BackgroundColor"))
 
   // 4. MetroCheckBox
   let cbBtn = children[3] :?> Button

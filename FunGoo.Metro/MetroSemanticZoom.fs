@@ -22,6 +22,7 @@ type MetroSemanticZoomState = {
   Input: MetroSemanticZoomInput
   ScaleAnim: Anim<float>
   OpacityAnim: Anim<float>
+  ToggleHandle: ElementHandle
 }
 
 [<AbstractClass>]
@@ -167,6 +168,7 @@ module ZoomInternals =
         )
           .Children(MaterialIcons.Create(iconName, 20.0, Nullable p.Foreground))
 
+      toggle.Handle <- state.ToggleHandle
       root.Add(toggle)
 
     root
@@ -194,6 +196,7 @@ module MetroSemanticZoom =
     mutable LastZoomedOut: bool voption
     mutable LastReducedMotion: bool
     mutable ScopedReducedMotion: bool
+    ToggleHandle: ElementHandle
     // Slots for the two animation values. `create` fills them after the cell
     // exists.
     mutable Scale: Anim<float>
@@ -219,6 +222,7 @@ module MetroSemanticZoom =
     LastZoomedOut = ValueNone
     LastReducedMotion = false
     ScopedReducedMotion = false
+    ToggleHandle = ElementHandle()
     Scale = Unchecked.defaultof<Anim<float>>
     Opacity = Unchecked.defaultof<Anim<float>>
   }
@@ -228,6 +232,7 @@ module MetroSemanticZoom =
     Input = ctx.State.Input
     ScaleAnim = ctx.State.Scale
     OpacityAnim = ctx.State.Opacity
+    ToggleHandle = ctx.State.ToggleHandle
   }
 
   /// Restores the resting scale and opacity of the active view.

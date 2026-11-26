@@ -186,10 +186,11 @@ module MetroHub =
         Padding =
           Edges(
             Length.Pixels 0.0,
-            Length.Pixels 48.0,
+            Length.Pixels 0.0,
             Length.Pixels 8.0,
             Length.Pixels 0.0
-          )
+          ),
+        PaddingEnd = Length.Pixels 48.0
       )
 
     for i = 0 to sections.Length - 1 do

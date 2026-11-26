@@ -4,7 +4,7 @@ open System.Collections.Generic
 open Goo
 
 /// Resolved Metro accent color family with hover/pressed shades and
-/// WCAG contrast-safe foreground paint.
+/// the white foreground that Metro paints on an accent surface.
 [<Struct; NoComparison>]
 type MetroAccent = {
   /// Primary accent fill color.
@@ -13,7 +13,8 @@ type MetroAccent = {
   Light: Color
   /// Darker shade used for light-surface hover and pressed states.
   Dark: Color
-  /// High-contrast foreground color (white or black) painted on top of <see cref="Base"/>.
+  /// White foreground color painted on top of <see cref="Base"/>. Metro uses
+  /// white on every accent surface, for every accent color.
   OnAccent: Color
 }
 
@@ -73,8 +74,8 @@ type MetroAccentKind =
 module MetroAccent =
 
   /// Derives a complete <see cref="MetroAccent"/> from a base color, blending 22% toward white
-  /// for <c>Light</c>, 22% toward black for <c>Dark</c>, and choosing WCAG contrast-safe
-  /// <c>Color.White</c> or <c>Color.Black</c> for <c>OnAccent</c>.
+  /// for <c>Light</c>, 22% toward black for <c>Dark</c>, and using <c>Color.White</c>
+  /// for <c>OnAccent</c>.
   val fromColor: color: Color -> MetroAccent
 
   /// Resolves a <see cref="MetroAccentKind"/> using the optional operating system accent color.

@@ -42,31 +42,8 @@ type MetroAccentKind =
   CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module MetroAccent =
 
-  let inline linearSrgb(channel: float32) : float =
-    let c = float channel
-
-    if c <= 0.04045 then
-      c / 12.92
-    else
-      Math.Pow((c + 0.055) / 1.055, 2.4)
-
-  let inline relativeLuminance(color: Color) : float =
-    0.2126 * linearSrgb color.R
-    + 0.7152 * linearSrgb color.G
-    + 0.0722 * linearSrgb color.B
-
-  let inline contrastRatio(first: Color, second: Color) : float =
-    let l1 = relativeLuminance first + 0.05
-    let l2 = relativeLuminance second + 0.05
-    if l1 >= l2 then l1 / l2 else l2 / l1
-
-  let inline onAccentFor(color: Color) : Color =
-    if
-      contrastRatio(Color.White, color) >= contrastRatio(Color.Black, color)
-    then
-      Color.White
-    else
-      Color.Black
+  // Metro rule: an accent surface always uses a white foreground.
+  let inline onAccentFor(_color: Color) : Color = Color.White
 
   let inline blend(source: Color, target: Color, amount: float32) : Color =
     Color.FromNormalized(

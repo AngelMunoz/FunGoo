@@ -447,8 +447,9 @@ module MetroPersonPicture =
 
       box.Add(
         Container(
+          Key = "metro-person-picture-presence",
           Position = PositionType.Absolute,
-          Right = Length.Pixels 0.0,
+          End = Length.Pixels 0.0,
           Bottom = Length.Pixels 0.0,
           Width = Length.Pixels badgeEdge,
           Height = Length.Pixels badgeEdge,

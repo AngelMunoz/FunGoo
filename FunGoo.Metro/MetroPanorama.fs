@@ -178,7 +178,7 @@ module MetroPanorama =
             Position = PositionType.Absolute,
             Top = Length.Pixels 0.0,
             Bottom = Length.Pixels 0.0,
-            Left = Length.Pixels 0.0,
+            Start = Length.Pixels 0.0,
             Width = Length.Percent 140.0,
             Opacity = 0.18,
             HitTestSelf = false,
@@ -230,10 +230,12 @@ module MetroPanorama =
         Padding =
           Edges(
             Length.Pixels 0.0,
-            Length.Pixels 64.0,
+            Length.Pixels 0.0,
             Length.Pixels 8.0,
-            Length.Pixels 16.0
-          )
+            Length.Pixels 0.0
+          ),
+        PaddingStart = Length.Pixels 16.0,
+        PaddingEnd = Length.Pixels 64.0
       )
 
     for i = 0 to sections.Length - 1 do
