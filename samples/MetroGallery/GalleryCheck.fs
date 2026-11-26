@@ -554,12 +554,12 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if pickDt.SelectedDate <> DateOnly(2026, 12, 1) then
     failwith "Expected CalendarDatePicker selection 2026-12-01."
 
-  // 12. Overlays tab: Flyout, MessageDialog, MenuFlyout, ContextMenu, and
-  // Tooltip mount and route callbacks cleanly.
+  // 12. Dialogs page, surfaces: Flyout, MessageDialog, MenuFlyout,
+  // ContextMenu, and Tooltip mount and route callbacks cleanly.
   gallery.SelectTab "dialogs"
   pump 2
 
-  let ovTab = requireSome("Expected overlays tab.", gallery.OverlaysTab)
+  let ovTab = requireSome("Expected dialogs page.", gallery.DialogsPage)
 
   let tooltip = requireSome("Expected tooltip cell.", ovTab.Tooltip)
 
@@ -592,13 +592,12 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
     failwith
       $"Expected 'Message command: save' in one build, got '{ovTab.LastAction}'."
 
-  // 13. Notifications tab: InfoBar, ToastHost, and TeachingTip mount and
-  // deliver callbacks cleanly.
+  // 13. Dialogs page, notices: InfoBar, ToastHost, and TeachingTip mount
+  // and deliver callbacks cleanly.
   gallery.SelectTab "dialogs"
   pump 2
 
-  let notifTab =
-    requireSome("Expected notifications tab.", gallery.NotificationsTab)
+  let notifTab = requireSome("Expected dialogs page.", gallery.DialogsPage)
 
   if notifTab.InfoOpenMask <> 0b1111 then
     failwith "Expected all four info bars open initially."
@@ -703,6 +702,24 @@ let run(sceneTabs: string array, scenes: Gallery.ScenesFactory) : int =
   if viewboxCell.ScaleX <= 0.0 || viewboxCell.ScaleY <= 0.0 then
     failwith
       $"Expected the responsive viewbox scale above 0.0, got {viewboxCell.ScaleX} and {viewboxCell.ScaleY}."
+
+  // 16. Motion page: the turnstile shader demo, the continuum demo, and the
+  // stagger demo mount cleanly.
+  gallery.SelectTab "motion"
+  pump 2
+
+  let motionPage = requireSome("Expected motion page.", gallery.MotionPage)
+
+  if motionPage.ContinuumDemo.IsNone || motionPage.StaggerDemo.IsNone then
+    failwith "Expected the continuum and the stagger demos to be mounted."
+
+  if
+    motionPage.ShaderAvailable <> MetroPerspective.isEmbeddedShaderAvailable
+  then
+    failwith "Expected the page to report the embedded shader state."
+
+  if motionPage.Builds < 1 then
+    failwith "Expected the motion page to build at least once."
 
   printfn "MetroGallery checks passed."
   0

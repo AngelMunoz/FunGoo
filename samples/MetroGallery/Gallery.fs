@@ -103,11 +103,11 @@ type GalleryCell
   /// The mounted pick section, for the headless check.
   abstract PickSection: InputPage.PickSectionCell voption
 
-  /// The mounted overlays tab, for the headless check.
-  abstract OverlaysTab: OverlaysTab.OverlaysTabCell voption
+  /// The mounted dialogs page, for the headless check.
+  abstract DialogsPage: DialogsPage.DialogsPageCell voption
 
-  /// The mounted notifications tab, for the headless check.
-  abstract NotificationsTab: NotificationsTab.NotificationsTabCell voption
+  /// The mounted motion page, for the headless check.
+  abstract MotionPage: MotionPage.MotionPageCell voption
 
   /// The mounted navigate page, for the headless check.
   abstract NavigatePage: NavigatePage.NavigatePageCell voption
@@ -153,8 +153,6 @@ type GalleryFactories = {
   ActSection: unit -> Cell
   EnterSection: unit -> Cell
   PickSection: unit -> Cell
-  OverlaysTab: unit -> Cell
-  NotificationsTab: unit -> Cell
   ContinuumDemo: unit -> Cell
   StaggerDemo: unit -> Cell
   LiveTile: unit -> MetroLiveTileCell
@@ -601,10 +599,9 @@ let create
   let mutable actRef: InputPage.ActSectionCell voption = ValueNone
   let mutable enterRef: InputPage.EnterSectionCell voption = ValueNone
   let mutable pickRef: InputPage.PickSectionCell voption = ValueNone
-  let mutable overlaysTabRef: OverlaysTab.OverlaysTabCell voption = ValueNone
+  let mutable dialogsPageRef: DialogsPage.DialogsPageCell voption = ValueNone
 
-  let mutable notificationsTabRef: NotificationsTab.NotificationsTabCell voption =
-    ValueNone
+  let mutable motionPageRef: MotionPage.MotionPageCell voption = ValueNone
 
   let mutable flyoutRef: MetroSettingsFlyoutCell voption = ValueNone
   let mutable dialogRef: MetroContentDialogCell voption = ValueNone
@@ -695,16 +692,6 @@ let create
         let section = InputPage.createPickSection post
         pickRef <- ValueSome section
         section :> Cell
-    OverlaysTab =
-      fun () ->
-        let tab = OverlaysTab.create()
-        overlaysTabRef <- ValueSome tab
-        tab :> Cell
-    NotificationsTab =
-      fun () ->
-        let tab = NotificationsTab.create()
-        notificationsTabRef <- ValueSome tab
-        tab :> Cell
     ContinuumDemo = ContinuumDemo.create
     StaggerDemo = StaggerDemo.create
     LiveTile =
@@ -764,16 +751,19 @@ let create
     page :> Cell
 
   let dialogsPageFactory() : Cell =
-    DialogsPage.create {
-      Overlays = factories.OverlaysTab
-      Notifications = factories.NotificationsTab
-    }
+    let page = DialogsPage.create()
+    dialogsPageRef <- ValueSome page
+    page :> Cell
 
   let motionPageFactory() : Cell =
-    MotionPage.create {
-      Continuum = factories.ContinuumDemo
-      Stagger = factories.StaggerDemo
-    }
+    let page =
+      MotionPage.create {
+        Continuum = factories.ContinuumDemo
+        Stagger = factories.StaggerDemo
+      }
+
+    motionPageRef <- ValueSome page
+    page :> Cell
 
   let firstModel, _ = init start
 
@@ -808,8 +798,8 @@ let create
       override _.ActSection = actRef
       override _.EnterSection = enterRef
       override _.PickSection = pickRef
-      override _.OverlaysTab = overlaysTabRef
-      override _.NotificationsTab = notificationsTabRef
+      override _.DialogsPage = dialogsPageRef
+      override _.MotionPage = motionPageRef
       override _.SettingsFlyout = flyoutRef
       override _.ContentDialog = dialogRef
       override _.Builds = (envOf().Builds)

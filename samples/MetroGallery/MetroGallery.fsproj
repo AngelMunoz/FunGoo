@@ -9,9 +9,6 @@
     <Compile Include="Pages\TypePage.fs" />
     <Compile Include="ContinuumDemo.fs" />
     <Compile Include="StaggerDemo.fs" />
-    <Compile Include="MotionTab.fs" />
-    <Compile Include="OverlaysTab.fs" />
-    <Compile Include="NotificationsTab.fs" />
     <Compile Include="Pages\HubPage.fs" />
     <Compile Include="Pages\InputPage.fs" />
     <Compile Include="Pages\CollectionsPage.fs" />
